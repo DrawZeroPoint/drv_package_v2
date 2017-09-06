@@ -3,7 +3,7 @@
 ![overview](https://github.com/DrawZeroPoint/drv_package_v2/blob/master/supplements/figures/1.png )
 
 Deep Robot Vision 2.0 system for NEU Vision Gear, for the former version, refer https://github.com/NEU-TEAM/drv_package 
-*We refer this package, aka drv_package_v2 as DRV in the follow instructions.*
+*We refer this package, aka drv_package_v2 as DRV in the following instructions.*
 
 ## 1. Software prerequisites
 ### 1.1 ROS
@@ -63,4 +63,4 @@ export DRV=/home/USER/catkin_ws/src/drv_package
 10: full light (white) 11: no light (black) 12: breath light (purple flash)
 
 ## Author
-[Zhipeng Dong](https://github.com/DrawZeroPoint) zhipengdongneu@gmail.com (Contact and discussion about this program is welcomed) 
+[Zhipeng Dong](https://github.com/DrawZeroPoint) zhipengdongneu@gmail.com (Contact and discussion about this program is welcome) 
