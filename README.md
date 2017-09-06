@@ -63,4 +63,4 @@ export DRV=/home/USER/catkin_ws/src/drv_package
 10: full light (white) 11: no light (black) 12: breath light (purple flash)
 
 ## Author
-[Zhipeng Dong](https://github.com/DrawZeroPoint) zhipengdongneu@gmail.com (Contact and discussion about this program is welcome) 
+[Zhipeng Dong](https://github.com/DrawZeroPoint) zhipengdongneu@gmail.com (Discussion about this program is welcome) 
