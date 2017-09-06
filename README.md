@@ -1,4 +1,7 @@
 # drv_package_v2.0
+
+![overview](https://github.com/DrawZeroPoint/drv_package_v2/blob/master/supplements/figures/1.png )
+
 Deep Robot Vision 2.0 system for NEU Vision Gear, for the former version, refer https://github.com/NEU-TEAM/drv_package 
 *We refer this package, aka drv_package_v2 as DRV in the follow instructions.*
 
@@ -13,8 +16,6 @@ After that, you need download the *VGG16_faster_rcnn_final.caffemodel*  into `DR
 ### 1.3 rosserial
 Please refer [Arduino IDE Setup](http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup) for using rosserial. To install it, we basicly need to 1) `sudo apt-get install ros-indigo-rosserial-arduino` and `sudo apt-get install ros-indigo-rosserial`. 2) Install the library ros_lib. 3) Install the libraries you might not have: FastLed, VerSpeedServo and JY901. The first two can be found in Arduino offical library, the last is provided in DRV/supplements/arduino_control.
 We use **rosserial_arduino** to communicate between one Arduino Mega 2560 board and an JY61 6-axis accelerator. The Arduino controls 2 servos, one for pitching the RGBD-camera (Orbbec ASTRA S) and the other for rotating it. The accelerator measures the pitch and yaw angles of the camera. The .ino file loaded on the Arduino board is provided in folder `$DRV/supplements/arduino_control`, you can load it to your board with Arduino IDE <http://arduino.cc/en/Main/Software>.
-##### Update
-The 2.0 version of NEU Vision Gear has been finished, which uses Mega 2560 instead of Uno as control moudle and JY61 as accelerator. New features such as LEDs were also added. Arduino program for it can also be found  in folder `$DRV_DIR/supplements/arduino_control`.
 
 ### 1.4 Orbbec Astra
 First clone the repo https://github.com/orbbec/ros_astra_camera.git and https://github.com/orbbec/ros_astra_launch.git into your catkin_ws, then do `catkin_make --pkg astra_camera -DFILTER=ON` in /catkin_ws.
