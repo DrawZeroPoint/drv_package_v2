@@ -1,0 +1,7 @@
+#IGNORE CERTAIN SUBFIX
+*.user
+*.pyc
+*.caffemodel
+#IGNORED FOLDERS
+build/
+.idea/

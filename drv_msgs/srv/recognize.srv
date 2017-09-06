@@ -1,0 +1,5 @@
+sensor_msgs/Image img_in
+
+---
+sensor_msgs/Image img_out
+drv_msgs/recognized_objects obj_info

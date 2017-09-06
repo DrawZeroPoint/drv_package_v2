@@ -1,0 +1,14 @@
+#goal definition
+uint8 mode           # 0: not active, 1: object location, 2: facial recognition (not support for now)
+string target_label  # The target label in English. If not set, the mode 1 will not be execute
+string target_color  # [Optional] parameter for target color, example: blue, orange, green...
+---
+#result definition
+geometry_msgs/PoseStamped target_pose      # Return target pose in camera_yaw_frame if mode=1
+geometry_msgs/PoseStamped target_location  # Return target location in map frame if mode=1
+
+int32[] ids              # Return faces' id if mode=2, 0 for unknown face
+std_msgs/String[] names  # Return names of face if mode=2
+---
+#feedback
+uint8 status  # Feedback working state for each mode, 0:not working (wandering), 1:working, 2:error occured, 3:successed

@@ -1,0 +1,4 @@
+int64 select_num
+---
+# 0 represent no select, 1 and above represent id
+int64 selected_id

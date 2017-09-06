@@ -1,0 +1,10 @@
+<launch>
+
+  <include file="$(find drv_brain)/launch/includes/drv_host.launch.xml">
+    <arg name="camera_type" value="openni2_camera"/>
+  </include>
+
+  <include file="$(find drv_brain)/launch/includes/drv_workstation.launch.xml">
+  </include>
+
+</launch>

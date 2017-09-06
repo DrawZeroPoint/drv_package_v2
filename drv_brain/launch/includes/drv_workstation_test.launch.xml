@@ -1,0 +1,54 @@
+<launch>
+
+  <!-- vision system referance frame on the robot -->
+  <arg name="base_link_frame" default="/base_link"/>
+
+  <arg name="vision_namespace_id" default="vision"/>
+
+  <!-- camera optical frame -->
+  <arg name="camera_frame" default="/openni_rgb_optical_frame"/>
+
+  <!-- drv_pointcloud is no longer used -->
+
+  <node name="drv_tf" pkg="drv_tf" type="drv_tf" output="screen">
+    <remap from="/base_link_frame_id" to="$(arg base_link_frame)"/>
+    <remap from="/camera_frame_id" to="$(arg camera_frame)"/>
+    <remap from="/vision_namespace" to="/$(arg vision_namespace_id)"/>
+  </node>
+
+  <!-- initialize visualization -->
+  <param name="use_gui" value="true"/> 
+  <node name="rviz" pkg="rviz" type="rviz" >
+  </node>
+
+  <!-- initialize recognition service -->
+  <node name="drv_recognize" pkg="drv_recognize" type="drv_recognize.py" output="screen">
+  </node>
+
+  <!-- initialize user selection service -->
+  <node name="drv_user" pkg="drv_user" type="drv_user.py" output="screen">
+  </node>
+
+  <!-- initialize search client -->
+  <node name="drv_search" pkg="drv_search" type="drv_search" output="screen">
+  </node>
+
+  <!-- initialize tracking function -->
+  <node name="drv_track_node" pkg="drv_track" type="drv_track_node" output="screen">
+  </node>
+
+  <!-- initialize grasp planning function -->
+  <node name="drv_grasp" pkg="drv_grasp" type="drv_grasp" output="screen">
+  </node>
+
+  <!-- initialize face recognition service -->
+  <node name="drv_face_service" pkg="drv_face_service" type="drv_face_service" output="screen">
+    <param name="face_likehood_threshold" value="0.9"/>
+  </node>
+
+  <!-- initialize face recognition client -->
+  <node name="drv_face_client" pkg="drv_face_client" type="drv_face_client" output="screen">
+  </node>
+
+
+</launch>

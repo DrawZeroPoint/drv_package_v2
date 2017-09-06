@@ -1,0 +1,6 @@
+<launch>
+
+  <include file="$(find drv_brain)/launch/includes/drv_workstation.launch.xml">
+  </include>
+
+</launch>

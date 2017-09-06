@@ -1,0 +1,30 @@
+<launch>
+  <!-- camera used, can be openni2_camera (ASUS Xtion Pro) or astra_camera -->
+  <arg name="camera_type" default="astra_camera"/>
+
+  <arg name="vision_namespace" default="vision"/>
+
+  <!-- initialize NVG 2.0 (Astra S camera and Arduino Mega 2560) -->
+  <node ns="$(arg vision_namespace)" pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
+    <param name="port" value="/dev/ttyACM0"/>
+    <param name="baud" value="57600"/>
+  </node>
+
+  <!-- Not need to give namespace here, cause camera act as namespace -->
+  <include file="$(find astra_launch)/launch/astra.launch">
+    <arg name="camera" value="$(arg vision_namespace)" />
+  </include>
+
+  <!-- initialize motor message publisher -->
+  <node ns="$(arg vision_namespace)" name="drv_motor" pkg="drv_motor" type="drv_motor" output="screen">
+  </node>
+
+  <!-- initialize central control -->
+  <node ns="$(arg vision_namespace)" name="drv_brain" pkg="drv_brain" type="drv_brain" output="screen">
+  </node>
+
+  <!-- initialize action service -->
+  <node ns="$(arg vision_namespace)" name="drv_action" pkg="drv_action" type="drv_action" output="screen">
+  </node>
+
+</launch>
