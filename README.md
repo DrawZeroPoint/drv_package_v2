@@ -2,12 +2,13 @@
 
 ![overview](https://github.com/DrawZeroPoint/drv_package_v2/blob/master/supplements/figures/1.png )
 
-Deep Robot Vision 2.0 system for NEU Vision Gear, for the former version, refer https://github.com/NEU-TEAM/drv_package 
+Deep Robot Vision 2.0 system for NEU Vision Gear, see the [wiki](https://github.com/DrawZeroPoint/drv_package_v2/wiki) for details.
+For the former version of DRV, refer https://github.com/NEU-TEAM/drv_package. 
 *We refer this package, aka drv_package_v2 as DRV in the following instructions.*
 
 ## 1. Software prerequisites
 ### 1.1 ROS
-We run this package in **indigo**, other versions of ROS may not be supported.
+We run this package in **indigo**, other versions of ROS *may not* be supported.
 
 ### 1.2 py-faster-rcnn
 This package is not included in the `drv_package`, you need to get it from <https://github.com/rbgirshick/py-faster-rcnn>, and install it following official guide (the customized Caffe installation part is basicly the same with installing ordinary Caffe when using cmake). Notice that if you use cuDNN 5.0 or above, `git clone https://github.com/donghongwen/py-faster-rcnn_cudnnv5.git` instead and cmake (or make). 
