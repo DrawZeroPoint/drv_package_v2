@@ -4,9 +4,11 @@
 
   <arg name="vision_namespace" default="vision"/>
 
+  <arg name="usb_port_num" default="0"/>
+
   <!-- initialize NVG 2.0 (Astra S camera and Arduino Mega 2560) -->
   <node ns="$(arg vision_namespace)" pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
-    <param name="port" value="/dev/ttyACM0"/>
+    <param name="port" value="/dev/ttyACM$(arg usb_port_num)"/>
     <param name="baud" value="57600"/>
   </node>
 
