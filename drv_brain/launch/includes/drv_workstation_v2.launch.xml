@@ -45,6 +45,8 @@
 
   <!-- initialize grasp planning function -->
   <node ns="$(arg vision_namespace)" name="drv_grasp" pkg="drv_grasp" type="drv_grasp" output="screen">
+    <param name="root_frame_id" value="/$(arg base_link_frame)" />
+    <param name="camera_optical_frame_id" value="/$(arg vision_namespace)_rgb_optical_frame" />
   </node>
 
   <!-- initialize face recognition service -->

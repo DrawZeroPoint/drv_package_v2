@@ -136,7 +136,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     track_ptr_->encoding = sensor_msgs::image_encodings::BGR8;
     trackPubImage_.publish(track_ptr_->toImageMsg());
 
-    //servo make camera central on object
+    // drive the camera so that the center of the image captured is on object
     int d_x = roi.x + roi.width / 2 - 320;
     int d_y = roi.y + roi.height / 2 - 240;
     int deg_x = int(d_x * TOANGLEX); // offset the robot head need to turn
@@ -171,7 +171,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 
     int x_ang = - deg_x + yaw_;
     int y_ang = - deg_y + pitch_;
-    if (x_ang >= 0 && x_ang <= 180 && y_ang > 20 && y_ang < 150)
+    if (x_ang >= 0 && x_ang <= 180 && y_ang > 50 && y_ang < 120)
     {
       isInTracking_ = true;
       delay_ = WAIT_LOOP;
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 
   ros::Subscriber sub_res = nh.subscribe<drv_msgs::recognized_target>("search/recognized_target", 1, resultCallback);
   image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("rgb/image_rect_color", 1, imageCallback, hints_rgb);
-  ros::Subscriber sub_s = nh.subscribe<std_msgs::UInt16MultiArray> ("servo", 1, servoCallback);
+  ros::Subscriber sub_s = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
 
   if (ros::param::has(param_servo_pitch))
     ros::param::get(param_servo_pitch, pitch_);

@@ -81,9 +81,10 @@ pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
 uint32_t shape = visualization_msgs::Marker::ARROW;
 
 // transform frame
-string camera_base_frame_ = "camera_yaw_frame";
-string camera_optical_frame_ = "openni_rgb_optical_frame";
-string target_location_frame_ = "map";
+string root_frame_ = "/camera_yaw_frame"; // Root frame that NVG link to
+//string camera_base_frame_ = "camera_yaw_frame";
+string camera_optical_frame_ = "/openni_rgb_optical_frame";
+string target_location_frame_ = "/map";
 geometry_msgs::TransformStamped trans_c_;
 geometry_msgs::TransformStamped trans_m_;
 
@@ -266,7 +267,7 @@ void depthCallback(
     {
       visualization_msgs::Marker marker;
       // Set the frame ID and timestamp.  See the TF tutorials for information on these.
-      marker.header.frame_id = camera_base_frame_;
+      marker.header.frame_id = root_frame_;
       marker.header.stamp = image->header.stamp;
 
       // Set the namespace and id for this marker.  This serves to create a unique ID
@@ -353,6 +354,9 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ros::NodeHandle pnh;
 
+  pnh.getParam("root_frame_id", root_frame_);
+  pnh.getParam("camera_optical_frame_id", camera_optical_frame_);
+
   graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("grasp/marker", 1);
   graspPubStatus_ = nh.advertise<std_msgs::Bool>("status/grasp/feedback", 1);
   graspPubCloud_ = nh.advertise<sensor_msgs::PointCloud2>("grasp/pointcloud", 1);
@@ -417,7 +421,7 @@ int main(int argc, char **argv)
     try
     {
       // the first frame is the target frame
-      trans_c_ = tfBufferC_.lookupTransform(camera_base_frame_, camera_optical_frame_, ros::Time(0));
+      trans_c_ = tfBufferC_.lookupTransform(root_frame_, camera_optical_frame_, ros::Time(0));
       // if (mapFrameExist_)
       //   trans_m_ = tfBufferM_.lookupTransform(target_location_frame_, camera_optical_frame_, ros::Time(0));
     }
