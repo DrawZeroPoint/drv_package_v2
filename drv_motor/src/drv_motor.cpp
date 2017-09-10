@@ -62,7 +62,7 @@ void calculatePitch(float &pitch_angle)
   float theta_a = to_rad(phi_d - target_angle - mu_d);
   // output in degree
   float result = calculate(ab, bc, cd, ad, theta_a);
-  pitch_angle = 180 - result + mu_d;
+  pitch_angle = result - mu_d;
 }
 
 void motorPublish(float pitch_angle, float yaw_angle, float pitch_speed, float yaw_speed)
@@ -78,7 +78,7 @@ void motorPublish(float pitch_angle, float yaw_angle, float pitch_speed, float y
 void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
 {
   // this callback should always active
-  float pitchAngle = 90.0;
+  float pitchAngle = 125.0;
   float yawAngle = 90.0;
   float pitchSpeed = 70.0;
   float yawSpeed = 70.0;

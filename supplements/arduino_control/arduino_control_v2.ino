@@ -4,8 +4,8 @@
  *  
  *  Connection map
  *  Componts         Mega 2560
- *  led_front   ->   digital 6
- *  led_back    ->   digital 7
+ *  led_front   ->   digital 13
+ *  led_back    ->   digital 11
  *  JY61(TX)    ->   digital 19
  *  servo_pitch ->   digital 32
  *  servo_yaw   ->   digital 33
@@ -91,7 +91,7 @@ ros::Publisher pub_yaw("camera_yaw", &yaw_msg);
 CRGB leds[NUM_LEDS][1]; // use 2 leds, each has 1 light
 int fade_val = 5;
 int fade_step = 5;
-float acc_th = 0.3; // m/s^2
+float acc_th = 1.1; // g
 
 int state_flag = 0;
 
@@ -106,8 +106,8 @@ void setup() {
   Serial.begin(57600); 
   Serial1.begin(115200); // 18 TX, 19 RX
 
-  FastLED.addLeds<NEOPIXEL, 6>(leds[0], 1); // front
-  FastLED.addLeds<NEOPIXEL, 7>(leds[1], 1); // back
+  FastLED.addLeds<NEOPIXEL, 13>(leds[0], 1); // front
+  FastLED.addLeds<NEOPIXEL, 11>(leds[1], 1); // back
   LEDS.setBrightness(255); // 0-255
 
   nh.getHardware()->setBaud(57600);
@@ -118,7 +118,7 @@ void setup() {
   
   p_sv.attach(32, 500, 2500);
   y_sv.attach(33, 500, 2500);
-  p_sv.write(60, servo_speed, true); // set the intial position of the servo
+  p_sv.write(125, servo_speed, true); // set the intial position of the servo
   y_sv.write(90, servo_speed, true); 
 
   while (Serial1.available()) 
@@ -157,7 +157,7 @@ void loop() {
 }
 
 void checkVibration(float x_a, float y_a, float z_a) {
-  if (x_a > acc_th || y_a > acc_th || z_a > 9.8 + acc_th) {
+  if (fabs(x_a) > acc_th || fabs(y_a) > acc_th || fabs(z_a) > acc_th) {
     state_flag = 20;
     active = true;
   }
