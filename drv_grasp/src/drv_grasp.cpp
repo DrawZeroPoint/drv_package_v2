@@ -81,10 +81,10 @@ pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
 uint32_t shape = visualization_msgs::Marker::ARROW;
 
 // transform frame
-string root_frame_ = "/camera_yaw_frame"; // Root frame that NVG link to
+string root_frame_ = "base_link"; // Root frame that NVG link to
 //string camera_base_frame_ = "camera_yaw_frame";
-string camera_optical_frame_ = "/openni_rgb_optical_frame";
-string target_location_frame_ = "/map";
+string camera_optical_frame_ = "vision_rgb_optical_frame";
+string target_location_frame_ = "map";
 geometry_msgs::TransformStamped trans_c_;
 geometry_msgs::TransformStamped trans_m_;
 
@@ -96,8 +96,8 @@ float fy_ = 540.23;
 float cx_ = 314.76;
 float cy_ = 239.95;
 
-double min_depth_ = 0.5;
-double max_depth_ = 2.5;
+double min_depth_ = 0.3;
+double max_depth_ = 3.0;
 
 
 void getCloudByInliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
@@ -247,19 +247,16 @@ void depthCallback(
 
   MakePlan MP;
   pcl::PointXYZRGB graspPt; // in robot's frame
-  pcl::PointXYZRGB locationPt; // in map frame
-
-  pcl::PointXYZRGB p_in; // use image to get p_in
+  pcl::PointXYZRGB opticalPt; // use image to get p_in
 
   if (GetSourceCloud::getPoint(imagePtr->image, imageDepthPtr->image, row_, col_,
-                               fx_, fy_, cx_, cy_, max_depth_, min_depth_, p_in))
+                               fx_, fy_, cx_, cy_, max_depth_, min_depth_, opticalPt))
   {
-    if (isnan(p_in.x) || isnan(p_in.y) || isnan(p_in.z))
+    if (isnan(opticalPt.x) || isnan(opticalPt.y) || isnan(opticalPt.z))
       hasGraspPlan_ = false;
     else
     {
-      doTransform(p_in, graspPt, trans_c_);
-      // doTransform(p_in, locationPt, trans_m_);
+      doTransform(opticalPt, graspPt, trans_c_);
       MP.smartOffset(graspPt, 0.02);
       hasGraspPlan_ = true;
     }

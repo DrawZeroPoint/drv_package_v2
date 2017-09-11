@@ -1,7 +1,4 @@
 <launch>
-  <!-- camera used, can be openni2_camera (ASUS Xtion Pro) or astra_camera -->
-  <arg name="camera_type" default="astra_camera"/>
-
   <arg name="vision_namespace" default="vision"/>
 
   <arg name="usb_port_num" default="0"/>

@@ -6,7 +6,6 @@
   <include file="$(find drv_brain)/launch/includes/drv_host_v2.launch.xml">
     <arg name="vision_namespace" value="$(arg ns)"/>
     <arg name="usb_port_num" value="$(arg port)"/>
-    <arg name="camera_type" value="astra_camera"/>
   </include>
 
 </launch>

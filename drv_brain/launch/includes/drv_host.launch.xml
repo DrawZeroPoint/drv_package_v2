@@ -1,24 +1,35 @@
 <launch>
-  <!-- camera used, can be openni2_camera (ASUS Xtion Pro) or astra_camera -->
-  <arg name="camera_type" default="astra_camera"/>
+  <arg name="vision_namespace" default="vision"/>
+  <arg name="usb_port_num" default="0"/>
 
-  <arg name="vision_namespace_id" default="vision"/>
+  <!-- camera used, if true, use openni2_camera (ASUS Xtion Pro), otherwise, astra_camera -->
+  <arg name="use_openni2" default="true"/>
 
   <!-- initialize camera servo and imu -->
-  <node ns="$(arg vision_namespace_id)" pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
-    <param name="port" value="/dev/ttyACM0"/>
+  <node ns="$(arg vision_namespace)" pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
+    <param name="port" value="/dev/ttyACM$(arg usb_port_num)"/>
     <param name="baud" value="57600"/>
   </node>
   
-  <node name="$(arg camera_type)_node" pkg="$(arg camera_type)" type="$(arg camera_type)_node" output="screen">
-  </node>
+  <!-- Not need to give namespace here, cause camera act as namespace -->
+  <group if="$(arg use_openni2)">
+    <include file="$(find openni2_launch)/launch/openni2.launch">
+      <arg name="camera" value="$(arg vision_namespace)" />
+    </include>
+  </group> 
+
+  <group unless="$(arg use_openni2)">
+    <include file="$(find astra_launch)/launch/astra.launch">
+      <arg name="camera" value="$(arg vision_namespace)" />
+    </include>
+  </group> 
 
   <!-- initialize central control -->
-  <node name="drv_brain" pkg="drv_brain" type="drv_brain" output="screen">
+  <node ns="$(arg vision_namespace)" name="drv_brain" pkg="drv_brain" type="drv_brain" output="screen">
   </node>
 
   <!-- initialize action service -->
-  <node name="drv_action" pkg="drv_action" type="drv_action" output="screen">
+  <node ns="$(arg vision_namespace)" name="drv_action" pkg="drv_action" type="drv_action" output="screen">
   </node>
 
 </launch>

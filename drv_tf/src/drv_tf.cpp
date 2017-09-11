@@ -32,24 +32,6 @@ float yaw_ = 0.0;
 const float to_rad = 0.01745; // PI / 180.0
 
 // distance between frame orign, in meter
-//#ifdef ASTRA // use astra s
-//float dx_optic_to_link = 0.02;
-//float dy_optic_to_link = 0.01025;
-//float dz_optic_to_link = 0.035;
-//#else // use xtion
-//float dx_optic_to_link = 0;
-//float dy_optic_to_link = 0.01;
-//float dz_optic_to_link = 0.02;
-//#endif
-
-//float dx_camera_to_pitch = 0;
-//#ifdef ASTRA
-//float dy_camera_to_pitch = 0.0125;
-//#else
-//float dy_camera_to_pitch = 0.00375;
-//#endif
-//float dz_camera_to_pitch = 0.027;
-
 float dx_camera_to_pitch = 0;
 float dy_camera_to_pitch = 0.00375;
 float dz_camera_to_pitch = 0.027;
@@ -67,10 +49,10 @@ float pitch_offset_ = 90.0; // offset the pitch angle delivered by IMU
 
 // When look at the camera, y on the rotation axis toward right, x toward front, z up
 // No Optical frame here (z toward front)
-std::string cameraFrame_; // Frame fixed with camera
+std::string cameraFrame_ = "/vision_link"; // Frame fixed with camera
 std::string cameraPitchFrame_ = "/camera_pitch_frame";
 std::string cameraYawFrame_ = "/camera_yaw_frame"; // Base of NEU Vision Gear
-std::string rootFrame_; // Root frame that NVG link to
+std::string rootFrame_ = "/base_link"; // Root frame that NVG link to
 
 MoveMean mm(50); // the value represent the strengh to stablize the camera.
 

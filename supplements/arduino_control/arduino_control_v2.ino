@@ -91,7 +91,7 @@ ros::Publisher pub_yaw("camera_yaw", &yaw_msg);
 CRGB leds[NUM_LEDS][1]; // use 2 leds, each has 1 light
 int fade_val = 5;
 int fade_step = 5;
-float acc_th = 1.1; // g
+float acc_th = 1.03; // g
 
 int state_flag = 0;
 

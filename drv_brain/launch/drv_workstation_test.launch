@@ -1,7 +1,0 @@
-<launch>
-
-  <!-- This file is for test purpose -->
-  <include file="$(find drv_brain)/launch/includes/drv_workstation_test.launch.xml">
-  </include>
-
-</launch>

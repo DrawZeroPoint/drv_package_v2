@@ -171,7 +171,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 
     int x_ang = - deg_x + yaw_;
     int y_ang = - deg_y + pitch_;
-    if (x_ang >= 0 && x_ang <= 180 && y_ang > 50 && y_ang < 120)
+    if (x_ang >= 0 && x_ang <= 180 && y_ang > 0 && y_ang < 120)
     {
       isInTracking_ = true;
       delay_ = WAIT_LOOP;
