@@ -47,22 +47,8 @@ float calculate(float ab, float bc, float cd, float ad, float theta_a)
 void calculatePitch(float &pitch_angle)
 {
   // Set the boundry of pitch value for NVG 2.0
-  if (pitch_angle > 110) pitch_angle = 110.0;
-  if (pitch_angle < 55) pitch_angle = 55.0;
-  float target_angle = pitch_angle;
-
-  // structure params
-  float ab = 41.23;
-  float bc = 68;
-  float cd = 26;
-  float ad = 84.49;
-  float phi_d = 141.13;
-  float mu_d = 2.58;
-
-  float theta_a = to_rad(phi_d - target_angle - mu_d);
-  // output in degree
-  float result = calculate(ab, bc, cd, ad, theta_a);
-  pitch_angle = result - mu_d;
+  if (pitch_angle > 140) pitch_angle = 140.0;
+  if (pitch_angle < 60) pitch_angle = 60.0;
 }
 
 void motorPublish(float pitch_angle, float yaw_angle, float pitch_speed, float yaw_speed)
@@ -78,10 +64,10 @@ void motorPublish(float pitch_angle, float yaw_angle, float pitch_speed, float y
 void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
 {
   // this callback should always active
-  float pitchAngle = 125.0;
+  float pitchAngle = 70.0;
   float yawAngle = 90.0;
-  float pitchSpeed = 70.0;
-  float yawSpeed = 70.0;
+  float pitchSpeed = 50.0;
+  float yawSpeed = 50.0;
   if (msg->data.size() == 2) {
     pitchAngle = msg->data[0];
     yawAngle = msg->data[1];

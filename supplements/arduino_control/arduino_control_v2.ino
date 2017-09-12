@@ -35,7 +35,7 @@ const long interval = 60000;
 
 /* Servo control */
 #include <VarSpeedServo.h>
-const int servo_speed = 70; // 0-255
+const int servo_speed = 50; // 0-255
 VarSpeedServo p_sv;
 VarSpeedServo y_sv;
 
@@ -91,7 +91,7 @@ ros::Publisher pub_yaw("camera_yaw", &yaw_msg);
 CRGB leds[NUM_LEDS][1]; // use 2 leds, each has 1 light
 int fade_val = 5;
 int fade_step = 5;
-float acc_th = 1.03; // g
+float acc_th = 1.04; // g
 
 int state_flag = 0;
 
@@ -118,7 +118,7 @@ void setup() {
   
   p_sv.attach(32, 500, 2500);
   y_sv.attach(33, 500, 2500);
-  p_sv.write(125, servo_speed, true); // set the intial position of the servo
+  p_sv.write(70, servo_speed, true); // set the intial position of the servo
   y_sv.write(90, servo_speed, true); 
 
   while (Serial1.available()) 
@@ -249,5 +249,4 @@ void checkError() {
     }
   }
 }
-
 
