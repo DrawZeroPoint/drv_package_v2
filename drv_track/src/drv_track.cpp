@@ -26,12 +26,13 @@
 
 #include "goturn.h"
 
-float TOANGLEX = 0.02; // a reasonable speed
-float TOANGLEY = 0.02;
+const int angle_step = 1;
+const float x_to_angle = 0.02; // a reasonable speed
+const float y_to_angle = 0.02;
 
 using namespace std;
 
-// wait loop for target lost
+// wait loop befor target lost
 #define WAIT_LOOP 50
 int delay_ = WAIT_LOOP;
 
@@ -132,11 +133,27 @@ bool verifyDetection(cv::Rect detection) {
   return true;
 }
 
+void pubTarget(std_msgs::Header header, std::vector<unsigned int> mask_id, cv::Rect roi) {
+  // publish new target info
+  drv_msgs::recognized_target result;
+  result.header = header;
+  result.label = tgt_label_;
+  result.tgt_pixels.data = mask_id; // the datatype is uint 32 aka unsigned int
+  result.tgt_bbox_array.data.push_back(roi.x);
+  result.tgt_bbox_array.data.push_back(roi.y);
+  result.tgt_bbox_array.data.push_back(roi.x + roi.width);
+  result.tgt_bbox_array.data.push_back(roi.y + roi.height);
+  result.tgt_bbox_center.data.push_back(roi.x + roi.width / 2);
+  result.tgt_bbox_center.data.push_back(roi.y + roi.height / 2);
+  
+  trackPubTarget_.publish(result);
+}
+
 void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 {
   if (modeType_ != m_track)
     return;
-
+  
   if (!verifyDetection(detection_))
   {
     isInTracking_ = false;
@@ -153,6 +170,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   cv::Rect roi;
   std::vector<unsigned int> mask_id; // store object pixels id in image
   
+  // Use roi to adjust the camera view
   if (GO.goProcess(src_img_, detection_, track_image_, roi, mask_id))
   {
     // publish exact location and boundaries of tracked object
@@ -164,52 +182,47 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     // drive the camera so that the center of the image captured is on object
     int d_x = roi.x + roi.width / 2 - 320;
     int d_y = roi.y + roi.height / 2 - 240;
-    int deg_x = int(d_x * TOANGLEX); // offset the robot head need to turn
-    int deg_y = int(d_y * TOANGLEY);
+    int deg_x = int(d_x * x_to_angle); // offset the robot head need to turn
+    int deg_y = int(d_y * y_to_angle);
     
-    if (abs(deg_x) < 1 && abs(deg_y) < 1)
-    {
+    isInTracking_ = true;
+    delay_ = WAIT_LOOP;
+    pubTarget(image_msg->header, mask_id, roi);
+    
+    if (abs(deg_x) < angle_step && abs(deg_y) < angle_step) {
       isInTracking_ = true;
       delay_ = WAIT_LOOP;
-      
-      // publish new target info
-      drv_msgs::recognized_target result;
-      result.header = image_msg->header;
-      result.label = tgt_label_;
-      result.tgt_pixels.data = mask_id; // the datatype is uint 32 aka unsigned int
-      result.tgt_bbox_array.data.push_back(roi.x);
-      result.tgt_bbox_array.data.push_back(roi.y);
-      result.tgt_bbox_array.data.push_back(roi.x + roi.width);
-      result.tgt_bbox_array.data.push_back(roi.y + roi.height);
-      result.tgt_bbox_center.data.push_back(roi.x + roi.width / 2);
-      result.tgt_bbox_center.data.push_back(roi.y + roi.height / 2);
-      
-      trackPubTarget_.publish(result);
+      pubTarget(image_msg->header, mask_id, roi);
       return;
     }
-    
-    // make the head don't turn too fast
-    if (deg_x < -1) deg_x = -1;
-    if (deg_x > 1) deg_x = 1;
-    if (deg_y < -1) deg_y = -1;
-    if (deg_y > 1) deg_y = 1;
-    
+    if (abs(deg_x) >= angle_step && abs(deg_y) < angle_step) {
+      if (deg_x < -angle_step) deg_x = -angle_step;
+      if (deg_x > angle_step) deg_x = angle_step;
+      deg_y = 0;
+    }
+    if (abs(deg_x) < angle_step && abs(deg_y) >= angle_step) {
+      if (deg_y < -angle_step) deg_y = -angle_step;
+      if (deg_y > angle_step) deg_y = angle_step;
+      deg_x = 0;
+    }
+    if (abs(deg_x) >= angle_step && abs(deg_y) >= angle_step) {
+      if (deg_x < -angle_step) deg_x = -angle_step;
+      if (deg_x > angle_step) deg_x = angle_step;
+      if (deg_y < -angle_step) deg_y = -angle_step;
+      if (deg_y > angle_step) deg_y = angle_step;
+    }
     int x_ang = - deg_x + yaw_;
     int y_ang = - deg_y + pitch_;
-    if (x_ang >= 0 && x_ang <= 180 && y_ang > 60 && y_ang < 140)
+    
+    if (!(x_ang >= 0 && x_ang <= 180 && y_ang > 60 && y_ang < 140))
     {
-      isInTracking_ = true;
-      delay_ = WAIT_LOOP;
-      
-      publishServo(y_ang, x_ang);
-      ros::Duration(0.1).sleep();
-    }
-    else
-    {
+      pubTarget(image_msg->header, mask_id, roi);
       isInTracking_ = false;
-      ROS_WARN("Target out of range.\n");
-      
+      ROS_WARN("Target out of camera view.\n");
       GO.tracker_initialized_ = false;
+    }
+    else {
+      publishServo(y_ang, x_ang);
     }
   }
   else
@@ -218,8 +231,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     if (delay_ < 0)
     {
       isInTracking_ = false;
-      ROS_WARN("Target lost.\n");
-      
+      ROS_WARN("GOTURN lost the target.\n");
       GO.tracker_initialized_ = false;
     }
   }
