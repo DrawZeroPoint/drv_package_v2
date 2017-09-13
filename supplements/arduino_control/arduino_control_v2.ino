@@ -24,7 +24,7 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/MultiArrayLayout.h>
 #include <std_msgs/MultiArrayDimension.h>
-#include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/UInt16MultiArray.h>
 
 ros::NodeHandle  nh;
 
@@ -39,46 +39,52 @@ const int servo_speed = 50; // 0-255
 VarSpeedServo p_sv;
 VarSpeedServo y_sv;
 
-void servo_cb(const std_msgs::Float32MultiArray& msg) {
+void servo_cb(const std_msgs::UInt16MultiArray& msg) {
+  int p = msg.data[0];
+  int y = msg.data[1];
+  if (p > 180) p = 180;
+  if (p < 0) p = 0;
+  if (y > 180) y = 180;
+  if (y < 0) y = 0;
+  
   if (msg.data_length == 2) {
-    p_sv.write(msg.data[0], servo_speed, false);
-    y_sv.write(msg.data[1], servo_speed, true);
+    p_sv.write(p, servo_speed, false);
+    y_sv.write(y, servo_speed, true);
   }
   else if (msg.data_length == 3) {
     if (msg.data[2] > 0 && msg.data[2] < 255) {
-      p_sv.write(msg.data[0], msg.data[2], false);
-      y_sv.write(msg.data[1], msg.data[2], true);
+      p_sv.write(p, msg.data[2], false);
+      y_sv.write(y, msg.data[2], true);
     }
     else if (msg.data[2] >= 255) {
-      p_sv.write(msg.data[0], 255, false);
-      y_sv.write(msg.data[1], 255, true);
+      p_sv.write(p, 255, false);
+      y_sv.write(y, 255, true);
     }
   }
   else if (msg.data_length == 4) {
     if (msg.data[2] > 0 && msg.data[2] < 255) {
-      p_sv.write(msg.data[0], msg.data[2], false);
+      p_sv.write(p, msg.data[2], false);
     }
     else if (msg.data[2] >= 255) {
-      p_sv.write(msg.data[0], 255, false);
+      p_sv.write(p, 255, false);
     }
     if (msg.data[3] > 0 && msg.data[3] < 255) {
-      y_sv.write(msg.data[1], msg.data[3], true);
+      y_sv.write(y, msg.data[3], true);
     }
     else if (msg.data[3] >= 255) {
-      y_sv.write(msg.data[1], 255, true);
+      y_sv.write(y, 255, true);
     }
   }
   active = true;
 }
 
-ros::Subscriber<std_msgs::Float32MultiArray> sub_servo("motor", servo_cb);
+ros::Subscriber<std_msgs::UInt16MultiArray> sub_servo("motor", servo_cb);
 
 /* IMU */
 #include <JY901.h>
 float x_ang = 0.0; // roll angle
 float y_ang = 0.0; // ptich angle
 float z_ang = 0.0; // yaw angle
-float offset_yaw = 0.0; // When y_sv = 90, record this value, suppose servo is accurate
 
 std_msgs::Float32 pitch_msg;
 std_msgs::Float32 yaw_msg;
@@ -91,7 +97,7 @@ ros::Publisher pub_yaw("camera_yaw", &yaw_msg);
 CRGB leds[NUM_LEDS][1]; // use 2 leds, each has 1 light
 int fade_val = 5;
 int fade_step = 5;
-float acc_th = 1.04; // g
+float acc_th = 1.05; // g
 
 int state_flag = 0;
 
@@ -111,6 +117,7 @@ void setup() {
   LEDS.setBrightness(255); // 0-255
 
   nh.getHardware()->setBaud(57600);
+  nh.initNode();
   nh.advertise(pub_pitch);
   nh.advertise(pub_yaw);
   nh.subscribe(sub_error);
@@ -118,15 +125,13 @@ void setup() {
   
   p_sv.attach(32, 500, 2500);
   y_sv.attach(33, 500, 2500);
-  p_sv.write(70, servo_speed, true); // set the intial position of the servo
+  p_sv.write(90, servo_speed, true); // set the intial position of the servo
   y_sv.write(90, servo_speed, true); 
 
   while (Serial1.available()) 
   {
     JY901.CopeSerialData(Serial1.read()); //Call JY901 data cope function
   }
-  z_ang = (float)JY901.stcAngle.Angle[2]/32768*180;
-  offset_yaw = -z_ang;
 }
 
 void loop() {
@@ -139,8 +144,9 @@ void loop() {
   z_ang = (float)JY901.stcAngle.Angle[2]/32768*180;
   
   pitch_msg.data = x_ang; // We make x axis as yaw
-  yaw_msg.data = 90.0 - z_ang - offset_yaw;
   pub_pitch.publish(&pitch_msg);
+  
+  yaw_msg.data = 90.0 - z_ang;
   pub_yaw.publish(&yaw_msg);
 
   float x_acc = (float)JY901.stcAcc.a[0]/32768*16;
@@ -149,7 +155,7 @@ void loop() {
   checkVibration(x_acc, y_acc, z_acc);
 
   nh.spinOnce();
-  delay(10);
+  delay(50);
 
   checkSleep();
 
@@ -249,4 +255,3 @@ void checkError() {
     }
   }
 }
-

@@ -349,7 +349,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "drv_grasp");
 
   ros::NodeHandle nh;
-  ros::NodeHandle pnh;
+  ros::NodeHandle pnh("~");
 
   pnh.getParam("root_frame_id", root_frame_);
   pnh.getParam("camera_optical_frame_id", camera_optical_frame_);

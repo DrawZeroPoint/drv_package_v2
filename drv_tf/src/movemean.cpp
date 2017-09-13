@@ -5,22 +5,21 @@ MoveMean::MoveMean(size_t q_size = 10)
   queueSize_ = q_size;
 }
 
-void MoveMean::getMoveMean(float in, float &out)
+void MoveMean::getMoveMean(float &in_out)
 {
   if (meanQ_.empty())
   {
     // initialize the queue
     for (size_t i = 0; i < queueSize_; i++)
     {
-      meanQ_.push(in);
+      meanQ_.push(in_out);
     }
-    out = in;
   }
   else
   {
     meanQ_.pop();
-    meanQ_.push(in);
-    getMeanValue(out);
+    meanQ_.push(in_out);
+    getMeanValue(in_out);
   }
 }
 

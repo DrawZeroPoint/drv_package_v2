@@ -9,7 +9,7 @@ class MoveMean
 {
 public:
   MoveMean(size_t q_size);
-  void getMoveMean(float in, float &out);
+  void getMoveMean(float &in_out);
 
 private:
   size_t queueSize_;

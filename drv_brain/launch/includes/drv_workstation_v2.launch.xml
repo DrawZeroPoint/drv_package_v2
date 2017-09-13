@@ -12,18 +12,18 @@
 
   <!-- broadcast transform among frames -->
   <node ns="$(arg vision_namespace)" name="drv_tf" pkg="drv_tf" type="drv_tf" output="screen">
-    <param name="camera_frame_id" value="/$(arg camera_frame)" />
-    <param name="root_frame_id" value="/$(arg base_link_frame)" />
+    <param name="camera_frame_id" value="$(arg camera_frame)" />
+    <param name="root_frame_id" value="$(arg base_link_frame)" />
 
     <!-- Modify following values according to the structure of NVG 2.0 -->
     <param name="pitch_offset_value" value="90.0" />
 
     <param name="dx_camera_to_pitch_value" value="0.0" />
-    <param name="dy_camera_to_pitch_value" value="0.03" />
+    <param name="dy_camera_to_pitch_value" value="0.06" />
     <param name="dz_camera_to_pitch_value" value="0.0" />
-    <param name="dx_pitch_to_yaw_value" value="0.01" />
-    <param name="dy_pitch_to_yaw_value" value="0.01" />
-    <param name="dz_pitch_to_yaw_value" value="0.01" />
+    <param name="dx_pitch_to_yaw_value" value="0.12" />
+    <param name="dy_pitch_to_yaw_value" value="0.0" />
+    <param name="dz_pitch_to_yaw_value" value="0.159" />
   </node>
 
 
@@ -32,7 +32,7 @@
   </node>
 
   <!-- initialize user selection service -->
-  <node name="drv_user" pkg="drv_user" type="drv_user.py" output="screen">
+  <node ns="$(arg vision_namespace)" name="drv_user" pkg="drv_user" type="drv_user.py" output="screen">
   </node>
 
   <!-- initialize search client -->
@@ -40,7 +40,7 @@
   </node>
 
   <!-- initialize tracking function -->
-  <node ns="$(arg vision_namespace)" name="drv_track_node" pkg="drv_track" type="drv_track_node" output="screen">
+  <node ns="$(arg vision_namespace)" name="drv_track_node" pkg="drv_track" type="drv_track_node">
   </node>
 
   <!-- initialize grasp planning function -->
@@ -51,7 +51,7 @@
   </node>
 
   <!-- initialize face recognition service -->
-  <node name="drv_face_service" pkg="drv_face_service" type="drv_face_service" output="screen">
+  <node ns="$(arg vision_namespace)" name="drv_face_service" pkg="drv_face_service" type="drv_face_service" output="screen">
     <param name="face_likehood_threshold" value="0.9"/>
   </node>
 
@@ -61,7 +61,7 @@
 
   <!-- initialize visualization -->
   <param name="use_gui" value="true"/> 
-  <node name="rviz" pkg="rviz" type="rviz" >
+  <node ns="$(arg vision_namespace)" name="rviz" pkg="rviz" type="rviz" >
   </node>
 
 

@@ -125,7 +125,7 @@ int main(int argc, char **argv)
   image_transport::ImageTransport rgb_it(nh);
   facePubImage_ = rgb_it.advertise("search/labeled_image", 1);
 
-  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("rgb/image_rect_color", 1, imageCallback, hints_rgb);
+  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1, imageCallback, hints_rgb);
 
   ros::ServiceClient client = nh.serviceClient<drv_msgs::face_recognize>("drv_face_service");
 

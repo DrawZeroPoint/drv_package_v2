@@ -12,7 +12,6 @@
 #include <std_msgs/Int8.h>
 #include <std_msgs/UInt16MultiArray.h>
 #include <std_msgs/Float32MultiArray.h>
-#include <std_msgs/Int32MultiArray.h>
 
 
 #include <stdio.h>
@@ -44,16 +43,18 @@ float calculate(float ab, float bc, float cd, float ad, float theta_a)
   return to_deg(result);
 }
 
-void calculatePitch(float &pitch_angle)
+void setBoundary(int &pitch_angle, int &yaw_angle)
 {
   // Set the boundry of pitch value for NVG 2.0
   if (pitch_angle > 140) pitch_angle = 140.0;
-  if (pitch_angle < 60) pitch_angle = 60.0;
+  else if (pitch_angle < 60) pitch_angle = 60.0;
+  if (yaw_angle > 180) yaw_angle = 180.0;
+  else if (yaw_angle < 0) yaw_angle = 0.0;
 }
 
-void motorPublish(float pitch_angle, float yaw_angle, float pitch_speed, float yaw_speed)
+void motorPublish(int pitch_angle, int yaw_angle, int pitch_speed, int yaw_speed)
 {
-  std_msgs::Float32MultiArray array;
+  std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch_angle);
   array.data.push_back(yaw_angle);
   array.data.push_back(pitch_speed);
@@ -64,10 +65,10 @@ void motorPublish(float pitch_angle, float yaw_angle, float pitch_speed, float y
 void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
 {
   // this callback should always active
-  float pitchAngle = 70.0;
-  float yawAngle = 90.0;
-  float pitchSpeed = 50.0;
-  float yawSpeed = 50.0;
+  int pitchAngle = 90;
+  int yawAngle = 90;
+  int pitchSpeed = 50;
+  int yawSpeed = 50;
   if (msg->data.size() == 2) {
     pitchAngle = msg->data[0];
     yawAngle = msg->data[1];
@@ -88,7 +89,7 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
     ROS_WARN_THROTTLE(11, "Servo message has wrong number of params.");
   }
 
-  calculatePitch(pitchAngle);
+  setBoundary(pitchAngle, yawAngle);
   motorPublish(pitchAngle, yawAngle, pitchSpeed, yawSpeed);
 }
 
@@ -98,7 +99,7 @@ int main(int argc, char **argv)
 
   ros::NodeHandle nh;
 
-  motorPub_ = nh.advertise<std_msgs::Float32MultiArray>("motor", 1, true);
+  motorPub_ = nh.advertise<std_msgs::UInt16MultiArray>("motor", 1, true);
 
   // This node should be launched in namespace /vision
   ros::Subscriber sub_servo_cmd = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 2, servoCallback);

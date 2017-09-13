@@ -63,7 +63,7 @@ bool Goturn::goProcess(Mat img_in, Rect gt, Mat &img_out, Rect &detection, std::
   double diff  = fabs(color_mean - color_mean_temp_);
   // std::cerr << diff << std::endl;
 
-  if (detection.area() < MIN_OBJECT_AREA ||  mask_id.size() < MIN_OBJECT_AREA ||
+  if (detection.area() < MIN_OBJECT_AREA || mask_id.size() < MIN_OBJECT_AREA ||
       detection.area() > MAX_OBJECT_AREA || mask_id.size() > MAX_OBJECT_AREA
       || diff > COLOR_TH)
   {

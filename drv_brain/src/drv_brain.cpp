@@ -91,11 +91,11 @@ void pubInfo(string info)
 
 void teleOpCallback(const std_msgs::Int32MultiArrayConstPtr &msg)
 {
-  if (msg->data.empty())
+  if (msg->data.empty() || (msg->data[0] == 0 && msg->data[1] ==0))
     return;
 
   int pitch_temp = pitchAngle_ + msg->data[0];
-  if (pitch_temp < 40 || pitch_temp > 130)
+  if (pitch_temp < 60 || pitch_temp > 140)
     return;
   else
     pitchAngle_ = pitch_temp;
@@ -153,14 +153,14 @@ void trackCallback(const std_msgs::BoolConstPtr &msg)
   {
     if (!msg->data)
     {
-      ROS_INFO_THROTTLE(21, "Target lost!");
+      ROS_INFO_THROTTLE(21, "Track report: Target lost!");
       foundTarget_ = false;
       ros::param::set(param_vision_feedback_track, -1);
       ros::param::set(param_vision_feedback, 1);
     }
     else
     {
-      ROS_INFO_THROTTLE(21, "Tracking the target...");
+      ROS_INFO_THROTTLE(21, "Track report: Tracking the target...");
       foundTarget_ = true;
       ros::param::set(param_vision_feedback_track, 1);
       ros::param::set(param_vision_feedback, 1);
@@ -174,13 +174,13 @@ void graspCallback(const std_msgs::BoolConstPtr &msg)
   {
     if (!msg->data)
     {
-      ROS_INFO_THROTTLE(21, "Failed to locate the target.");
+      ROS_INFO_THROTTLE(21, "Grasp report: Failed to locate the target.");
       ros::param::set(param_vision_feedback_grasp, -1);
       ros::param::set(param_vision_feedback, 1);
     }
     else
     {
-      ROS_INFO_THROTTLE(21, "Target location confirmed.");
+      ROS_INFO_THROTTLE(21, "Grasp report: Target location confirmed.");
       ros::param::set(param_vision_feedback_grasp, 1);
       ros::param::set(param_vision_feedback, 3);
     }
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
     // Initialize servo position
     if (!servo_initialized_)
     {
-      pubServo(70, 90);
+      pubServo(90, 90);
       servo_initialized_ = true;
       ROS_INFO("Servo initialized.\n");
     }

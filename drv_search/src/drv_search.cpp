@@ -124,7 +124,7 @@ int main(int argc, char **argv)
   searchPubTarget_ = nh.advertise<drv_msgs::recognized_target>("search/recognized_target", 1, true);
 
   //		ros::Subscriber sub_rgb = nh.subscribe("/rgb/image/compressed", 1, imageCallback);
-  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("rgb/image_rect_color", 1, imageCallback, hints_rgb);
+  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1, imageCallback, hints_rgb);
   //		ros::Subscriber sub_depth = nh.subscribe("/depth/image_raw", 1, depthCallback );
 
   ros::ServiceClient client = nh.serviceClient<drv_msgs::recognize>("drv_recognize");

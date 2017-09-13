@@ -54,7 +54,7 @@ std::string cameraPitchFrame_ = "/camera_pitch_frame";
 std::string cameraYawFrame_ = "/camera_yaw_frame"; // Base of NEU Vision Gear
 std::string rootFrame_ = "/base_link"; // Root frame that NVG link to
 
-MoveMean mm(50); // the value represent the strengh to stablize the camera.
+MoveMean mm(10); // the value represent the strengh to stablize the camera.
 
 void configCallback(drv_tf::tfConfig &config, uint32_t level)
 {
@@ -72,16 +72,15 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
 
 void imuPitchCallback(const std_msgs::Float32ConstPtr & msg)
 {
-  float imuPitchTemp = 0.0;
   pitch_ = msg->data - pitch_offset_; // notice that pitch_ < 0
-  mm.getMoveMean(pitch_, imuPitchTemp);
-  pitch_ = imuPitchTemp * to_rad;
+  mm.getMoveMean(pitch_);
+  pitch_ *= to_rad;
 }
 
 void imuYawCallback(const std_msgs::Float32ConstPtr & msg)
 {
   // This callback only valid for NVG 2.0
-  yaw_ = (msg->data - 90) * to_rad;
+//  yaw_ = (msg->data - 90) * to_rad;
 }
 
 void imageCallback(const sensor_msgs::ImageConstPtr &image_msg)
@@ -177,7 +176,7 @@ int main(int argc, char** argv){
   ros::NodeHandle rgb_pnh(pnh, "rgb");
   image_transport::ImageTransport it_rgb_sub(rgb_nh);
   image_transport::TransportHints hints_rgb("compressed", ros::TransportHints(), rgb_pnh);
-  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("rgb/image_rect_color", 1, imageCallback, hints_rgb);
+  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1, imageCallback, hints_rgb);
 
   ROS_INFO("TF initialized.");
 

@@ -13,6 +13,7 @@ param_vision_search_param_lock = '/vision/select/param/lock'  # this is used for
 
 
 def handle_user_select(req):
+    param_control_target_is_set = '/comm/param/control/target/is_set'
     param_control_user_selected = '/comm/param/control/target/selected'
 
     num = req.select_num
@@ -32,6 +33,10 @@ def handle_user_select(req):
     rospy.set_param(param_vision_search_param_lock, False)  # unlock param change
     select_msg = String()
     while selected < 0:
+        if rospy.has_param(param_control_target_is_set):
+            if not rospy.get_param(param_control_target_is_set):
+                selected = 0
+                break
         if rospy.has_param(param_control_user_selected):
             selected = rospy.get_param(param_control_user_selected)
             if num >= selected > 0:

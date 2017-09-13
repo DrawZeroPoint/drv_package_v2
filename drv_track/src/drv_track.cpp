@@ -92,16 +92,44 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
   yaw_ = msg->data[1];
 }
 
-void resultCallback(const drv_msgs::recognized_targetConstPtr & msg)
+void resultCallback(const drv_msgs::recognized_targetConstPtr &msg)
 {
   tgt_label_ = msg->label;
   int min_x = msg->tgt_bbox_array.data[0];
   int min_y = msg->tgt_bbox_array.data[1];
   int max_x = msg->tgt_bbox_array.data[2];
   int max_y = msg->tgt_bbox_array.data[3];
-
+  
   detection_ = cv::Rect(min_x, min_y, max_x - min_x, max_y - min_y);
   GO.tracker_initialized_ = false;
+}
+
+bool verifyDetection(cv::Rect detection) {
+  if (detection.area() < 20) {
+    ROS_WARN("Target area in image is %d, too small to be tracked.\n", detection_.area());
+    return false;
+  }
+  if (detection.x < 0 || detection.x >= 640) {
+    ROS_WARN("ROI X is %d.\n", detection_.x);
+    return false;
+  }
+  if (detection.y < 0 || detection.y >= 480) {
+    ROS_WARN("ROI Y is %d.\n", detection_.y);
+    return false;
+  }
+  if (detection.x + detection.width >= 640) {
+    ROS_WARN("ROI X+W is %d.\n", detection_.x + detection.width);
+    return false;
+  }
+  if (detection.y + detection.height >= 480) {
+    ROS_WARN("ROI Y+H is %d.\n", detection_.y + detection.height);
+    return false;
+  }
+  if (detection.width <= 0 || detection.height <= 0) {
+    ROS_WARN("ROI W, H is %d, %d.\n", detection.width, detection.height);
+    return false;
+  }
+  return true;
 }
 
 void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
@@ -109,25 +137,22 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   if (modeType_ != m_track)
     return;
 
-  src_ = cv_bridge::toCvShare(image_msg, sensor_msgs::image_encodings::BGR8);
-  src_img_ = src_->image;
-  src_img_.copyTo(track_image_);
-
-  // cv::rectangle(track_image_, detection_, cv::Scalar(232,228,53),2);
-
-  cv::Rect roi;
-
-  if (detection_.area() < 20)
+  if (!verifyDetection(detection_))
   {
     isInTracking_ = false;
-    ROS_WARN("Target area in image is %d, too small to be tracked.\n", detection_.area());
-
     GO.tracker_initialized_ = false;
     return;
   }
-
+  
+  src_ = cv_bridge::toCvShare(image_msg, sensor_msgs::image_encodings::BGR8);
+  src_img_ = src_->image;
+  src_img_.copyTo(track_image_);
+  
+  // cv::rectangle(track_image_, detection_, cv::Scalar(232,228,53),2);
+  
+  cv::Rect roi;
   std::vector<unsigned int> mask_id; // store object pixels id in image
-
+  
   if (GO.goProcess(src_img_, detection_, track_image_, roi, mask_id))
   {
     // publish exact location and boundaries of tracked object
@@ -135,18 +160,18 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     track_ptr_->image = track_image_;
     track_ptr_->encoding = sensor_msgs::image_encodings::BGR8;
     trackPubImage_.publish(track_ptr_->toImageMsg());
-
+    
     // drive the camera so that the center of the image captured is on object
     int d_x = roi.x + roi.width / 2 - 320;
     int d_y = roi.y + roi.height / 2 - 240;
     int deg_x = int(d_x * TOANGLEX); // offset the robot head need to turn
     int deg_y = int(d_y * TOANGLEY);
-
+    
     if (abs(deg_x) < 1 && abs(deg_y) < 1)
     {
       isInTracking_ = true;
       delay_ = WAIT_LOOP;
-
+      
       // publish new target info
       drv_msgs::recognized_target result;
       result.header = image_msg->header;
@@ -158,24 +183,24 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
       result.tgt_bbox_array.data.push_back(roi.y + roi.height);
       result.tgt_bbox_center.data.push_back(roi.x + roi.width / 2);
       result.tgt_bbox_center.data.push_back(roi.y + roi.height / 2);
-
+      
       trackPubTarget_.publish(result);
       return;
     }
-
+    
     // make the head don't turn too fast
     if (deg_x < -1) deg_x = -1;
     if (deg_x > 1) deg_x = 1;
     if (deg_y < -1) deg_y = -1;
     if (deg_y > 1) deg_y = 1;
-
+    
     int x_ang = - deg_x + yaw_;
     int y_ang = - deg_y + pitch_;
-    if (x_ang >= 0 && x_ang <= 180 && y_ang > 0 && y_ang < 120)
+    if (x_ang >= 0 && x_ang <= 180 && y_ang > 60 && y_ang < 140)
     {
       isInTracking_ = true;
       delay_ = WAIT_LOOP;
-
+      
       publishServo(y_ang, x_ang);
       ros::Duration(0.1).sleep();
     }
@@ -183,7 +208,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     {
       isInTracking_ = false;
       ROS_WARN("Target out of range.\n");
-
+      
       GO.tracker_initialized_ = false;
     }
   }
@@ -194,7 +219,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     {
       isInTracking_ = false;
       ROS_WARN("Target lost.\n");
-
+      
       GO.tracker_initialized_ = false;
     }
   }
@@ -203,58 +228,58 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "drv_track");
-
+  
   ros::NodeHandle nh;
   ros::NodeHandle pnh;
   ros::NodeHandle rgb_nh(nh, "rgb");
   //		ros::NodeHandle depth_nh(nh, "depth");
   ros::NodeHandle rgb_pnh(pnh, "rgb");
   //		ros::NodeHandle depth_pnh(pnh, "depth");
-
+  
   image_transport::ImageTransport it_rgb_sub(rgb_nh);
   //		image_transport::ImageTransport depth_it(depth_nh);
   image_transport::TransportHints hints_rgb("compressed", ros::TransportHints(), rgb_pnh);
-
+  
   image_transport::ImageTransport it_rgb_pub(nh);
   trackPubImage_ = it_rgb_pub.advertise("search/labeled_image", 1);
   trackPubServo_ = nh.advertise<std_msgs::UInt16MultiArray>("servo", 1);
   trackPubStatus_ = nh.advertise<std_msgs::Bool>("status/track/feedback", 1);
   trackPubTarget_ = nh.advertise<drv_msgs::recognized_target>("track/recognized_target" , 1);
-
+  
   ros::Subscriber sub_res = nh.subscribe<drv_msgs::recognized_target>("search/recognized_target", 1, resultCallback);
-  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("rgb/image_rect_color", 1, imageCallback, hints_rgb);
+  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1, imageCallback, hints_rgb);
   ros::Subscriber sub_s = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
-
+  
   if (ros::param::has(param_servo_pitch))
     ros::param::get(param_servo_pitch, pitch_);
-
+  
   if (ros::param::has(param_servo_yaw))
     ros::param::get(param_servo_yaw, yaw_);
-
+  
   ROS_INFO("Tracking function initialized!\n");
-
+  
   while (ros::ok())
   {
     if (ros::param::has(param_running_mode))
     {
       ros::param::get(param_running_mode, modeTypeTemp_);
-
+      
       if (modeTypeTemp_ != m_track && modeType_ == m_track)
       {
         GO.tracker_initialized_ = false;
       }
       modeType_ = modeTypeTemp_;
     }
-
+    
     std_msgs::Bool flag;
     flag.data = true;
-
+    
     ros::spinOnce();
-
+    
     flag.data = isInTracking_;
     trackPubStatus_.publish(flag);
   }
-
+  
   return 0;
 }
 
