@@ -15,16 +15,11 @@ inline bool uIsFinite(const T & value)
 }
 
 
-float getDepth(
-    const cv::Mat & depthImage,
-    float x, float y,
-    bool smoothing,
-    float maxZError,
-    bool estWithNeighborsIfNull)
+float getDepth(const cv::Mat & depthImage, float x, float y,
+               bool smoothing, float maxZError, bool estWithNeighborsIfNull)
 {
-
-  int u = int(x+0.5f);
-  int v = int(y+0.5f);
+  int u = int(x + 0.5f);
+  int v = int(y + 0.5f);
   if(u == depthImage.cols && x<float(depthImage.cols))
   {
     u = depthImage.cols - 1;
@@ -171,15 +166,9 @@ float getDepth(
 }
 
 
-pcl::PointXYZ projectDepthTo3D(
-    const cv::Mat & depthImage,
-    float x, float y,
-    float cx, float cy,
-    float fx, float fy,
-    bool smoothing,
-    float maxZError)
+pcl::PointXYZ projectDepthTo3D(const cv::Mat & depthImage, float x, float y,
+                               float cx, float cy, float fx, float fy, bool smoothing, float maxZError)
 {
-
   pcl::PointXYZ pt;
 
   float depth = getDepth(depthImage, x, y, smoothing, maxZError, true);
@@ -202,79 +191,23 @@ pcl::PointXYZ projectDepthTo3D(
 }
 
 
-pcl::PointXYZRGB pointFromDepthRGB(const cv::Mat & imageRgb, const cv::Mat & imageDepth, int h, int w,
-                                   float cx, float cy, float fx, float fy, float maxDepth, float minDepth)
+pcl::PointXYZ pointFromDepth(const cv::Mat & imageDepth, int h, int w,
+                             float cx, float cy, float fx, float fy)
 {
-  pcl::PointXYZRGB pt;
-
-  bool mono;
-  if(imageRgb.channels() == 3) // BGR
-  {
-    mono = false;
-  }
-  else if(imageRgb.channels() == 1) // Mono
-  {
-    mono = true;
-  }
-  else
-  {
-    return pt;
-  }
-
-  float rgbToDepthFactorX = 1.0f/float((imageRgb.cols / imageDepth.cols));
-  float rgbToDepthFactorY = 1.0f/float((imageRgb.rows / imageDepth.rows));
-  float depthFx = fx * rgbToDepthFactorX;
-  float depthFy = fy * rgbToDepthFactorY;
-  float depthCx = cx * rgbToDepthFactorX;
-  float depthCy = cy * rgbToDepthFactorY;
-
-  if(!mono)
-  {
-    pt.b = imageRgb.at<cv::Vec3b>(h, w)[0];
-    pt.g = imageRgb.at<cv::Vec3b>(h, w)[1];
-    pt.r = imageRgb.at<cv::Vec3b>(h, w)[2];
-  }
-  else
-  {
-    unsigned char v = imageRgb.at<unsigned char>(h,w);
-    pt.b = v;
-    pt.g = v;
-    pt.r = v;
-  }
-
-  pcl::PointXYZ ptXYZ = projectDepthTo3D(imageDepth, w*rgbToDepthFactorX, h*rgbToDepthFactorY,
-                                         depthCx, depthCy, depthFx, depthFy, false,3.0);
-
-  if(pcl::isFinite(ptXYZ) && ptXYZ.z>=minDepth && (maxDepth<=0.0f || ptXYZ.z <= maxDepth))
-  {
-    pt.x = ptXYZ.x;
-    pt.y = ptXYZ.y;
-    pt.z = ptXYZ.z;
-  }
-  else
-  {
-    pt.x = pt.y = pt.z = std::numeric_limits<float>::quiet_NaN();
-  }
-  return pt;
+  pcl::PointXYZ ptXYZ = projectDepthTo3D(imageDepth, w, h,
+                                         cx, cy, fx, fy, false, 3.0);
+  return ptXYZ;
 }
 
 
-bool GetSourceCloud::getPoint(cv::Mat color, cv::Mat depth, int row, int col, float fx, float fy, float cx, float cy,
-                              float maxDepth, float minDepth, pcl::PointXYZRGB &point)
+bool GetSourceCloud::getPoint(cv::Mat depth, int row, int col, float fx, float fy, float cx, float cy,
+                              float maxDepth, float minDepth, pcl::PointXYZ &point)
 {
-  if (color.empty())
-  {
-    std::cerr << "color image is empty" << std::endl;
+  point = pointFromDepth(depth, row, col, cx, cy, fx, fy);
+  
+  if (isnan(point.x) || isnan(point.y) || isnan(point.z))
     return false;
-  }
-  if (depth.empty())
-  {
-    std::cerr << "depth image is empty" << std::endl;
-    return false;
-  }
-
-  point = pointFromDepthRGB(color, depth, row, col, cx, cy, fx, fy, maxDepth, minDepth);
-  if (point.x == std::numeric_limits<float>::quiet_NaN())
+  else if(point.z < minDepth || point.z > maxDepth)
     return false;
   else
     return true;

@@ -33,8 +33,8 @@ class GetSourceCloud
 public:
   GetSourceCloud();
 
-  static bool getPoint(cv::Mat color, cv::Mat depth, int row, int col, float fx, float fy, float cx, float cy,
-                       float maxDepth, float minDepth, pcl::PointXYZRGB &point);
+  static bool getPoint(cv::Mat depth, int row, int col, float fx, float fy, float cx, float cy,
+                       float maxDepth, float minDepth, pcl::PointXYZ &point);
 
 };
 

@@ -4,9 +4,9 @@ MakePlan::MakePlan()
 {
 }
 
-void MakePlan::removeOutliers(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_out)
+void MakePlan::removeOutliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out)
 {
-  pcl::RadiusOutlierRemoval<pcl::PointXYZRGB> outrem;
+  pcl::RadiusOutlierRemoval<pcl::PointXYZ> outrem;
   // build the filter
   outrem.setInputCloud(cloud_in);
   outrem.setRadiusSearch(0.01);
@@ -15,16 +15,16 @@ void MakePlan::removeOutliers(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, p
   outrem.filter (*cloud_out);
 }
 
-bool MakePlan::getAveragePoint(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, pcl::PointXYZRGB &avrPt)
+bool MakePlan::getAveragePoint(PointCloud::Ptr cloud_in, pcl::PointXYZ &avrPt)
 {
   if (!cloud_in->points.size())
   {
     return false;
   }
 
-  pcl::PointXYZRGB min_dis_point;
+  pcl::PointXYZ min_dis_point;
   float min_dis = 100.0;
-  for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = cloud_in->begin(); it != cloud_in->end(); ++ it)
+  for (PointCloud::const_iterator it = cloud_in->begin(); it != cloud_in->end(); ++ it)
   {
     float dis = pow(it->x, 2) + pow(it->y, 2);
     if (dis < min_dis)
@@ -39,7 +39,7 @@ bool MakePlan::getAveragePoint(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, 
   return true;
 }
 
-void MakePlan::smartOffset(pcl::PointXYZRGB &p_in, float off_val)
+void MakePlan::smartOffset(pcl::PointXYZ &p_in, float off_val)
 {
   float y_off = off_val / sqrt(1 + pow(p_in.x / p_in.y, 2)) * p_in.y / fabs(p_in.y);
   float x_off = p_in.x / p_in.y * y_off;
@@ -47,17 +47,17 @@ void MakePlan::smartOffset(pcl::PointXYZRGB &p_in, float off_val)
   p_in.y = p_in.y + y_off;
 }
 
-void MakePlan::removeNans(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_out)
+void MakePlan::removeNans(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out)
 {
   std::vector< int >	index;
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered_nan (new pcl::PointCloud<pcl::PointXYZRGB>);
+  PointCloud::Ptr cloud_filtered_nan (new PointCloud);
 
   pcl::removeNaNFromPointCloud(*cloud_in, *cloud_filtered_nan, index);
 
   pcl::PointIndices::Ptr indices_x(new pcl::PointIndices);
   pcl::PointIndices::Ptr indices_xy(new pcl::PointIndices);
 
-  pcl::PassThrough<pcl::PointXYZRGB> ptfilter; // Initializing with true will allow us to extract the removed indices
+  pcl::PassThrough<pcl::PointXYZ> ptfilter; // Initializing with true will allow us to extract the removed indices
   ptfilter.setInputCloud (cloud_filtered_nan);
   ptfilter.setFilterFieldName ("x");
   ptfilter.setFilterLimits (-0.2, 0.2);
@@ -74,14 +74,14 @@ void MakePlan::removeNans(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, pcl::
   ptfilter.filter (*cloud_out);
 }
 
-bool MakePlan::process(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, float a, float b, float c, float d, pcl::PointXYZRGB &avrPt)
+bool MakePlan::process(PointCloud::Ptr cloud_in, float a, float b, float c, float d, pcl::PointXYZ &avrPt)
 {
   if (!cloud_in->points.size())
   {
     return false;
   }
 
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZRGB>);
+  PointCloud::Ptr cloud_filtered (new PointCloud);
 #ifdef USE_CENTER
   cloud_filtered = cloud_in;
 #else

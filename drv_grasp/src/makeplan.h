@@ -52,14 +52,16 @@ class MakePlan
 {
 public:
   MakePlan();
+  
+  typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
-  bool process(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, float a, float b, float c, float d, pcl::PointXYZRGB &avrPt);
-  void removeNans(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_out);
-  void smartOffset(pcl::PointXYZRGB &p_in, float off_val);
+  bool process(PointCloud::Ptr cloud_in, float a, float b, float c, float d, pcl::PointXYZ &avrPt);
+  void removeNans(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out);
+  void smartOffset(pcl::PointXYZ &p_in, float off_val);
 
 private:
-  void removeOutliers(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_out);
-  bool getAveragePoint(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_in, pcl::PointXYZRGB &avrPt);
+  void removeOutliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out);
+  bool getAveragePoint(PointCloud::Ptr cloud_in, pcl::PointXYZ &avrPt);
 
 };
 
