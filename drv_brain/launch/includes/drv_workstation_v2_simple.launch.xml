@@ -26,21 +26,8 @@
     <param name="dz_pitch_to_yaw_value" value="0.159" />
   </node>
 
-
-  <!-- initialize recognition service -->
-  <node ns="$(arg vision_namespace)" name="drv_recognize" pkg="drv_recognize" type="drv_recognize.py" output="screen">
-  </node>
-
   <!-- initialize user selection service -->
   <node ns="$(arg vision_namespace)" name="drv_user" pkg="drv_user" type="drv_user.py" output="screen">
-  </node>
-
-  <!-- initialize search client -->
-  <node ns="$(arg vision_namespace)" name="drv_search" pkg="drv_search" type="drv_search" output="screen">
-  </node>
-
-  <!-- initialize tracking function -->
-  <node ns="$(arg vision_namespace)" name="drv_track_node" pkg="drv_track" type="drv_track_node" output="screen">
   </node>
 
   <!-- initialize grasp planning function -->
@@ -49,15 +36,6 @@
     <param name="root_frame_id" value="$(arg base_link_frame)" />
     <param name="camera_optical_frame_id" value="$(arg vision_namespace)_depth_optical_frame" />
     <param name="simple_id" value="true" />
-  </node>
-
-  <!-- initialize face recognition service -->
-  <node ns="$(arg vision_namespace)" name="drv_face_service" pkg="drv_face_service" type="drv_face_service" output="screen">
-    <param name="face_likehood_threshold" value="0.9"/>
-  </node>
-
-  <!-- initialize face recognition client -->
-  <node ns="$(arg vision_namespace)" name="drv_face_client" pkg="drv_face_client" type="drv_face_client" output="screen">
   </node>
 
   <!-- initialize visualization -->

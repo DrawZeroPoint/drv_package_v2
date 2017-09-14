@@ -99,7 +99,7 @@ float cy_ = 239.95;
 double min_depth_ = 0.3;
 double max_depth_ = 3.0;
 
-bool simple_;
+bool simple_ = true;
 
 
 void getCloudByInliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
@@ -162,7 +162,7 @@ void doTransform(pcl::PointXYZ p_in, pcl::PointXYZ &p_out, const geometry_msgs::
   p_out.z = point.z();
 }
 
-void trackResultCallback(const drv_msgs::recognized_targetConstPtr & msg)
+void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
 {
   if (modeType_ != m_track)
   {

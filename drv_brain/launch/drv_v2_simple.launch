@@ -7,7 +7,6 @@
   <include file="$(find drv_brain)/launch/includes/drv_host_v2.launch.xml">
     <arg name="vision_namespace" value="$(arg ns)"/>
     <arg name="usb_port_num" value="$(arg port)"/>
-    <arg name="use_openni2" value="true"/>
   </include>
 
   <include file="$(find drv_brain)/launch/includes/drv_workstation_v2_simple.launch.xml">
