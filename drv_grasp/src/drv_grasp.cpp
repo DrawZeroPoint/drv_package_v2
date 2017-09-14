@@ -169,6 +169,8 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
     return;
   }
   
+  posePublished_ = false;
+  
 #ifdef USE_CENTER
   // directly use center as tgt location
   idx_ = msg->tgt_bbox_center.data[0] + msg->tgt_bbox_center.data[1] * 640;
@@ -191,6 +193,10 @@ void depthCallback(
 {
   if (modeType_ != m_track)
     return;
+  
+  if (posePublished_) {
+    return;
+  }
   
   if(!(imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_16UC1) == 0 ||
        imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) == 0 ||
@@ -226,7 +232,6 @@ void depthCallback(
   {
     doTransform(opticalPt, graspPt, trans_c_);
     MP.smartOffset(graspPt, 0.02);
-    
     
     visualization_msgs::Marker marker;
     // Set the frame ID and timestamp.  See the TF tutorials for information on these.
@@ -297,6 +302,8 @@ void depthCallback(
     grasp_ps.pose.orientation.y = -sqrt(0.5);
     grasp_ps.pose.orientation.z = 0;
     graspPubPose_.publish(grasp_ps);
+    
+    posePublished_ = true;
   }
   else
   {
@@ -364,8 +371,8 @@ int main(int argc, char **argv)
     if (ros::param::has(param_running_mode))
     {
       ros::param::get(param_running_mode, modeTypeTemp_);
-      if (modeType_ == m_wander && modeTypeTemp_ != m_wander)
-        posePublished_ = false;
+//      if (modeType_ == m_wander && modeTypeTemp_ != m_wander)
+//        posePublished_ = false;
       modeType_ = modeTypeTemp_;
     }
     
