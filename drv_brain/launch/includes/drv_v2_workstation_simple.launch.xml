@@ -15,7 +15,7 @@
     <param name="camera_frame_id" value="$(arg camera_frame)" />
     <param name="root_frame_id" value="$(arg base_link_frame)" />
 
-    <!-- Modify following values according to the structure of NVG 2.0 -->
+    <!-- structure parameters of NVG 2.0 -->
     <param name="pitch_offset_value" value="90.0" />
 
     <param name="dx_camera_to_pitch_value" value="0.0" />
@@ -28,6 +28,10 @@
 
   <!-- initialize user selection service -->
   <node ns="$(arg vision_namespace)" name="drv_user" pkg="drv_user" type="drv_user.py" output="screen">
+  </node>
+
+  <!-- initialize tracking function -->
+  <node ns="$(arg vision_namespace)" name="drv_track_kcf" pkg="drv_track_kcf" type="drv_track_kcf" output="screen">
   </node>
 
   <!-- initialize grasp planning function -->

@@ -1,0 +1,9 @@
+<launch>
+
+  <arg name="ns" default="vision"/>
+
+  <include file="$(find drv_brain)/launch/includes/drv_v2_host.launch.xml">
+    <arg name="vision_namespace" value="$(arg ns)"/>
+  </include>
+
+</launch>

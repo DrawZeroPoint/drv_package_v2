@@ -1,18 +1,15 @@
 <launch>
 
   <arg name="ns" default="vision"/>
-  <arg name="port" default="0"/>
   <arg name="base_frame" default="base_link"/>
 
-  <include file="$(find drv_brain)/launch/includes/drv_host_v2.launch.xml">
+  <include file="$(find drv_brain)/launch/includes/drv_v2_host.launch.xml">
     <arg name="vision_namespace" value="$(arg ns)"/>
-    <arg name="usb_port_num" value="$(arg port)"/>
   </include>
 
-  <include file="$(find drv_brain)/launch/includes/drv_workstation_v2_simple.launch.xml">
+  <include file="$(find drv_brain)/launch/includes/drv_v2_workstation_simple.launch.xml">
     <arg name="vision_namespace" value="$(arg ns)"/>
-
-    <!-- vision system referance frame on the robot -->
+    <!-- referance frame of the vision system -->
     <arg name="base_link_frame" value="$(arg base_frame)"/>
   </include>
 

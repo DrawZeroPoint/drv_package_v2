@@ -1,0 +1,1 @@
+SUBSYSTEM=="tty" ATTRS{serial}=="854303630393517012E1" SYMLINK+="Arduino_vision"
