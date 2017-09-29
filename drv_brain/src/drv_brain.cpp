@@ -36,7 +36,7 @@ string param_vision_shared_switch = "/comm/param/shared/vision/switch"; // true:
 bool centralSwitch_ = true; // main switch
 
 // target properties
-bool targetSetTemp = false;
+bool targetSetTemp_ = false;
 string param_target_label = "/vision/target/label";
 enum TargetType{t_null, t_onTable, t_onGround, t_onHead, t_onHand};
 string targetTypeName[5] = {"in air", "on the table", "on the ground", "on the face", "in the hand"};
@@ -121,24 +121,20 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
 
 void searchCallback(const std_msgs::Int8ConstPtr &msg)
 {
-  if (modeType_ == m_search)
-  {
-    if (msg->data == -1)
-    {
+  if (modeType_ == m_search) {
+    if (msg->data == -1) {
       pubInfo("Search around didn't get target, continue searching...");
       foundTarget_ = false;
       ros::param::set(param_vision_feedback_search, -2);
       ros::param::set(param_vision_feedback, 2);
     }
-    else if (msg->data == 0)
-    {
+    else if (msg->data == 0) {
       pubInfo("Currently didn't find target, continue searching...");
       ros::param::set(param_vision_feedback_search, -1);
       ros::param::set(param_vision_feedback, 1);
       foundTarget_ = false;
     }
-    else
-    {
+    else {
       foundTarget_ = true;
       ros::param::set(param_vision_feedback_search, 1);
       ros::param::set(param_vision_feedback, 1);
@@ -149,18 +145,15 @@ void searchCallback(const std_msgs::Int8ConstPtr &msg)
 
 void trackCallback(const std_msgs::BoolConstPtr &msg)
 {
-  if (modeType_ == m_track)
-  {
-    if (!msg->data)
-    {
-      ROS_INFO_THROTTLE(21, "Track report: Target lost!");
+  if (modeType_ == m_track) {
+    if (!msg->data) {
+      ROS_WARN("Track report: Target lost!");
       foundTarget_ = false;
       ros::param::set(param_vision_feedback_track, -1);
       ros::param::set(param_vision_feedback, 1);
     }
-    else
-    {
-      ROS_INFO_THROTTLE(21, "Track report: Tracking the target...");
+    else {
+      ROS_INFO_THROTTLE(2, "Track report: Tracking...");
       foundTarget_ = true;
       ros::param::set(param_vision_feedback_track, 1);
       ros::param::set(param_vision_feedback, 1);
@@ -170,17 +163,14 @@ void trackCallback(const std_msgs::BoolConstPtr &msg)
 
 void graspCallback(const std_msgs::BoolConstPtr &msg)
 {
-  if (modeType_ == m_track)
-  {
-    if (!msg->data)
-    {
-      ROS_INFO_THROTTLE(21, "Grasp report: Failed to locate the target.");
+  if (modeType_ == m_track) {
+    if (!msg->data) {
+      ROS_WARN("Grasp report: Failed.");
       ros::param::set(param_vision_feedback_grasp, -1);
       ros::param::set(param_vision_feedback, 1);
     }
-    else
-    {
-      ROS_INFO_THROTTLE(21, "Grasp report: Target location confirmed.");
+    else {
+      ROS_INFO("Grasp report: Successed.");
       ros::param::set(param_vision_feedback_grasp, 1);
       ros::param::set(param_vision_feedback, 3);
     }
@@ -189,17 +179,14 @@ void graspCallback(const std_msgs::BoolConstPtr &msg)
 
 void faceRecognizeCallback(const std_msgs::BoolConstPtr &msg)
 {
-  if (modeType_ == m_wander)
-  {
-    if (!msg->data)
-    {
-      pubInfo("Failed to recognize face.");
+  if (modeType_ == m_wander) {
+    if (!msg->data) {
+      pubInfo("Face report: Failed.");
       ros::param::set(param_vision_feedback_face, -1);
       ros::param::set(param_vision_feedback, 2);
     }
-    else
-    {
-      pubInfo("Face recognition finished.");
+    else {
+      pubInfo("Face report: Successed.");
       ros::param::set(param_vision_feedback_face, 1);
       ros::param::set(param_vision_feedback, 3);
     }
@@ -254,30 +241,24 @@ int main(int argc, char **argv)
 
   pubInfo("Deep Robot Vision system initialized!");
 
-  while (ros::ok())
-  {
+  while (ros::ok()) {
     // main on/off control
-    if (ros::param::has(param_vision_shared_switch))
-    {
+    if (ros::param::has(param_vision_shared_switch)) {
       bool temp = true;
       ros::param::get(param_vision_shared_switch, temp);
       if (temp)
-      {
         ROS_WARN_COND(!centralSwitch_, "Central switch is ON.\n");
-      }
       centralSwitch_ = temp;
     }
 
-    if (!centralSwitch_)
-    {
-      ROS_WARN_THROTTLE(31, "Central switch is OFF.\n");
+    if (!centralSwitch_) {
+      ROS_WARN_THROTTLE(9, "Central switch is OFF.\n");
       resetStatus();
       continue;
     }
 
     // Initialize servo position
-    if (!servo_initialized_)
-    {
+    if (!servo_initialized_) {
       pubServo(90, 90);
       servo_initialized_ = true;
       ROS_INFO("Servo initialized.\n");
@@ -289,40 +270,39 @@ int main(int argc, char **argv)
     // get target if params were set
     tl.getTargetStatus(isTargetSet_, targetLabel_);
     ros::param::set(param_target_label, targetLabel_);
-    if (isTargetSet_ != targetSetTemp)
-    {
+    
+    if (isTargetSet_ != targetSetTemp_) {
       if (isTargetSet_)
-      {
         pubInfo("Target set to be '" + targetLabel_ + "'.");
-      }
       else
       {
         pubInfo("Target cancelled.");
         resetStatus();
       }
-      targetSetTemp = isTargetSet_;
+      targetSetTemp_ = isTargetSet_;
     }
 
-    // if user select target on cellphone, publish the target
+    // if user selects target on cellphone, publish the target
     al.publishOnceIfTargetSelected(isTargetSet_, foundTarget_);
 
-    //mode selection, NOTICE that modeType_ should only be set by central control
-    if (isTargetSet_)
-    {
-      if (foundTarget_)
-      {
+    //mode selection, Notice that modeType_ should only be set by central control
+    if (isTargetSet_) {
+      if (foundTarget_) {
+        // No matter the target is searched or selected by user, as long as it
+        // was found, track it.
         modeType_ = m_track;
       }
-      else
-      {
-        if (targetLabel_ == "user selected object")
+      else {
+        if (targetLabel_ == "user selected object") {
+          // If the target is selected by user but no more been found, which means
+          // tracking has lost it, reset.
           resetStatus();
+        }
         else
           modeType_ = m_search;
       }
     }
-    else
-    {
+    else {
       modeType_ = m_wander;
       fl.isNeedRecognizeFace(); // only recognize face in wander mode
     }
@@ -330,8 +310,7 @@ int main(int argc, char **argv)
     // set mode
     ros::param::set(param_running_mode, modeType_);
 
-    if (modeType_ != modeTypeTemp_)
-    {
+    if (modeType_ != modeTypeTemp_) {
       std_msgs::String mode_msg;
       mode_msg.data = modeName[modeType_];
       drvPubMode_.publish(mode_msg);

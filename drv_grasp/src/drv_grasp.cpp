@@ -59,14 +59,11 @@ ros::Publisher graspPubLocation_;
 
 enum ModeType{m_wander, m_search, m_track};
 int modeType_ = m_wander;
-int modeTypeTemp_ = m_wander;
 
 string param_running_mode = "/status/running_mode";
 bool hasGraspPlan_ = false;
 
-bool posePublished_ = false;
-
-bool mapFrameExist_ = false;
+bool posePublished_ = false; // merely works in simple mode
 
 // target pointcloud index of image
 #ifdef USE_CENTER
@@ -82,13 +79,13 @@ uint32_t shape = visualization_msgs::Marker::ARROW;
 
 // transform frame
 string root_frame_ = "base_link"; // Root frame that NVG link to
-//string camera_base_frame_ = "camera_yaw_frame";
 string camera_optical_frame_ = "vision_depth_optical_frame";
-string target_location_frame_ = "map";
+
 geometry_msgs::TransformStamped trans_c_;
 geometry_msgs::TransformStamped trans_m_;
 
-typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo> MyApproxSyncDepthPolicy;
+typedef message_filters::sync_policies::ApproximateTime
+        <sensor_msgs::Image, sensor_msgs::CameraInfo> MyApproxSyncDepthPolicy;
 message_filters::Synchronizer<MyApproxSyncDepthPolicy> * approxSyncDepth_;
 
 float fx_ = 538.77;
@@ -165,9 +162,7 @@ void doTransform(pcl::PointXYZ p_in, pcl::PointXYZ &p_out, const geometry_msgs::
 void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
 {
   if (modeType_ != m_track)
-  {
     return;
-  }
   
   posePublished_ = false;
   
@@ -191,12 +186,9 @@ void depthCallback(
     const sensor_msgs::ImageConstPtr& imageDepth,
     const sensor_msgs::CameraInfoConstPtr& cameraInfo)
 {
-  if (modeType_ != m_track)
+  // In simple mode, pose only publish once after one detection
+  if (modeType_ != m_track || (simple_ && posePublished_))
     return;
-  
-  if (posePublished_) {
-    return;
-  }
   
   if(!(imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_16UC1) == 0 ||
        imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) == 0 ||
@@ -224,21 +216,21 @@ void depthCallback(
 #endif
   
   MakePlan MP;
-  pcl::PointXYZ graspPt; // in robot's frame
-  pcl::PointXYZ opticalPt; // use image to get p_in
+  pcl::PointXYZ graspPt; // target center in robot's referance frame
+  pcl::PointXYZ opticalPt; // target center in camera optical frame
   
   if (GetSourceCloud::getPoint(imageDepthPtr->image, row_, col_,
                                fx_, fy_, cx_, cy_, max_depth_, min_depth_, opticalPt))
   {
     doTransform(opticalPt, graspPt, trans_c_);
-    MP.smartOffset(graspPt, 0.02);
+    MP.smartOffset(graspPt, 0.02); //TODO: make this smart
     
     visualization_msgs::Marker marker;
-    // Set the frame ID and timestamp.  See the TF tutorials for information on these.
+    // Set the frame ID and timestamp. See the TF tutorials for information on these.
     marker.header.frame_id = root_frame_;
     marker.header.stamp = imageDepth->header.stamp;
     
-    // Set the namespace and id for this marker.  This serves to create a unique ID
+    // Set the namespace and id for this marker. This serves to create a unique ID
     // Any marker sent with the same namespace and id will overwrite the old one
     marker.ns = "grasp";
     marker.id = 0;
@@ -246,7 +238,7 @@ void depthCallback(
     marker.type = shape;
     marker.action = visualization_msgs::Marker::ADD;
     
-    // Set the pose of the marker.  This is a full 6DOF pose relative to the frame/time specified in the header
+    // Set the pose of the marker. This is a full 6DOF pose relative to the frame/time specified in the header
     marker.points.resize(2);
     // The point at index 0 is assumed to be the start point, and the point at index 1 is assumed to be the end.
     marker.points[0].x = graspPt.x;
@@ -303,12 +295,11 @@ void depthCallback(
     grasp_ps.pose.orientation.z = 0;
     graspPubPose_.publish(grasp_ps);
     
+    hasGraspPlan_ = true;
     posePublished_ = true;
   }
-  else
-  {
-    ROS_ERROR("Get point failed!\n");
-  }
+  else 
+    ROS_ERROR("Get grasp point failed!\n");
 }
 
 
@@ -321,7 +312,6 @@ int main(int argc, char **argv)
   
   pnh.getParam("root_frame_id", root_frame_);
   pnh.getParam("camera_optical_frame_id", camera_optical_frame_);
-  
   pnh.getParam("simple_id", simple_);
   
   graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("grasp/marker", 1);
@@ -337,25 +327,25 @@ int main(int argc, char **argv)
   
   string topic;
   if (simple_) {
+    // In simple mode, only respond for search result or user select
     topic = "search/recognized_target";
   }
   else {
+    // Otherwise, respond for track result
     topic = "track/recognized_target";
   }
   ros::Subscriber sub_track = nh.subscribe<drv_msgs::recognized_target>(topic, 1, trackResultCallback);
   
   // sub images to get point coordinate
   int queueSize = 3;
-  image_transport::SubscriberFilter imageSub_;
   image_transport::SubscriberFilter imageDepthSub_;
   message_filters::Subscriber<sensor_msgs::CameraInfo> cameraInfoSub_;
   
   ros::NodeHandle depth_nh(nh, "depth");
   ros::NodeHandle depth_pnh(pnh, "depth");
   image_transport::ImageTransport depth_it(depth_nh);
-  // !Use compressed message to speed up -- necessary!
   image_transport::TransportHints hintsDepth("compressedDepth", ros::TransportHints(), depth_pnh);
-
+  
   imageDepthSub_.subscribe(depth_it, depth_nh.resolveName("image_rect"), 1, hintsDepth);
   cameraInfoSub_.subscribe(depth_nh, "camera_info", 1);
   
@@ -363,37 +353,26 @@ int main(int argc, char **argv)
         MyApproxSyncDepthPolicy(queueSize), imageDepthSub_, cameraInfoSub_);
   approxSyncDepth_->registerCallback(depthCallback);
   
-  
   ROS_INFO("Grasp planning function initialized!\n");
   
-  while (ros::ok())
-  {
+  while (ros::ok()) {
     if (ros::param::has(param_running_mode))
-    {
-      ros::param::get(param_running_mode, modeTypeTemp_);
-//      if (modeType_ == m_wander && modeTypeTemp_ != m_wander)
-//        posePublished_ = false;
-      modeType_ = modeTypeTemp_;
-    }
-    
-    if (tfBufferM_._frameExists(target_location_frame_))
-      mapFrameExist_ = true;
-    else
-      mapFrameExist_ = false;
-    
+      ros::param::get(param_running_mode, modeType_);
+
     std_msgs::Bool flag;
     flag.data = true;
     
-    if (modeType_ != m_track)
+    if (modeType_ != m_track) {
+      hasGraspPlan_ = false;
+      posePublished_ = false;
       continue;
+    }
     
-    try
-    {
-      // the first frame is the target frame
+    try {
+      // the 1st frame is the base frame for transform
       trans_c_ = tfBufferC_.lookupTransform(root_frame_, camera_optical_frame_, ros::Time(0));
     }
-    catch (tf2::TransformException &ex)
-    {
+    catch (tf2::TransformException &ex) {
       ROS_WARN("%s",ex.what());
       ros::Duration(1.0).sleep();
       continue;
