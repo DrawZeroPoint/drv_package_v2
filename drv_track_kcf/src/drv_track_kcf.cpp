@@ -183,10 +183,8 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     vector<unsigned int> mask_id; // store object pixels id in image
     if (!postProcess(roi, track_img_)) {
       delay_--;
-      if (delay_ < 0)
-      {
+      if (delay_ < 0) {
         isInTracking_ = false;
-        ROS_WARN("GOTURN lost the target.\n");
         tracker.initialized_ = false;
       }
       return;
@@ -237,12 +235,11 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     int x_ang = - deg_x + yaw_;
     int y_ang = - deg_y + pitch_;
 
-    if (!(x_ang >= 0 && x_ang <= 180 && y_ang >= 60 && y_ang <= 140))
-    {
+    if (!(x_ang >= 0 && x_ang <= 180 && y_ang >= 60 && y_ang <= 140)) {
       // target center out of camera movement region
       pubTarget(image_msg->header, mask_id, roi);
       isInTracking_ = false;
-      ROS_WARN("Target out of camera view.\n");
+      ROS_WARN("Target out of camera movable area.");
       tracker.initialized_ = false;
     }
     else {
