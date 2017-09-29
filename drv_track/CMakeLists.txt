@@ -97,7 +97,7 @@ src/utilities.h
 )
 
 # the node name can't be the same as the project name
- add_executable(drv_track_node src/drv_track.cpp)
+add_executable(drv_track_node src/drv_track.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${catkin_LIBRARIES} ${Caffe_LIBRARIES} ${Boost_LIBRARIES} ${GLOG_LIB})
 target_link_libraries (drv_track_node ${PROJECT_NAME})
