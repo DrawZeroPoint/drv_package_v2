@@ -46,7 +46,7 @@ double max_depth_ = 2.5;
 
 bool approxSync = true;
 
-ros::Publisher cloudPub_ ;
+ros::Publisher cloudPub_;
 ros::Publisher cloudHeaderPub_;
 std::string pointCloudSourceTopic_ = "/point_cloud";
 

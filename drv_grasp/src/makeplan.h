@@ -1,8 +1,6 @@
 #ifndef MAKEPLAN_H
 #define MAKEPLAN_H
 
-#define USE_CENTER
-
 //STL
 #include <iostream>
 #include <math.h>
@@ -47,6 +45,8 @@
 #include <pcl/surface/convex_hull.h>
 #include <pcl/surface/concave_hull.h>
 #include <pcl/surface/mls.h>
+
+//#define USE_CENTER
 
 class MakePlan
 {
