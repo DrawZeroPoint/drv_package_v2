@@ -7,6 +7,11 @@ if(NOT WIN32)
 ADD_DEFINITIONS("-std=c++0x -O3")
 endif(NOT WIN32)
 
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+    message(STATUS "No build type selected, default to ${CMAKE_BUILD_TYPE}")
+endif()
+
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   drv_msgs

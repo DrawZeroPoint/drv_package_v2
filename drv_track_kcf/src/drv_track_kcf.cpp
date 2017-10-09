@@ -236,14 +236,15 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     int y_ang = - deg_y + pitch_;
 
     if (!(x_ang >= 0 && x_ang <= 180 && y_ang >= 60 && y_ang <= 140)) {
-      // target center out of camera movement region
+      // target center out of camera movable region
       pubTarget(image_msg->header, mask_id, roi);
-      isInTracking_ = false;
       ROS_WARN("Target out of camera movable area.");
-      tracker.initialized_ = false;
+      // Although out of movable area, still in tracking
+      // isInTracking_ = false;
+      // tracker.initialized_ = false;
     }
     else {
-      // target center is in camera movement region, so move the camera
+      // target center is in camera movable region, so move the camera
       publishServo(y_ang, x_ang);
     }
   }

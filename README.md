@@ -24,19 +24,24 @@ If you get error: `Getting "fatal error: libudev.h: No such file or directory #i
 After that, `roscd astra_camera && ./scripts/create_udev_rules` to make astra udev rules. Run it by `roslaunch astra_launch astra.launch`
 You can find the calibration files for our devices (Astra S) in folder *DRV/supplements/camera_info* for reference purpose. When running in ROS, this folder should be put into `/home/YOUR_USERNAME/.ros`.
 
-### 1.5 GOTURN
-We use GOTURN as well as KCF as our object tracking backbone. GOTURN itself is not necessarily needed to run this program, we only need the trained model *tracker.caffemodel* and prototext *tracker.prototxt* in `DRV/supplements/object_track/`. You can get the model from <https://github.com/davheld/GOTURN>.
+### 1.5 GOTURN (Deprecated)
+We used to using GOTURN as our object tracking backbone, however, it performs slow in CPU-only computer such that we trun to Correlation Filter method (KCF). The algorithm using GOTURN is still provided for reference purpose. GOTURN itself is not necessarily needed to run tracking, we only need the trained model *tracker.caffemodel* and prototext *tracker.prototxt* in `DRV/supplements/object_track/`. You can get the model from <https://github.com/davheld/GOTURN>.
 
 ### 1.6 NEU_FACE
 We provide the face recognition function based on [VGG_Face](http://www.robots.ox.ac.uk/~vgg/software/vgg_face/). To perform face recognition, the caffe model (ex. *finetune_neu_face.caffemodel*) and prototext (ex. *neu_face_deploy.prototxt*) should in `DRV/supplements/face_recognize/`.
 
+### 1.7 gpd
+We optionally use [gpd](https://github.com/atenpas/gpd) to generate grasp pose. You may need to install it first to compile DRV. We provide the launch file `drv_gpd_port.launch` to run gpd in `DRV/drv_brain/launch`
+
 ## 2 Hardware
-To run searching and tracking modules smoothly, a workstation with at least 4GB of GRAM is necessary. This program has been tested on multi-machine configurations, in which the host computer's CPUs run at frequencies exceeding 2.4 GHz. Low frequencies will lead to a delay in point cloud capturing and communication between the workstation and the host PC.
+To run searching and tracking modules smoothly, a workstation with NVIDIA GPU which has at least 4GB of GRAM is necessary. If the machine has no GPU, it can only run in **simple** mode which means no searching or face recognition can be performed.
+The host computer's CPUs run at frequencies exceeding 2.4 GHz. Low frequencies will lead to a delay in point cloud capturing and communication between the workstation and the host PC.
+This program has also been tested on multi-machine configurations.
 
 ## 3. Installation
 1. Clone this repository into catkin_ws/src (we assume your ROS work space has the name *catkin_ws*):
 `git clone https://github.com/DrawZeroPoint/drv_package_v2.git`
-2. Add the line `source ~/catkin_ws/devel/setup.bash` to your ~/.bashrc.
+2. Add the line `source /home/USER/catkin_ws/devel/setup.bash` to your ~/.bashrc.
 2. Run `catkin_make --pkg drv_msgs` in ~/catkin_ws to generate header file used by other nodes in DRV.
 3. Run `catkin_make` in ~/catkin_ws to make all packages and nodes.
 4. Add these two lines into your ~/.bashrc:
@@ -44,7 +49,7 @@ To run searching and tracking modules smoothly, a workstation with at least 4GB 
 export PYTHONPATH="/home/USER/py-faster-rcnn/lib:/home/USER/py-faster-rcnn/caffe-fast-rcnn/python:${PYTHONPATH}"
 export DRV=/home/USER/catkin_ws/src/drv_package_v2
  ```
- **Change 'USER' according to your username**
+ **Replace 'USER' with your actual username**
 
 ## 4. Usage
 1. Run `roscore` first. Plug in the NVG (NEU Vision Gear).

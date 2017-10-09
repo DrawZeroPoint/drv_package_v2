@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 2.8.3)
 project(drv_grasp)
 
 #Comment this if don't want debug
-set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Debug)
+
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+    message(STATUS "No build type selected, default to ${CMAKE_BUILD_TYPE}")
+endif()
 
 aux_source_directory(./src SRC_LIST)
 
