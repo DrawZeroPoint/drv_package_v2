@@ -48,7 +48,7 @@ export DRV=/home/USER/catkin_ws/src/drv_package_v2
 
 ## 4. Usage
 1. Run `roscore` first. Plug in the NVG (NEU Vision Gear).
-2. Run `roslaunch drv_brain drv_v2.launch` or `roslaunch drv_brain drv_v2_simple.launch` to launch the whole robot vision system on a single machine. The main difference of the two launch files is that the *simple* version doesn't perform searching and uses KCF tracker. If you let arg "simple_id" in drv_v2_workstation_simple.launch.xml to be true, target will not be tracked. The whole vision system runs in namespace /vision, and you can change it by modifing the arg "ns" in drv_v2.launch. Meanwhile, you need pay attention to the launch file drv_v2_host.launch.xml, in which we assume your Arduino board link to USB port "/dev/Arduino_vision", you can make this symlink by following [this instruction](http://www.joakimlinde.se/microcontrollers/arduino/avr/udev.php). Briefly, you need create a udev rule file for Arduino and put it into the folder `/etc/udev/rules.d`. To make the rules work, you may re-plug the Arduino. 
+2. Run `roslaunch drv_brain drv_v2.launch` or `roslaunch drv_brain drv_v2_simple.launch` to launch the whole robot vision system on a single machine. The main difference of the two launch files is that the *simple* version doesn't perform searching. Besides, if you let arg "simple_id" in drv_v2_workstation_simple.launch.xml to be true, it will publish object pose for only once for one detection. The whole vision system runs in namespace /vision, and you can change it by modifing the arg "ns" in drv_v2.launch. Meanwhile, you need to pay attention to the launch file drv_v2_host.launch.xml, in which we assume your Arduino board link to USB port "/dev/Arduino_vision", you can make this symlink by following [this instruction](http://www.joakimlinde.se/microcontrollers/arduino/avr/udev.php). Briefly, you need create a udev rule file (a example can be found in folder `DRV/supplements/arduino_control`, notice that your serial is different form ours) for Arduino and put it into the folder `/etc/udev/rules.d`. To make the rules work, you may re-plugin the Arduino. 
 3. If you use DRV on multiple machines, run `roslaunch drv_brain drv_v2_host.launch` on host machine (which is carried by the robot), and `roslaunch drv_brain drv_v2_workstation.launch` or `roslaunch drv_brain drv_v2_workstation_simple.launch` on the workstation, to control the robot and process data remotely.
 4. Target can be assigned by setting the rosparam: `rosparam set /comm/control/target/label bottle`, `rosparam set /comm/control/target/is_set true`, the order of these settings should not be changed. Here the 'bottle' refers to the target label and can be changed to 'chair', 'person', etc. as long as it belongs to Pascal_VOC categories. FYI, the target setting function as well as more useful functions can be easily realized with [JARVIS](https://github.com/NEU-TEAM/JARVIS), which is an Android app for controlling the NEU household robot. Till now it only supports Android 6.0+.
 5. With the target set, the system will automatically run in *search mode* and find the target in the scene. When some objects which likely to be the target were found, the system will request user select to judge the candidates and decide whether continuing searching the target or tracking the selected target. If the target is confirmed, the system will run in *tracking mode* in which the location of the target in 3D space will be generated for manipulating the target.
@@ -58,10 +58,10 @@ export DRV=/home/USER/catkin_ws/src/drv_package_v2
 1. If custom message issue occurred when running catkin_make, run `catkin_make --pkg drv_msgs --force-cmake` first to make the msg header files needed, and then run `catkin_make`.
  
 ## 6. Development details
-1. Light code (std_msgs::UInt16) defination:
+1. To demonstrate the status of the robot, we use full-color LEDs to show the status with these light code (std_msgs::UInt16) defination:
 0: normal (green)
 1: warning (yellow) 2: error (red) 3: fatal error (red flash)
-10: full light (white) 11: no light (black) 12: breath light (purple flash)
+10: fully bright (white) 11: extinguished (black) 12: breathing light (flashing purple)
 
 ## Author
 [Zhipeng Dong](https://github.com/DrawZeroPoint) zhipengdongneu@gmail.com (Discussion about this program is welcome) 

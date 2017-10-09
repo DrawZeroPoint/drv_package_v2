@@ -100,7 +100,7 @@ float cy_ = 239.95;
 double min_depth_ = 0.3;
 double max_depth_ = 3.0;
 
-bool simple_ = true;
+bool simple_ = false;
 
 
 void getCloudByInliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
@@ -313,12 +313,12 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
     return;
 
   if (inliers_->indices.empty()) {
-    ROS_ERROR_THROTTLE(5, "Target ROI contains no point.\n");
+    ROS_ERROR_THROTTLE(5, "Target ROI contains no point.");
     return;
   }
   // Convert point clound inliers into base frame and publish
-  PointCloud::Ptr cloud_in;
-  PointCloud::Ptr cloud_out;
+  PointCloud::Ptr cloud_in(new PointCloud);
+  PointCloud::Ptr cloud_out(new PointCloud);
   pcl::fromROSMsg(*msg, *cloud_in);
   getCloudByInliers(cloud_in, cloud_out, inliers_, false, false);
 
@@ -384,14 +384,14 @@ int main(int argc, char **argv)
   tf2_ros::TransformListener tfListenerM_(tfBufferM_);
   
   string topic;
-  if (simple_) {
-    // In simple mode, only respond for search result or user select
-    topic = "search/recognized_target";
-  }
-  else {
+//  if (simple_) {
+//    // In simple mode, only respond for search result or user select
+//    topic = "search/recognized_target";
+//  }
+//  else {
     // Otherwise, respond for track result
     topic = "track/recognized_target";
-  }
+//  }
   ros::Subscriber sub_track = nh.subscribe<drv_msgs::recognized_target>(topic, 1, trackResultCallback);
   
 #ifdef USE_CENTER
