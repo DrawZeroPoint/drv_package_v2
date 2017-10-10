@@ -75,6 +75,8 @@ string base_frame_ = "base_link"; // Base frame that NVG link to
 string camera_optical_frame_ = "vision_depth_optical_frame";
 
 geometry_msgs::TransformStamped trans_c_;
+tf2_ros::Buffer tfBufferCameraToBase_;
+tf2_ros::TransformListener tfListenerC_(tfBufferCameraToBase_);
 
 bool simple_ = false;
 
@@ -123,6 +125,20 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
     }
   }
 #endif
+}
+
+bool getTransform()
+{
+  try {
+    // the 1st frame is the base frame for transform
+    trans_c_ = tfBufferCameraToBase_.lookupTransform(base_frame_, camera_optical_frame_, ros::Time(0));
+    return true;
+  }
+  catch (tf2::TransformException &ex) {
+    ROS_WARN("%s",ex.what());
+    ros::Duration(1.0).sleep();
+    return false;
+  }
 }
 
 void publishMarker(float x, float y, float z, std_msgs::Header header)
@@ -226,6 +242,10 @@ void depthCallback(
   if (GetSourceCloud::getPoint(imageDepthPtr->image, row_, col_,
                                fx_, fy_, cx_, cy_, max_depth_, min_depth_, opticalPt))
   {
+    if (!getTransform()) {
+      ROS_ERROR("Grasp: Get transform failed.");
+      return;
+    }
     doTransform(opticalPt, graspPt, trans_c_);
     MP.smartOffset(graspPt, 0.02); //TODO: make this smart
 
@@ -291,7 +311,7 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
     return;
 
   if (inliers_->indices.empty()) {
-    ROS_ERROR_THROTTLE(5, "Target ROI contains no point.");
+    ROS_ERROR("Grasp: Target ROI contains no point.");
     return;
   }
 
@@ -304,6 +324,10 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
   getCloudByInliers(cloud_in, cloud_filted, inliers_, false, false);
 
   // Convert point clound inliers into base frame
+  if (!getTransform()) {
+    ROS_ERROR("Grasp: Get transform failed.");
+    return;
+  }
   doTransform(cloud_filted, cloud_trans, trans_c_);
 
   // Publish filted cloud for gpd
@@ -322,34 +346,40 @@ void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
     return;
 
   if (msg->grasps.size() == 0) {
-    ROS_ERROR("Get grasp plan failed!\n");
+    ROS_ERROR("Get grasp plan failed!");
     return;
   }
 
   gpd::GraspConfig grasp;
+  gpd::GraspConfig grasp_max_score;
+  float score = 0.0; // classification score for grasp
   for (size_t i = 0; i < msg->grasps.size(); ++i) {
     grasp = msg->grasps[i];
 
-    // Publish grasp pose
-    geometry_msgs::PoseStamped grasp_pose;
-    grasp_pose.header = msg->header;
-    grasp_pose.pose.position.x = grasp.bottom.x; // TODO: Is using bottom right?
-    grasp_pose.pose.position.y = grasp.bottom.y;
-    grasp_pose.pose.position.z = grasp.bottom.z;
-    grasp_pose.pose.orientation.w = sqrt(0.5); // to rotate x axis to z axis, so the rotation angle = -90 deg
-    grasp_pose.pose.orientation.x = 0;
-    grasp_pose.pose.orientation.y = -sqrt(0.5);
-    grasp_pose.pose.orientation.z = 0;
-    graspPubPose_.publish(grasp_pose);
-
-    // Publish marker of grasp pose
-    publishMarker(grasp.bottom.x, grasp.bottom.y,
-                  grasp.bottom.z, msg->header);
-
-    hasGraspPlan_ = true;
-    posePublished_ = true;
-    break; // Only publish the first plan
+    if (grasp.score.data > score) {
+      score = grasp.score.data;
+      grasp_max_score = grasp;
+    }
   }
+
+  // Publish grasp pose with max score
+  geometry_msgs::PoseStamped grasp_pose;
+  grasp_pose.header = msg->header;
+  grasp_pose.pose.position.x = grasp_max_score.bottom.x;
+  grasp_pose.pose.position.y = grasp_max_score.bottom.y;
+  grasp_pose.pose.position.z = grasp_max_score.bottom.z;
+  grasp_pose.pose.orientation.w = sqrt(0.5); // to rotate x axis to z axis, so the rotation angle = -90 deg
+  grasp_pose.pose.orientation.x = 0;
+  grasp_pose.pose.orientation.y = -sqrt(0.5);
+  grasp_pose.pose.orientation.z = 0;
+  graspPubPose_.publish(grasp_pose);
+
+  // Publish marker of grasp pose
+  publishMarker(grasp.bottom.x, grasp.bottom.y,
+                grasp.bottom.z, msg->header);
+
+  hasGraspPlan_ = true;
+  posePublished_ = true;
 }
 #endif
 
@@ -368,9 +398,6 @@ int main(int argc, char **argv)
   graspPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/pose", 1);
   graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("grasp/marker", 1);
   
-  tf2_ros::Buffer tfBufferCameraToBase_;
-  tf2_ros::TransformListener tfListenerC_(tfBufferCameraToBase_);
-
   ros::Subscriber sub_track = nh.subscribe<drv_msgs::recognized_target>("track/recognized_target",
                                                                         1, trackResultCallback);
   
@@ -412,16 +439,6 @@ int main(int argc, char **argv)
     if (modeType_ != m_track) {
       hasGraspPlan_ = false;
       posePublished_ = false;
-      continue;
-    }
-    
-    try {
-      // the 1st frame is the base frame for transform
-      trans_c_ = tfBufferCameraToBase_.lookupTransform(base_frame_, camera_optical_frame_, ros::Time(0));
-    }
-    catch (tf2::TransformException &ex) {
-      ROS_WARN("%s",ex.what());
-      ros::Duration(1.0).sleep();
       continue;
     }
     
