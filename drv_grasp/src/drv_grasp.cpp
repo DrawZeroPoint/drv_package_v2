@@ -214,7 +214,7 @@ void depthCallback(
     const sensor_msgs::CameraInfoConstPtr& cameraInfo)
 {
   // In simple mode, pose only publish once after one detection
-  if (modeType_ != m_track || (simple_ && posePublished_))
+  if (modeType_ != m_track || (pub_pose_once_ && posePublished_))
     return;
   
   if(!(imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_16UC1) == 0 ||
@@ -252,7 +252,7 @@ void depthCallback(
     publishMarker(graspPt.x, graspPt.y, graspPt.z, imageDepth->header);
 
     geometry_msgs::PoseStamped grasp_ps;
-    grasp_ps.header = marker.header;
+    grasp_ps.header = imageDepth->header;
     grasp_ps.pose.position.x = graspPt.x;
     grasp_ps.pose.position.y = graspPt.y;
     grasp_ps.pose.position.z = graspPt.z;
