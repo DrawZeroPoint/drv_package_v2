@@ -75,7 +75,6 @@ string base_frame_ = "base_link"; // Base frame that NVG link to
 string camera_optical_frame_ = "vision_depth_optical_frame";
 
 geometry_msgs::TransformStamped trans_c_;
-tf2_ros::Buffer tfBufferCameraToBase_;
 
 bool pub_pose_once_ = false;
 
@@ -124,21 +123,6 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
     }
   }
 #endif
-}
-
-bool getTransform()
-{
-  try {
-    // the 1st frame is the base frame for transform
-    trans_c_ = tfBufferCameraToBase_.lookupTransform(base_frame_, camera_optical_frame_, 
-                                                     ros::Time(0));
-    return true;
-  }
-  catch (tf2::TransformException &ex) {
-    ROS_WARN("%s",ex.what());
-    ros::Duration(1.0).sleep();
-    return false;
-  }
 }
 
 void publishMarker(float x, float y, float z, std_msgs::Header header)
@@ -242,10 +226,6 @@ void depthCallback(
   if (GetSourceCloud::getPoint(imageDepthPtr->image, row_, col_,
                                fx_, fy_, cx_, cy_, max_depth_, min_depth_, opticalPt))
   {
-    if (!getTransform()) {
-      ROS_ERROR("Grasp: Get transform failed.");
-      return;
-    }
     doTransform(opticalPt, graspPt, trans_c_);
     MP.smartOffset(graspPt, 0.02); //TODO: make this smart
 
@@ -325,10 +305,6 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
   getCloudByInliers(cloud_in, cloud_filted, inliers_, false, false);
 
   // Convert point clound inliers into base frame
-  if (!getTransform()) {
-    ROS_ERROR("Grasp: Get transform failed.");
-    return;
-  }
   doTransform(cloud_filted, cloud_trans, trans_c_);
 
   // Publish filted cloud for gpd
@@ -428,6 +404,11 @@ int main(int argc, char **argv)
   ros::Subscriber sub_grasp_plan = nh.subscribe<gpd::GraspConfigList>("/detect_grasps/clustered_grasps",
                                                                       1, graspPlanCallback);
 #endif
+
+  // These declaration must be after the node initialization
+  tf2_ros::Buffer tfBufferCameraToBase_;
+  // This is mandatory
+  tf2_ros::TransformListener tfListener(tfBufferCameraToBase_);
   
   ROS_INFO("Grasp planning function initialized!");
   
@@ -441,6 +422,17 @@ int main(int argc, char **argv)
     if (modeType_ != m_track) {
       hasGraspPlan_ = false;
       posePublished_ = false;
+      continue;
+    }
+
+    try {
+      // the 1st frame is the base frame for transform
+      trans_c_ = tfBufferCameraToBase_.lookupTransform(base_frame_, camera_optical_frame_,
+                                                       ros::Time(0));
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("%s",ex.what());
+      ros::Duration(1.0).sleep();
       continue;
     }
     
