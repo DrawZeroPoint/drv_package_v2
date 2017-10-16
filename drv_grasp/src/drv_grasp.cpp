@@ -78,7 +78,7 @@ geometry_msgs::TransformStamped trans_c_;
 tf2_ros::Buffer tfBufferCameraToBase_;
 tf2_ros::TransformListener tfListenerC_(tfBufferCameraToBase_);
 
-bool simple_ = false;
+bool pub_pose_once_ = false;
 
 #ifdef USE_CENTER
 int idx_;
@@ -307,7 +307,7 @@ void doTransform(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
 void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
   // In simple mode, pose only publish once after one detection
-  if (modeType_ != m_track || (simple_ && posePublished_))
+  if (modeType_ != m_track || (pub_pose_once_ && posePublished_))
     return;
 
   if (inliers_->indices.empty()) {
@@ -342,7 +342,7 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
 void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
 {
   // In simple mode, pose only publish once after one detection
-  if (modeType_ != m_track || (simple_ && posePublished_))
+  if (modeType_ != m_track || (pub_pose_once_ && posePublished_))
     return;
 
   if (msg->grasps.size() == 0) {
@@ -392,7 +392,7 @@ int main(int argc, char **argv)
   
   pnh.getParam("base_frame_id", base_frame_);
   pnh.getParam("camera_optical_frame_id", camera_optical_frame_);
-  pnh.getParam("simple_id", simple_);
+  pnh.getParam("pub_pose_once_id", pub_pose_once_);
   
   graspPubStatus_ = nh.advertise<std_msgs::Bool>("status/grasp/feedback", 1);
   graspPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/pose", 1);
