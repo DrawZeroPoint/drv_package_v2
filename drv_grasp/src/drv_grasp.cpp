@@ -76,7 +76,6 @@ string camera_optical_frame_ = "vision_depth_optical_frame";
 
 geometry_msgs::TransformStamped trans_c_;
 tf2_ros::Buffer tfBufferCameraToBase_;
-tf2_ros::TransformListener tfListenerC_(tfBufferCameraToBase_);
 
 bool pub_pose_once_ = false;
 
@@ -131,7 +130,8 @@ bool getTransform()
 {
   try {
     // the 1st frame is the base frame for transform
-    trans_c_ = tfBufferCameraToBase_.lookupTransform(base_frame_, camera_optical_frame_, ros::Time(0));
+    trans_c_ = tfBufferCameraToBase_.lookupTransform(base_frame_, camera_optical_frame_, 
+                                                     ros::Time(0));
     return true;
   }
   catch (tf2::TransformException &ex) {
@@ -252,7 +252,8 @@ void depthCallback(
     publishMarker(graspPt.x, graspPt.y, graspPt.z, imageDepth->header);
 
     geometry_msgs::PoseStamped grasp_ps;
-    grasp_ps.header = imageDepth->header;
+    grasp_ps.header.frame_id = base_frame_;
+    grasp_ps.header.stamp = imageDepth->header.stamp;
     grasp_ps.pose.position.x = graspPt.x;
     grasp_ps.pose.position.y = graspPt.y;
     grasp_ps.pose.position.z = graspPt.z;
@@ -389,6 +390,7 @@ int main(int argc, char **argv)
   
   ros::NodeHandle nh;
   ros::NodeHandle pnh("~");
+  ros::NodeHandle cnh;
   
   pnh.getParam("base_frame_id", base_frame_);
   pnh.getParam("camera_optical_frame_id", camera_optical_frame_);
@@ -410,7 +412,7 @@ int main(int argc, char **argv)
   message_filters::Subscriber<sensor_msgs::CameraInfo> cameraInfoSub_;
   
   ros::NodeHandle depth_nh(nh, "depth");
-  ros::NodeHandle depth_pnh(pnh, "depth");
+  ros::NodeHandle depth_pnh(cnh, "depth");
   image_transport::ImageTransport depth_it(depth_nh);
   image_transport::TransportHints hintsDepth("compressedDepth", ros::TransportHints(), depth_pnh);
   
