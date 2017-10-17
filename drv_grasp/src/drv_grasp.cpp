@@ -409,7 +409,6 @@ int main(int argc, char **argv)
   
   ros::NodeHandle nh;
   ros::NodeHandle pnh("~");
-  ros::NodeHandle cnh;
   
   pnh.getParam("base_frame_id", base_frame_);
   pnh.getParam("camera_optical_frame_id", camera_optical_frame_);
@@ -430,6 +429,7 @@ int main(int argc, char **argv)
   image_transport::SubscriberFilter imageDepthSub_;
   message_filters::Subscriber<sensor_msgs::CameraInfo> cameraInfoSub_;
   
+  ros::NodeHandle cnh;
   ros::NodeHandle depth_nh(nh, "depth");
   ros::NodeHandle depth_pnh(cnh, "depth");
   image_transport::ImageTransport depth_it(depth_nh);
