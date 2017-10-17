@@ -407,7 +407,7 @@ int main(int argc, char **argv)
 
   // These declaration must be after the node initialization
   tf2_ros::Buffer tfBufferCameraToBase_;
-  // This is mandatory
+  // This is mandatory and should be declared before while loop
   tf2_ros::TransformListener tfListener(tfBufferCameraToBase_);
   
   ROS_INFO("Grasp planning function initialized!");
