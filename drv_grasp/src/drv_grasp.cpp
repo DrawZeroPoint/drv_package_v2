@@ -306,7 +306,7 @@ void getOrientation(gpd::GraspConfig g, geometry_msgs::Quaternion &q)
   q.w = 0.5 * sqrt(1 + r11 + r22 + r33);
   
   if (q.w == 0.0)
-    q.x = sqrt(0.5*(1 + r11));
+    q.x = sqrt(0.5 * (1 + r11));
   else
     q.x = (r23 - r32) / (4 * q.w);
   

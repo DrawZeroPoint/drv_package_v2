@@ -61,7 +61,7 @@
     <param name="base_frame_id" value="$(arg base_link_frame)" />
     <param name="camera_optical_frame_id" value="$(arg vision_namespace)_depth_optical_frame" />
     <!-- If true, object pose only publish once for one detection -->
-    <param name="pub_pose_once_id" value="true" />
+    <param name="pub_pose_once_id" value="false" />
   </node>
 
   <include file="$(find drv_brain)/launch/drv_gpd_port.launch">
