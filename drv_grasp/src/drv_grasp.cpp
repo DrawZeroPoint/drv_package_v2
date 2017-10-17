@@ -237,9 +237,13 @@ void depthCallback(
     grasp_ps.pose.position.x = graspPt.x;
     grasp_ps.pose.position.y = graspPt.y;
     grasp_ps.pose.position.z = graspPt.z;
-    grasp_ps.pose.orientation.w = sqrt(0.5); // to rotate x axis to z axis, so the rotation angle = -90 deg
+//    grasp_ps.pose.orientation.w = sqrt(0.5); // to rotate x axis to z axis, so the rotation angle = -90 deg
+//    grasp_ps.pose.orientation.x = 0;
+//    grasp_ps.pose.orientation.y = -sqrt(0.5);
+//    grasp_ps.pose.orientation.z = 0;
+    grasp_ps.pose.orientation.w = 1;
     grasp_ps.pose.orientation.x = 0;
-    grasp_ps.pose.orientation.y = -sqrt(0.5);
+    grasp_ps.pose.orientation.y = 0;
     grasp_ps.pose.orientation.z = 0;
     graspPubPose_.publish(grasp_ps);
 
@@ -345,7 +349,7 @@ void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
   grasp_pose.pose.position.x = grasp_max_score.bottom.x;
   grasp_pose.pose.position.y = grasp_max_score.bottom.y;
   grasp_pose.pose.position.z = grasp_max_score.bottom.z;
-  grasp_pose.pose.orientation.w = sqrt(0.5); // to rotate x axis to z axis, so the rotation angle = -90 deg
+  grasp_pose.pose.orientation.w = grasp_max_score.approach
   grasp_pose.pose.orientation.x = 0;
   grasp_pose.pose.orientation.y = -sqrt(0.5);
   grasp_pose.pose.orientation.z = 0;
