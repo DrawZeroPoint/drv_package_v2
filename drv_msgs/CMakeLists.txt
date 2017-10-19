@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    recognize.srv
    face_recognize.srv
+   face_train.srv
    user_select.srv
  )
 

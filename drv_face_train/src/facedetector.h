@@ -16,6 +16,7 @@ class FaceDetector
 {
 public:
   FaceDetector(string path);
+  bool countFace(Mat img_in, Mat &img_out);
   bool Process(Mat img_in, Mat &img_out, vector<Rect> &faceRoi, std::vector<Mat> &face_imgs);
 
 private:

@@ -14,12 +14,12 @@ using namespace std;
 class ProcessFace
 {
 public:
-    ProcessFace(string test_proto, string caffe_model, int gpu_id, bool do_train);
+  ProcessFace(string test_proto, string caffe_model, int gpu_id, bool do_train);
 
-    void processFace(cv::Mat img_in, int &result_id, float &result_trust);
+  void processFace(cv::Mat img_in, int &result_id, float &result_trust);
 
 private:
-    Classifier classifier_;
+  Classifier classifier_;
 };
 
 #endif // PROCESSFACE_H
