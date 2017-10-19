@@ -43,5 +43,6 @@ include_directories(
 )
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Caffe_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES}
+${OpenCV_LIBS} ${Caffe_LIBRARIES} ${Boost_LIBRARIES} crypto)
 

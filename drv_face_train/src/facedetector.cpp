@@ -17,9 +17,15 @@ bool FaceDetector::countFace(Mat img_in, Mat &img_out)
   cascade_.detectMultiScale(gray, faces, 1.1, 3, 0);
 
   if (faces.size() == 1) {
-    Mat img_temp = img_in(faces[0]);
-    resize(img_temp, img_out, Size(224, 224));
-    return true;
+    Rect rect_temp;
+    Mat img_temp;
+    if (trySquareRoi(img_in, faces[0], rect_temp)) {
+      img_temp = img_in(rect_temp);
+      resize(img_temp, img_out, Size(224, 224));
+      return true;
+    }
+    else
+      return false;
   }
   else
     return false;
@@ -31,8 +37,7 @@ bool FaceDetector::Process(Mat img_in, Mat &img_out,
   detectAndDraw(img_in, img_out, 1, 0, faceRoi);
   if (!faceRoi.size())
     return false;
-  else
-  {
+  else {
     getFaceFromRoi(img_in, faceRoi, face_imgs);
     return true;
   }
@@ -90,49 +95,32 @@ bool FaceDetector::trySquareRoi(Mat img_in, Rect face_roi, Rect &square_roi)
   int h = face_roi.height;
 
   int margin = 20; // expand the roi
-  if (w >= h)
-  {
+  if (w >= h) {
     if (face_roi.y + h/2 - w/2 - margin >= 0)
-    {
       square_roi.y = cvRound(face_roi.y + h/2 - w/2 - margin);
-    }
     else
-    {
       square_roi.y = 0;
-    }
     if (face_roi.y + h/2 + w/2 + margin < img_in.rows)
-    {
       square_roi.height = w + 2*margin;
-    }
     else
-    {
       square_roi.height = img_in.rows - square_roi.y + margin;
-    }
     square_roi.x = face_roi.x;
     square_roi.width = w;
   }
-  else
-  {
+  else {
     if (face_roi.x + w/2 - h/2 - margin >=0)
-    {
       square_roi.x = cvRound(face_roi.x + w/2 - h/2 - margin);
-    }
     else
-    {
       square_roi.x = 0;
-    }
     if (face_roi.x + w/2 + h/2 + margin < img_in.cols)
-    {
       square_roi.width = h + 2 * margin;
-    }
     else
-    {
       square_roi.width = img_in.cols - square_roi.x - margin;
-    }
     square_roi.y = face_roi.y;
     square_roi.height = h;
   }
-  if (square_roi.height + square_roi.y >= img_in.rows || square_roi.width + square_roi.x >= img_in.cols)
+  if (square_roi.height + square_roi.y >= img_in.rows ||
+      square_roi.width + square_roi.x >= img_in.cols)
     return false;
   else
     return true;

@@ -120,7 +120,7 @@ def face_net(train=True, learn_all=False, subset=None):
         batch_size=10, new_height=224, new_width=224, ntop=2)
     return vgg_face_net(data=face_data, label=face_label, train=train,
                         num_classes=num_names,
-                        classifier_name='fc8_neu_face',
+                        classifier_name='fc8_'+str(num_names),
                         learn_all=learn_all)
 
 
@@ -203,7 +203,10 @@ def run_solvers(niter, solvers, disp_interval=1):
 
 def process(model=caffemodel):
     name_dir = dir_prefix + '/supplements/face_recognize/names.txt'
-    face_labels = list(np.loadtxt(name_dir, str, delimiter='\n'))
+    face_labels = []
+    with open(name_dir, 'rt') as f:
+        for line in f:
+            face_labels.append(line)
 
     global num_names
     num_names = face_labels.__len__()
@@ -212,13 +215,21 @@ def process(model=caffemodel):
     print('Loaded names:\n', ', '.join(face_labels))
 
     # Reset style_solver as before.
-    style_solver_filename = solver(face_net(train=True))
+    pt_name = face_net(train=True)
+    # Use pt_name to replace the original prototxt
+    with open(pt_name, 'rt') as fr:
+        data = fr.read()
+        with open(prototxt, 'wt') as fw:
+            fw.write(data)
+
+    style_solver_filename = solver(pt_name)
     style_solver = caffe.get_solver(style_solver_filename)
     style_solver.net.copy_from(model)
 
     print('Running solvers for %d iterations...' % num_iter)
     solvers = [('pretrained', style_solver)]
     loss, acc, model = run_solvers(num_iter, solvers)
+    # TODO: Use trained model to replace the original model
     print('Done.')
 
     # Delete solvers to save memory.

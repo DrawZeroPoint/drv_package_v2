@@ -10,11 +10,8 @@ roslib.load_manifest('drv_face_train')
 
 
 def handle_train(req):
-    rsp = face_trainResponse
-
-    result = ps.process()
-
-    rsp.accuracy = result
+    rsp = face_trainResponse()
+    ps.process()
     return rsp
 
 

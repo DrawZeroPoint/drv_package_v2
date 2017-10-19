@@ -18,6 +18,10 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <fstream>
+#include <openssl/sha.h>
+#include <rosauth/Authentication.h>
+#include <sstream>
+#include <string>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
@@ -41,7 +45,7 @@ string param_running_mode = "/status/running_mode";
 
 string param_face_need_train_ = "/vision/face/need_train";
 string param_face_train_name_ = "/vision/face/train/name";
-bool needTrain_ = false;
+
 string faceName_ = "";
 
 int image_num_ = 100;
@@ -52,24 +56,37 @@ int currNameId_ = 0;
 
 vector<string> nameVec_;
 
-bool imageReady_ = false;
-
 cv_bridge::CvImagePtr imagePtr_;
 
 FaceDetector fd_(drv_path_);
 
-bool faceTrainResult_ = false;
+// Authority
+ros::ServiceClient cl_auth_;
+bool need_authority_ = false;
+bool authenticated_ = false;
+string param_password_ = "/password";
+string password_ = ""; // default: admin
 
+
+void resetStatus()
+{
+  faceName_ = "";
+  imageCount_ = 0;
+
+  nameAdded_ = false;
+  currNameId_ = 0;
+
+  nameVec_.clear();
+
+  authenticated_ = true;
+}
 
 void saveCurrentName()
 {
-  if (nameAdded_)
-    return;
-
   string file = drv_path_ + "/supplements/face_recognize/names.txt";
   if (!boost::filesystem::exists(file)) {
     std::ofstream outfile(file.c_str());
-    outfile << faceName_ << std::endl;
+    outfile << faceName_;
     nameVec_.push_back(faceName_);
     outfile.close();
     currNameId_ = 0;
@@ -93,22 +110,12 @@ void saveCurrentName()
 
     if (!repeated) {
       std::ofstream outfile(file.c_str(), std::ofstream::app);
-      outfile << faceName_ << std::endl;
+      outfile << std::endl << faceName_;
       nameVec_.push_back(faceName_);
       outfile.close();
     }
     currNameId_ = num;
   }
-  nameAdded_ = true;
-}
-
-bool inList(int n, vector<int> list)
-{
-  for (size_t i = 0; i < nameVec_.size(); ++i) {
-    if (n == list[i])
-      return true;
-  }
-  return false;
 }
 
 void generateTrainList()
@@ -121,15 +128,10 @@ void generateTrainList()
   assert(nameVec_.size() == currNameId_ + 1);
   string train_list = drv_path_ + "/supplements/face_recognize/train.txt";
   ofstream outfile(train_list.c_str(), ofstream::trunc);
-  vector<int> used_list;
-  for (size_t i = 0; i < nameVec_.size(); ++i) {
-    for (size_t k = 0; k < image_num_; ++k) {
-      string s = nameVec_[i];
-      int n = rand() % (nameVec_.size() + 1); // get a random num from 0 to nameVec.size
-      if (!inList(n, used_list)) {
-        outfile << image_path_ << n << "/" << k << ".jpg " << i << endl;
-        used_list.push_back(n);
-      }
+
+  for (size_t k = 0; k < image_num_; ++k) {
+    for (size_t i = 0; i < nameVec_.size(); ++i) {
+      outfile << image_path_ << i << "/" << k << ".jpg " << i << endl;
     }
   }
 }
@@ -150,7 +152,7 @@ void saveImage(Mat image, int num)
 
 void imageCallback(const sensor_msgs::ImageConstPtr & image_msg)
 {
-  if (modeType_ != m_wander || !needTrain_ || faceName_ == "")
+  if (modeType_ != m_wander || faceName_ == "")
     return;
 
   imagePtr_ = cv_bridge::toCvCopy(image_msg, "bgr8");
@@ -164,32 +166,54 @@ void imageCallback(const sensor_msgs::ImageConstPtr & image_msg)
   if (fd_.countFace(imagePtr_->image, face_roi)) {
     // If captured image contains only one face, save it
     string n = nameVec_[currNameId_];
-    imshow(n.c_str(), face_roi);
-    waitKey(50);
+    assert(n == faceName_);
+//    namedWindow(n.c_str());
+//    imshow(n.c_str(), face_roi);
+//    waitKey(50);
 
     saveImage(face_roi, currNameId_);
     ROS_WARN("Face image number %d captured.", imageCount_);
     imageCount_++;
 
-    if (imageCount_ == image_num_)
-      imageReady_ = true;
+    if (imageCount_ == image_num_) {
+//      destroyWindow(n.c_str());
+      ROS_WARN("All face image capture finished.");
+      resetStatus();
+      ros::param::set(param_face_train_name_, "");
+    }
   }
 }
 
-void resetStatus()
+bool checkAuthority()
 {
-  needTrain_ = false;
-  faceName_ = "";
-  imageCount_ = 0;
-  imageReady_ = false;
-  faceTrainResult_ = false;
-  nameAdded_ = false;
-  currNameId_ = 0;
+  string rand = "xyzabc";
+  ros::Time now = ros::Time::now();
+  string user_level = "admin";
+  ros::Time end = ros::Time::now();
+  end.sec += 120;
 
-  nameVec_.clear();
+  // create the string to hash
+  stringstream ss;
+  ss << password_ << rand << now.sec << user_level << end.sec;
+  string local_hash = ss.str();
+  unsigned char sha512_hash[SHA512_DIGEST_LENGTH];
+  SHA512((unsigned char *)local_hash.c_str(), local_hash.length(), sha512_hash);
 
-  ros::param::set(param_face_need_train_, false);
-  ros::param::set(param_face_train_name_, "");
+  // convert to a hex string to compare
+  char hex[SHA512_DIGEST_LENGTH * 2];
+  // make the request
+  rosauth::Authentication srv;
+  srv.request.mac = string(hex);
+  srv.request.rand = rand;
+  srv.request.t = now;
+  srv.request.level = user_level;
+  srv.request.end = end;
+
+  if (!cl_auth_.call(srv)) {
+    ROS_ERROR("Face train: Authentication server not actived.");
+    return false;
+  }
+  return srv.response.authenticated;
 }
 
 int main(int argc, char **argv)
@@ -200,7 +224,8 @@ int main(int argc, char **argv)
   ros::NodeHandle pnh("~");
 
   // Get training image number of one person
-  pnh.getParam("image_num_id", image_num_);
+  pnh.getParam("image_num", image_num_);
+  pnh.getParam("need_authentication_id", need_authority_);
 
   ros::NodeHandle inh;
   ros::NodeHandle rgb_nh(nh, "rgb");
@@ -217,6 +242,7 @@ int main(int argc, char **argv)
 
   faceTrainPubStatus_ = nh.advertise<std_msgs::Bool>("status/face/train/feedback", 1);
 
+  cl_auth_ = nh.serviceClient<rosauth::Authentication>("authenticate");
   ros::ServiceClient client = nh.serviceClient<drv_msgs::face_train>("face_train_service");
 
   ROS_INFO("Ready to train face recognition.");
@@ -230,48 +256,56 @@ int main(int argc, char **argv)
       continue;
     }
 
-    if (ros::param::has(param_face_need_train_))
-      ros::param::get(param_face_need_train_, needTrain_);
-    else
-      continue;
-
-    if (ros::param::has(param_face_train_name_))
+    if (ros::param::has(param_face_train_name_)) {
       ros::param::get(param_face_train_name_, faceName_);
-    else
-      continue;
+    }
 
-    if (!nameAdded_) {
+    // Check if the request have authority
+    if (need_authority_ && !authenticated_ && faceName_ != "") {
+      ros::param::get(param_password_, password_);
+      if (!checkAuthority()) {
+        ROS_ERROR_THROTTLE(9, "Face train: Password is not correct.");
+        continue;
+      }
+      else
+        authenticated_ = true;
+    }
+
+    if (!nameAdded_ && faceName_ != "") {
       saveCurrentName();
       generateTrainList();
+      nameAdded_ = true;
     }
 
     ros::spinOnce();
 
-    // Capture images untill reach the desired number
-    if (!imageReady_)
-      continue;
+    bool needTrain = false;
+    if (ros::param::has(param_face_need_train_)) {
+      ros::param::get(param_face_need_train_, needTrain);
+    }
 
-    if (needTrain_) {
+    if (needTrain) {
       // Call training service
       drv_msgs::face_train srv;
 
+      bool faceTrainResult = false;
       if (client.call(srv)) {
-        faceTrainResult_ = true;
-        ROS_WARN("The training acc is %f.", srv.response.accuracy);
+        faceTrainResult = true;
       }
       else {
-        faceTrainResult_ = false;
+        faceTrainResult = false;
         ROS_ERROR("Failed to call face train service.");
       }
 
       std_msgs::Bool flag;
-      flag.data = faceTrainResult_;
+      flag.data = faceTrainResult;
       faceTrainPubStatus_.publish(flag);
 
       // Reset status if training successed
       resetStatus();
+      ros::param::set(param_face_need_train_, false);
+      faceTrainResult = false;
     }
   }
-
   return 0;
 }

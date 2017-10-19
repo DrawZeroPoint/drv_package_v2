@@ -2,6 +2,8 @@
 
   <arg name="vision_namespace" default="vision"/>
 
+  <arg name="need_authentication" default="true"/>
+
   <!-- initialize recognition service -->
   <node ns="$(arg vision_namespace)" name="drv_recognize" pkg="drv_recognize" type="drv_recognize.py" output="screen">
   </node>
@@ -20,9 +22,20 @@
   </node>
 
   <!-- initialize face training service -->
+  <node ns="$(arg vision_namespace)" name="drv_face_train_server" pkg="drv_face_train" type="face_train_server.py" output="screen">
+  </node>
 
+  <!-- initialize authentication service -->
+  <group if="$(arg need_authentication)">
+    <node name="ros_mac_authentication" pkg="drv_search" type="ros_mac_authentication" output="screen">
+    </node>
+  </group> 
 
   <!-- initialize face training client -->
+  <node ns="$(arg vision_namespace)" name="drv_face_train_client" pkg="drv_face_train" type="drv_face_train" output="screen">
+    <param name="image_num" value="100"/>
+    <param name="need_authentication_id" value="$(arg need_authentication)"/>
+  </node>
 
   <!-- initialize grasp planner -->
   <include file="$(find drv_brain)/launch/drv_gpd_port.launch">
