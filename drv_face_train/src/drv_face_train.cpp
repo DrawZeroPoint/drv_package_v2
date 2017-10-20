@@ -152,7 +152,7 @@ void saveImage(Mat image, int num)
 
 void imageCallback(const sensor_msgs::ImageConstPtr & image_msg)
 {
-  if (modeType_ != m_wander || faceName_ == "")
+  if (modeType_ != m_wander || !nameAdded_)
     return;
 
   imagePtr_ = cv_bridge::toCvCopy(image_msg, "bgr8");
@@ -213,6 +213,10 @@ bool checkAuthority()
     ROS_ERROR("Face train: Authentication server not actived.");
     return false;
   }
+  else {
+    if (!srv.response.authenticated)
+      ROS_ERROR_THROTTLE(9, "Face train: Password is not correct.");
+  }
   return srv.response.authenticated;
 }
 
@@ -263,10 +267,8 @@ int main(int argc, char **argv)
     // Check if the request have authority
     if (need_authority_ && !authenticated_ && faceName_ != "") {
       ros::param::get(param_password_, password_);
-      if (!checkAuthority()) {
-        ROS_ERROR_THROTTLE(9, "Face train: Password is not correct.");
+      if (!checkAuthority())
         continue;
-      }
       else
         authenticated_ = true;
     }
@@ -291,6 +293,7 @@ int main(int argc, char **argv)
       bool faceTrainResult = false;
       if (client.call(srv)) {
         faceTrainResult = true;
+        ROS_INFO("Face train: Finished training of face data.");
       }
       else {
         faceTrainResult = false;

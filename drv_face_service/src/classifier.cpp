@@ -26,13 +26,10 @@ void Classifier::SetupNetwork(const string& deploy_proto,
   caffe::Caffe::set_mode(caffe::Caffe::GPU);
 #endif
 
-  if (do_train) {
-    printf("Setting phase to train\n");
+  if (do_train)
     net_.reset(new Net<float>(deploy_proto, caffe::TRAIN));
-  } else {
-    printf("Setting phase to test\n");
+  else
     net_.reset(new Net<float>(deploy_proto, caffe::TEST));
-  }
 
   if (caffe_model != "NONE") {
     net_->CopyTrainedLayersFrom(caffe_model_);
@@ -157,10 +154,9 @@ void Classifier::GetFeatures(const string& feature_name, int &id, float &trust) 
   std::vector<float> featureList;
   featureList.resize(layer->offset(1));
 
-  for (int i=0;i<layer->offset(1);i++)
-  {
-    featureList[i]=begin[i];
-  }
+  for (int i = 0;i < layer->offset(1); i++)
+    featureList[i] = begin[i];
+
   std::vector<int> top_ids = Argmax(featureList, featureList.size());
   // only output the id with highest trust
   id = top_ids[0];

@@ -60,8 +60,7 @@ void resetStatus()
 
 void imgToSensorMsg(vector<Mat> face_imgs, vector<sensor_msgs::Image> &face_msgs)
 {
-  for (size_t i = 0; i < face_imgs.size(); i++)
-  {
+  for (size_t i = 0; i < face_imgs.size(); i++) {
     sensor_msgs::Image face_msg;
     cv_bridge::CvImage cv_face;
     cv_face.encoding = sensor_msgs::image_encodings::BGR8;
@@ -74,16 +73,15 @@ void imgToSensorMsg(vector<Mat> face_imgs, vector<sensor_msgs::Image> &face_msgs
 void drawText(Mat &img, vector<Rect> face_roi, vector<std_msgs::String> names)
 {
   // here we assume all rois contain face, known or unknown
-  if (face_roi.size() != names.size())
-  {
+  if (face_roi.size() != names.size()) {
     ROS_ERROR("Number of ROIs and names mismatch.");
     faceSearchResult_ = false;
     return;
   }
-  for (size_t i = 0; i < names.size(); i++)
-  {
+  for (size_t i = 0; i < names.size(); i++) {
     Scalar color = Scalar(0, 255, 0); // bgr order, don't miss 'Scalar'
-    putText(img, names[i].data, Point(face_roi[i].x + 20, face_roi[i].y + face_roi[i].height - 20),
+    putText(img, names[i].data,
+            Point(face_roi[i].x + 20, face_roi[i].y + face_roi[i].height - 20),
             1, 1, color, 2);
   }
   faceSearchResult_ = true;
@@ -122,7 +120,8 @@ int main(int argc, char **argv)
   image_transport::ImageTransport rgb_it(nh);
   facePubImage_ = rgb_it.advertise("search/labeled_image", 1);
 
-  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1, imageCallback, hints_rgb);
+  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1,
+                                                             imageCallback, hints_rgb);
 
   ros::ServiceClient client = nh.serviceClient<drv_msgs::face_recognize>("drv_face_service");
 

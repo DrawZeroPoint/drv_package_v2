@@ -11,8 +11,8 @@ char* drv_path_env = std::getenv("DRV");
 
 std::string drv_path_ = std::string(drv_path_env);
 
-std::string prototxt = drv_path_ + "/supplements/face_recognize/neu_face_deploy.prototxt";
-std::string caffemodel = drv_path_ + "/supplements/face_recognize/finetune_neu_face.caffemodel";
+std::string prototxt = drv_path_ + "/supplements/face_recognize/face_deploy.prototxt";
+std::string caffemodel = drv_path_ + "/supplements/face_recognize/face_deploy.caffemodel";
 ProcessFace pf_(prototxt, caffemodel, 0, false);
 
 float face_th_ = 0.9;
@@ -22,8 +22,7 @@ bool recognize_face(drv_msgs::face_recognize::Request  &req,
 {
   size_t im = req.images_in.size();
   vector<int> result_id;
-  for (size_t i = 0;i < im; i++)
-  {
+  for (size_t i = 0;i < im; i++) {
     cv_bridge::CvImagePtr src = cv_bridge::toCvCopy(req.images_in[i], "bgr8");
     int id = 0;
     float result_trust = 0.0;
@@ -49,14 +48,12 @@ int main(int argc, char **argv)
   pnh.getParam("face_likelihood", face_th_);
   
   std::ifstream f_pt(prototxt.c_str());
-  if (!f_pt)
-  {
+  if (!f_pt) {
     ROS_ERROR("Can not find prototxt for face detection.");
     return -1;
   }
   std::ifstream f_mo(caffemodel.c_str());
-  if (!f_mo)
-  {
+  if (!f_mo) {
     ROS_ERROR("Can not find caffemodel for face detection.");
     return -1;
   }
