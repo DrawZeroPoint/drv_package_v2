@@ -14,10 +14,12 @@ using namespace std;
 class ProcessFace
 {
 public:
+  ProcessFace();
   ProcessFace(string test_proto, string caffe_model, int gpu_id, bool do_train);
 
   void processFace(cv::Mat img_in, int &result_id, float &result_trust);
-
+  
+  void initClassifier(string test_proto, string caffe_model, int gpu_id);
 private:
   Classifier classifier_;
 };

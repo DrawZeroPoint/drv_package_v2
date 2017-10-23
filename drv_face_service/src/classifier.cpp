@@ -4,6 +4,11 @@ using caffe::Blob;
 using caffe::Net;
 using std::string;
 
+Classifier::Classifier()
+{
+  
+}
+
 Classifier::Classifier(const string& deploy_proto,
                        const string& caffe_model,
                        const int gpu_id,

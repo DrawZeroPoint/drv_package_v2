@@ -94,9 +94,8 @@ void saveCurrentName()
     std::string line;
 
     bool repeated = false;
-    int num = 0;
     while (std::getline(infile, line)) {
-      ++num;
+      ++currNameId_;
       nameVec_.push_back(line);
       if (line == faceName_) {
         ROS_WARN("Current name has already exist!");
@@ -112,7 +111,7 @@ void saveCurrentName()
       nameVec_.push_back(faceName_);
       outfile.close();
     }
-    currNameId_ = num;
+    --currNameId_;
   }
 }
 
@@ -235,12 +234,12 @@ int main(int argc, char **argv)
   image_transport::ImageTransport it_rgb_sub(rgb_nh);
   image_transport::TransportHints hints_rgb("compressed", ros::TransportHints(),
                                             rgb_pnh);
-  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("/camera/rgb/image_rect_color",
+  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("/vision/rgb/image_rect_color",
                                                              1, imageCallback,
                                                              hints_rgb);
-  //  image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color",
-  //                                                             1, imageCallback,
-  //                                                             hints_rgb);
+//    image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color",
+//                                                               1, imageCallback,
+//                                                               hints_rgb);
 
   faceTrainPubStatus_ = nh.advertise<std_msgs::Bool>("status/face/train/feedback", 1);
 

@@ -65,6 +65,7 @@ If you are in 2 machines configuration, which means you have 2 PCs and one of th
 
 ## 5. Trouble Shooting
 1. If custom message issue occurred when running catkin_make, run `catkin_make --pkg drv_msgs --force-cmake` first to make the msg header files needed, and then run `catkin_make`.
+2. If you can't run the python nodes, make sure they have authority to be executed.
  
 ## 6. Development details
 1. To demonstrate the status of the robot, we use full-color LEDs to show the status with these light code (std_msgs::UInt16) defination:

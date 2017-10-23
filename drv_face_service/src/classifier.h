@@ -15,6 +15,8 @@
 class Classifier
 {
 public:
+  Classifier();
+  
   Classifier(const std::string& train_deploy_proto,
              const std::string& caffe_model,
              const int gpu_id,

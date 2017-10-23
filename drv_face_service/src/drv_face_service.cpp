@@ -13,13 +13,21 @@ std::string drv_path_ = std::string(drv_path_env);
 
 std::string prototxt = drv_path_ + "/supplements/face_recognize/face_deploy.prototxt";
 std::string caffemodel = drv_path_ + "/supplements/face_recognize/face_deploy.caffemodel";
-ProcessFace pf_(prototxt, caffemodel, 0, false);
+
+ProcessFace pf_;
+bool pf_init = false;
 
 float face_th_ = 0.9;
 
 bool recognize_face(drv_msgs::face_recognize::Request  &req,
                     drv_msgs::face_recognize::Response &res)
 {
+  // Incase the model is not generated when initialize pf
+  if (!pf_init) {
+    pf_.initClassifier(prototxt, caffemodel, 0);
+    pf_init = true;
+  }
+  
   size_t im = req.images_in.size();
   vector<int> result_id;
   for (size_t i = 0;i < im; i++) {
@@ -46,17 +54,6 @@ int main(int argc, char **argv)
   ros::NodeHandle pnh("~");
   
   pnh.getParam("face_likelihood", face_th_);
-  
-  std::ifstream f_pt(prototxt.c_str());
-  if (!f_pt) {
-    ROS_ERROR("Can not find prototxt for face detection.");
-    return -1;
-  }
-  std::ifstream f_mo(caffemodel.c_str());
-  if (!f_mo) {
-    ROS_ERROR("Can not find caffemodel for face detection.");
-    return -1;
-  }
   
   ros::ServiceServer service = n.advertiseService("drv_face_service", recognize_face);
   ROS_INFO("Ready to recognize face.");
