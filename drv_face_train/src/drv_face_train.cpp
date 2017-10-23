@@ -31,11 +31,9 @@ using namespace cv;
 
 char* drv_path_env = std::getenv("DRV");
 
-std::string drv_path_ = std::string(drv_path_env);
+string drv_path_ = string(drv_path_env) + "/supplements/face_recognize/";
 
-string image_path_ = drv_path_ + "/supplements/face_recognize/images/";
-std::string prototxt = drv_path_ + "/supplements/face_recognize/neu_face_deploy.prototxt";
-std::string caffemodel = drv_path_ + "/supplements/face_recognize/finetune_neu_face.caffemodel";
+string image_path_ = drv_path_ + "images/";
 
 ros::Publisher faceTrainPubStatus_;
 
@@ -83,7 +81,7 @@ void resetStatus()
 
 void saveCurrentName()
 {
-  string file = drv_path_ + "/supplements/face_recognize/names.txt";
+  string file = drv_path_ + "names.txt";
   if (!boost::filesystem::exists(file)) {
     std::ofstream outfile(file.c_str());
     outfile << faceName_;
@@ -126,7 +124,7 @@ void generateTrainList()
     /caffe/data/images/8.jpg 1
   */
   assert(nameVec_.size() == currNameId_ + 1);
-  string train_list = drv_path_ + "/supplements/face_recognize/train.txt";
+  string train_list = drv_path_ + "train.txt";
   ofstream outfile(train_list.c_str(), ofstream::trunc);
 
   for (size_t k = 0; k < image_num_; ++k) {

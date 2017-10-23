@@ -2,8 +2,8 @@
 
 FaceDetector::FaceDetector(string path)
 {
-  cascade_.load(path + "/supplements/face_recognize/haarcascade_frontalface_alt.xml");
-  nestedCascade_.load(path + "/supplements/face_recognize/haarcascade_eye_tree_eyeglasses.xml");
+  cascade_.load(path + "haarcascade_frontalface_alt.xml");
+  nestedCascade_.load(path + "haarcascade_eye_tree_eyeglasses.xml");
 }
 
 bool FaceDetector::countFace(Mat img_in, Mat &img_out)
