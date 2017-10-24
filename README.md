@@ -61,7 +61,15 @@ If you are in 2 machines configuration, which means you have 2 PCs and one of th
 5. Target can be assigned by setting the rosparam: `rosparam set /comm/control/target/label bottle`, `rosparam set /comm/control/target/is_set true`, the order of these settings should not be changed. Here the 'bottle' refers to the target label and can be changed to 'chair', 'person', etc. as long as it belongs to Pascal_VOC categories. FYI, the target setting function as well as more useful functions can be easily realized with [JARVIS](https://github.com/NEU-TEAM/JARVIS), which is an Android app for controlling the NEU household robot. Till now it only supports Android 6.0+.
 6. With the target set, the system will automatically run in *search mode* and find the target in the scene. When some objects which likely to be the target were found, the system will request user select to judge the candidates and decide whether continuing searching the target or tracking the selected target. If the target is confirmed, the system will run in *tracking mode* in which the location of the target in 3D space will be generated for manipulating the target.
 7. By setting the target *is_set* param to be *false*, the system will run in *wander mode* and do nothing.
-8. You can recognize face in the scene by setting the params: `rosparam set /comm/control/target/label face`, `rosparam set /comm/control/target/is_set true`. Notice that this only happens in *wander mode*. With these params set, the system will use model described in 1.6 to detect faces. You can also train on your own dataset by capturing face image online. To do that, you need set param: `rosparam set /vision/face/need_train true` and `rosparam set /vision/face/train/name NAME`. Replace NAME with the actual name of that person. After that, the person shall stand in front of the camera and 100 face images will be captured by default. The training will then be performed. Notice that this all run in GPU workstation. If you use password, you may set it by `rosparam set /password PASSWORD`, the default password is 'admin' which stored in 'DRV/supplements/password'
+8. You can recognize face in the scene by setting the params: 
+`rosparam set /comm/control/target/label face`, `rosparam set /comm/control/target/is_set true`. 
+Notice that this only happens in *wander mode*. With these params set, the system will use model described in 1.6 to detect faces. 
+9. You can also train on your own dataset by capturing face image online. To do that, First you need set param to capture images: 
+`rosparam set /vision/face/train/name NAME`. 
+Replace NAME with the actual name of that person. After that, the person shall stand in front of the camera and 100 face images will be captured by default. 
+Then you can perform training by set param:
+`rosparam set /vision/face/need_train true` 
+and the training will then be performed. Notice that this all run in GPU workstation. If you use password, you may set it by `rosparam set /password PASSWORD`, the default password is 'admin' which stored in 'DRV/supplements/password'
 
 ## 5. Trouble Shooting
 1. If custom message issue occurred when running catkin_make, run `catkin_make --pkg drv_msgs --force-cmake` first to make the msg header files needed, and then run `catkin_make`.

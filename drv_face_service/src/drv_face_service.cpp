@@ -14,7 +14,7 @@ std::string drv_path_ = std::string(drv_path_env);
 std::string prototxt = drv_path_ + "/supplements/face_recognize/face_deploy.prototxt";
 std::string caffemodel = drv_path_ + "/supplements/face_recognize/face_deploy.caffemodel";
 
-ProcessFace pf_;
+ProcessFace pf_(prototxt, caffemodel, 0, false);
 bool pf_init = false;
 
 float face_th_ = 0.9;
@@ -23,10 +23,10 @@ bool recognize_face(drv_msgs::face_recognize::Request  &req,
                     drv_msgs::face_recognize::Response &res)
 {
   // Incase the model is not generated when initialize pf
-  if (!pf_init) {
-    pf_.initClassifier(prototxt, caffemodel, 0);
-    pf_init = true;
-  }
+//  if (!pf_init) {
+//    pf_.initClassifier(prototxt, caffemodel, 0);
+//    pf_init = true;
+//  }
   
   size_t im = req.images_in.size();
   vector<int> result_id;

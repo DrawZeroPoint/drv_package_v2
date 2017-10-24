@@ -23,6 +23,7 @@
 
   <!-- initialize face training service -->
   <node ns="$(arg vision_namespace)" name="drv_face_train_server" pkg="drv_face_train" type="face_train_server.py" output="screen">
+    <param name="iter_num" value="20"/>
   </node>
 
   <!-- initialize authentication service -->

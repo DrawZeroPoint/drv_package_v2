@@ -3,7 +3,7 @@ project(drv_face_service)
 
 aux_source_directory(./src SRC_LIST)
 
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Debug")
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
     message(STATUS "No build type selected, default to ${CMAKE_BUILD_TYPE}")
