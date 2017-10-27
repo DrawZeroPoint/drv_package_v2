@@ -20,7 +20,7 @@ def train_server():
     s = rospy.Service('face_train_service', face_train, handle_train)
     i_n = rospy.get_param('iter_num')
     ps.set_param(i_n)
-    print "Ready to train face."
+    print "Ready to train face. The iteration number is %d", i_n
     rospy.spin()
 
 

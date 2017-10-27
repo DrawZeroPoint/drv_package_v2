@@ -64,7 +64,7 @@ int modeType_ = m_wander;
 
 string param_running_mode = "/status/running_mode";
 
-bool hasGraspPlan_ = false;
+bool hasGraspPlan_ = false; // for output grasp info 
 bool posePublished_ = false; // only works in simple mode
 
 // marker type
@@ -83,6 +83,16 @@ int idx_;
 int row_;
 int col_;
 
+/* The graspable area of robot left arm, 
+ * relative to base_link, in meter */
+float x_min_ = 0.4;
+float x_max_ = 0.6;
+float y_min_ = 0.2;
+float y_max_ = 0.35;
+
+/* This location will be published if the target is out of range
+   This describe the offset x, y value to be adjusted, z and 
+   orientation are not used */
 ros::Publisher graspPubLocation_;
 
 float fx_ = 538.77;
@@ -109,7 +119,7 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
   posePublished_ = false;
   
 #ifdef USE_CENTER
-  // directly use center as tgt location
+  // Directly use bbox center as tgt location
   idx_ = msg->tgt_bbox_center.data[0] + msg->tgt_bbox_center.data[1] * 640;
   row_ = msg->tgt_bbox_center.data[1];
   col_ = msg->tgt_bbox_center.data[0];
@@ -177,13 +187,49 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
 }
 
 #ifdef USE_CENTER
-void doTransform(pcl::PointXYZ p_in, pcl::PointXYZ &p_out, const geometry_msgs::TransformStamped& t_in)
+bool isInGraspRange(pcl::PointXYZ graspPt, 
+                    geometry_msgs::PoseStamped &offset)
 {
-  Eigen::Transform<float,3,Eigen::Affine> t = Eigen::Translation3f(t_in.transform.translation.x,
-                                                                   t_in.transform.translation.y,
-                                                                   t_in.transform.translation.z)
-      * Eigen::Quaternion<float>(t_in.transform.rotation.w, t_in.transform.rotation.x,
-                                 t_in.transform.rotation.y, t_in.transform.rotation.z);
+  // Upper value
+  float x_off_u = graspPt.x - x_max_;
+  float y_off_u = graspPt.y - y_max_;
+  // Lower value
+  float x_off_l = graspPt.x - x_min_;
+  float y_off_l = graspPt.y - y_min_;
+  
+  if (x_off_u > 0)
+    offset.pose.position.x = x_off_u; // foreward
+  else if (x_off_l < 0)
+    offset.pose.position.x = x_off_l; // backward
+  else
+    offset.pose.position.x = 0;
+  
+  if (y_off_u > 0)
+    offset.pose.position.y = y_off_u;
+  else if (y_off_l < 0)
+    offset.pose.position.y = y_off_l;
+  else
+    offset.pose.position.y = 0;
+  
+  if (offset.pose.position.x == 0 &&
+      offset.pose.position.y == 0)
+    return true;
+  else 
+    return false;
+}
+
+
+void doTransform(pcl::PointXYZ p_in, pcl::PointXYZ &p_out, 
+                 const geometry_msgs::TransformStamped& t_in)
+{
+  Eigen::Transform<float,3,Eigen::Affine> t = 
+      Eigen::Translation3f(t_in.transform.translation.x,   
+                           t_in.transform.translation.y,
+                           t_in.transform.translation.z) * 
+      Eigen::Quaternion<float>(t_in.transform.rotation.w, 
+                               t_in.transform.rotation.x,
+                               t_in.transform.rotation.y, 
+                               t_in.transform.rotation.z);
   
   Eigen::Vector3f point;
   
@@ -220,32 +266,48 @@ void depthCallback(
   
   MakePlan MP;
   
-  pcl::PointXYZ graspPt; // target center in robot's referance frame
-  pcl::PointXYZ opticalPt; // target center in camera optical frame
+  pcl::PointXYZ graspPt; // target xyz center in robot's referance frame
+  pcl::PointXYZ opticalPt; // target xyz center in camera optical frame
   
+  // Get opticalPt and transfer to graspPt
   if (GetSourceCloud::getPoint(imageDepthPtr->image, row_, col_,
-                               fx_, fy_, cx_, cy_, max_depth_, min_depth_, opticalPt))
+                               fx_, fy_, cx_, cy_, 
+                               max_depth_, min_depth_, opticalPt))
   {
     doTransform(opticalPt, graspPt, trans_c_);
     MP.smartOffset(graspPt, 0.02); //TODO: make this smart
     
     publishMarker(graspPt.x, graspPt.y, graspPt.z, imageDepth->header);
     
-    geometry_msgs::PoseStamped grasp_ps;
-    grasp_ps.header.frame_id = base_frame_;
-    grasp_ps.header.stamp = imageDepth->header.stamp;
-    grasp_ps.pose.position.x = graspPt.x;
-    grasp_ps.pose.position.y = graspPt.y;
-    grasp_ps.pose.position.z = graspPt.z;
-    //    grasp_ps.pose.orientation.w = sqrt(0.5); // to rotate x axis to z axis, so the rotation angle = -90 deg
-    //    grasp_ps.pose.orientation.x = 0;
-    //    grasp_ps.pose.orientation.y = -sqrt(0.5);
-    //    grasp_ps.pose.orientation.z = 0;
-    grasp_ps.pose.orientation.w = 1;
-    grasp_ps.pose.orientation.x = 0;
-    grasp_ps.pose.orientation.y = 0;
-    grasp_ps.pose.orientation.z = 0;
-    graspPubPose_.publish(grasp_ps);
+    /* Judge if the graspPt is within the graspable area, if so,
+     * publish the pose via graspPubPose_, otherwise, 
+     * publish the adjustment value via graspPubLocation_ */
+    geometry_msgs::PoseStamped offset;
+    bool in_range = isInGraspRange(graspPt, offset);
+    if (in_range) {
+      geometry_msgs::PoseStamped grasp_ps;
+      grasp_ps.header.frame_id = base_frame_;
+      grasp_ps.header.stamp = imageDepth->header.stamp;
+      grasp_ps.pose.position.x = graspPt.x;
+      grasp_ps.pose.position.y = graspPt.y;
+      grasp_ps.pose.position.z = graspPt.z;
+      
+      grasp_ps.pose.orientation.w = 1;
+      grasp_ps.pose.orientation.x = 0;
+      grasp_ps.pose.orientation.y = 0;
+      grasp_ps.pose.orientation.z = 0;
+      graspPubPose_.publish(grasp_ps);
+    }
+    else {
+      offset.header.frame_id = base_frame_;
+      offset.header.stamp = imageDepth->header.stamp;
+      offset.pose.position.z = 0;
+      offset.pose.orientation.w = 1;
+      offset.pose.orientation.x = 0;
+      offset.pose.orientation.y = 0;
+      offset.pose.orientation.z = 0;
+      graspPubLocation_.publish(offset);
+    }
     
     hasGraspPlan_ = true;
     posePublished_ = true;
