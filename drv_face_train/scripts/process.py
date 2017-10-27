@@ -132,7 +132,7 @@ def face_net(train=True, learn_all=False, subset=None):
     face_data, face_label = L.ImageData(
         transform_param=transform_param, source=ss, shuffle=True,
         batch_size=10, new_height=224, new_width=224, ntop=2)
-    
+
     return vgg_face_net(data=face_data, label=face_label, train=train,
                         num_classes=num_names,
                         classifier_name='fc8_'+str(num_names),
