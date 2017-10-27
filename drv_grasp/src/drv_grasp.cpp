@@ -476,6 +476,12 @@ int main(int argc, char **argv)
   pnh.getParam("camera_optical_frame_id", camera_optical_frame_);
   pnh.getParam("pub_pose_once_id", pub_pose_once_);
   
+  // Get left arm movable area params
+  pnh.getParam("left_arm_x_min", x_min_);
+  pnh.getParam("left_arm_y_min", y_min_);
+  pnh.getParam("left_arm_x_max", x_max_);
+  pnh.getParam("left_arm_y_max", y_max_);
+  
   graspPubStatus_ = nh.advertise<std_msgs::Bool>("status/grasp/feedback", 1);
   graspPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/pose", 1);
   graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("grasp/marker", 1);

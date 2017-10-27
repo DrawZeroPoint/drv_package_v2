@@ -125,10 +125,14 @@ def face_net(train=True, learn_all=False, subset=None):
     ss = dir_prefix + '%s.txt' % subset
 
     transform_param = dict(mirror=train, crop_size=224)
-    # actually set images and labels here
+
+    # Create ImageData layer here
+    # Set images and labels by source=ss
+    # Use shuffle=True to disorganize the data
     face_data, face_label = L.ImageData(
-        transform_param=transform_param, source=ss,
+        transform_param=transform_param, source=ss, shuffle=True,
         batch_size=10, new_height=224, new_width=224, ntop=2)
+    
     return vgg_face_net(data=face_data, label=face_label, train=train,
                         num_classes=num_names,
                         classifier_name='fc8_'+str(num_names),

@@ -3,10 +3,9 @@
 FaceDetector::FaceDetector(string path)
 {
   cascade_.load(path + "haarcascade_frontalface_alt.xml");
-  nestedCascade_.load(path + "haarcascade_eye_tree_eyeglasses.xml");
 }
 
-bool FaceDetector::countFace(Mat img_in, Mat &img_out)
+bool FaceDetector::getOneFace(Mat img_in, Mat &img_out)
 {
   vector<Rect> faces;
   Mat gray(img_in.size(), img_in.type());
@@ -17,15 +16,27 @@ bool FaceDetector::countFace(Mat img_in, Mat &img_out)
   cascade_.detectMultiScale(gray, faces, 1.1, 3, 0);
 
   if (faces.size() == 1) {
-    Rect rect_temp;
-    Mat img_temp;
-    if (trySquareRoi(img_in, faces[0], rect_temp)) {
-      img_temp = img_in(rect_temp);
-      resize(img_temp, img_out, Size(224, 224));
+    // Make sure the detected face is on center of image
+    if (isOnCenter(faces[0], img_in)) {
+      img_out = img_in(faces[0]);
       return true;
     }
     else
       return false;
+  }
+  else
+    return false;
+}
+
+bool FaceDetector::isOnCenter(Rect rect, Mat img_in)
+{
+  int w = img_in.cols;
+  int h = img_in.rows;
+  float c_x = rect.x + rect.width / 2;
+  float c_y = rect.y + rect.height / 2;
+  if (fabs(c_x - w/2) < w/4 &&
+      fabs(c_y - h/2) < h/4) {
+    return true;
   }
   else
     return false;
