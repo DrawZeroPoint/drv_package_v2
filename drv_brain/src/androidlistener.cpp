@@ -35,7 +35,7 @@ void AndroidListener::roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi
     rt_.tgt_bbox_center.data.push_back((array.data[0] + array.data[2])/2);
     rt_.tgt_bbox_center.data.push_back((array.data[1] + array.data[3])/2);
     targetNeedPub_ = true;
-    ROS_INFO("User selected target received.\n");
+    ROS_INFO("User selected target received.");
   }
   else
     targetNeedPub_ = false;

@@ -24,14 +24,21 @@ using namespace std;
 
 /* global params */
 // feedback
-string param_vision_feedback = "/comm/param/feedback/vision/overall"; // 0:not working, 1:working, 2:failed, 3:finished with success
-string param_vision_feedback_mode = "/comm/param/feedback/vision/mode"; // 0:wandering, 1:searching, 2:tracking
-string param_vision_feedback_search = "/comm/param/feedback/vision/search"; // 0:no search, 1:found, -1:current not found. -2:around not found
-string param_vision_feedback_track = "/comm/param/feedback/vision/track"; // 0:no track, 1:tracking, -1:lost
-string param_vision_feedback_grasp = "/comm/param/feedback/vision/grasp"; // 0:no grasp, 1:found location, -1:can't find location
-string param_vision_feedback_face = "/comm/param/feedback/vision/face"; // 0:no face recognize, 1:found faces, -1:failed to recognize
+// 0:not working, 1:working, 2:failed, 3:finished with success
+string param_vision_feedback = "/comm/param/feedback/vision/overall";
+// 0:wandering, 1:searching, 2:tracking
+string param_vision_feedback_mode = "/comm/param/feedback/vision/mode"; 
+// 0:no search, 1:found, -1:current not found. -2:around not found
+string param_vision_feedback_search = "/comm/param/feedback/vision/search";
+// 0:no track, 1:tracking, -1:lost
+string param_vision_feedback_track = "/comm/param/feedback/vision/track"; 
+// 0:no grasp, 1:found location, -1:can't find location
+string param_vision_feedback_grasp = "/comm/param/feedback/vision/grasp";
+// 0:no face recognize, 1:found faces, -1:failed to recognize
+string param_vision_feedback_face = "/comm/param/feedback/vision/face"; 
 // vision shared
-string param_vision_shared_switch = "/comm/param/shared/vision/switch"; // true:switch on to execute tasks, false:switch off and run in wander mode
+// true:switch on to execute tasks, false:switch off and run in wander mode
+string param_vision_shared_switch = "/comm/param/shared/vision/switch"; 
 
 bool centralSwitch_ = true; // main switch
 
@@ -39,7 +46,8 @@ bool centralSwitch_ = true; // main switch
 bool targetSetTemp_ = false;
 string param_target_label = "/vision/target/label";
 enum TargetType{t_null, t_onTable, t_onGround, t_onHead, t_onHand};
-string targetTypeName[5] = {"in air", "on the table", "on the ground", "on the face", "in the hand"};
+string targetTypeName[5] = {"in air", "on the table", "on the ground", 
+                            "on the face", "in the hand"};
 int tgtType_ = t_null;
 string param_target_type = "/status/target/type";
 
@@ -247,12 +255,12 @@ int main(int argc, char **argv)
       bool temp = true;
       ros::param::get(param_vision_shared_switch, temp);
       if (temp)
-        ROS_WARN_COND(!centralSwitch_, "Central switch is ON.\n");
+        ROS_WARN_COND(!centralSwitch_, "Central switch is ON.");
       centralSwitch_ = temp;
     }
 
     if (!centralSwitch_) {
-      ROS_WARN_THROTTLE(9, "Central switch is OFF.\n");
+      ROS_WARN_THROTTLE(9, "Central switch is OFF.");
       resetStatus();
       continue;
     }
@@ -261,7 +269,7 @@ int main(int argc, char **argv)
     if (!servo_initialized_) {
       pubServo(90, 90);
       servo_initialized_ = true;
-      ROS_INFO("Servo initialized.\n");
+      ROS_INFO("Servo initialized.");
     }
 
     // get feedback from search and track to determine is target found
@@ -314,7 +322,7 @@ int main(int argc, char **argv)
       std_msgs::String mode_msg;
       mode_msg.data = modeName[modeType_];
       drvPubMode_.publish(mode_msg);
-      ROS_INFO("Current mode: %s.\n", modeName[modeType_].c_str());
+      ROS_INFO("Current mode: %s.", modeName[modeType_].c_str());
       modeTypeTemp_ = modeType_;
     }
   }
