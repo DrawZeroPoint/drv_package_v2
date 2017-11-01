@@ -5,6 +5,8 @@
 
 #include <std_msgs/UInt16MultiArray.h>
 
+using namespace std;
+
 class SmoothServo
 {
 public:
@@ -21,7 +23,7 @@ private:
   ros::NodeHandle nh;
   ros::Publisher servoPubSearch_;
 
-  bool smooth(std::vector<std::vector<int> > &path, int p, int y);
+  bool smooth(vector<vector<int> > &path, int p, int y);
 
 };
 

@@ -51,7 +51,7 @@
  * its grasp pose, otherwise, use the target's point cloud together with gpd to get
  * its grasp pose. https://github.com/atenpas/gpd
  */
-#define USE_CENTER
+//#define USE_CENTER
 
 class MakePlan
 {

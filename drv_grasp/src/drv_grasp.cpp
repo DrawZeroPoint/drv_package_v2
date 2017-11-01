@@ -78,12 +78,7 @@ geometry_msgs::TransformStamped trans_c_;
 
 bool pub_pose_once_ = false;
 
-#ifdef USE_CENTER
-int idx_;
-int row_;
-int col_;
-
-/* The graspable area of robot left arm, 
+/* The graspable area of robot left arm,
  * relative to base_link, in meter */
 float x_min_ = 0.4;
 float x_max_ = 0.6;
@@ -91,9 +86,14 @@ float y_min_ = 0.2;
 float y_max_ = 0.35;
 
 /* This location will be published if the target is out of range
-   This describe the offset x, y value to be adjusted, z and 
+   This describe the offset x, y value to be adjusted, z and
    orientation are not used */
 ros::Publisher graspPubLocation_;
+
+#ifdef USE_CENTER
+int idx_;
+int row_;
+int col_;
 
 float fx_ = 538.77;
 float fy_ = 540.23;
@@ -186,39 +186,38 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
   graspPubMarker_.publish(marker);
 }
 
-#ifdef USE_CENTER
-bool isInGraspRange(pcl::PointXYZ graspPt, 
+bool isInGraspRange(float x, float y, float z,
                     geometry_msgs::PoseStamped &offset)
 {
   // Upper value
-  float x_off_u = graspPt.x - x_max_;
-  float y_off_u = graspPt.y - y_max_;
+  float x_off_u = x - x_max_;
+  float y_off_u = y - y_max_;
   // Lower value
-  float x_off_l = graspPt.x - x_min_;
-  float y_off_l = graspPt.y - y_min_;
-  
+  float x_off_l = x - x_min_;
+  float y_off_l = y - y_min_;
+
   if (x_off_u > 0)
     offset.pose.position.x = x_off_u; // foreward
   else if (x_off_l < 0)
     offset.pose.position.x = x_off_l; // backward
   else
     offset.pose.position.x = 0;
-  
+
   if (y_off_u > 0)
     offset.pose.position.y = y_off_u;
   else if (y_off_l < 0)
     offset.pose.position.y = y_off_l;
   else
     offset.pose.position.y = 0;
-  
+
   if (offset.pose.position.x == 0 &&
       offset.pose.position.y == 0)
     return true;
-  else 
+  else
     return false;
 }
 
-
+#ifdef USE_CENTER
 void doTransform(pcl::PointXYZ p_in, pcl::PointXYZ &p_out, 
                  const geometry_msgs::TransformStamped& t_in)
 {
@@ -283,7 +282,7 @@ void depthCallback(
      * publish the pose via graspPubPose_, otherwise, 
      * publish the adjustment value via graspPubLocation_ */
     geometry_msgs::PoseStamped offset;
-    bool in_range = isInGraspRange(graspPt, offset);
+    bool in_range = isInGraspRange(graspPt.x, graspPt.y, graspPt.z, offset);
     if (in_range) {
       geometry_msgs::PoseStamped grasp_ps;
       grasp_ps.header.frame_id = base_frame_;
@@ -402,7 +401,7 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
   pcl::fromROSMsg(*msg, *cloud_in);
   getCloudByInliers(cloud_in, cloud_filted, inliers_, false, false);
   
-  // Convert point clound inliers into base frame
+  // Convert point cloud inliers into base frame
   doTransform(cloud_filted, cloud_trans, trans_c_);
   
   // Publish filted cloud for gpd
@@ -443,22 +442,44 @@ void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
   grasp_pose.pose.position.x = grasp_max_score.bottom.x;
   grasp_pose.pose.position.y = grasp_max_score.bottom.y;
   grasp_pose.pose.position.z = grasp_max_score.bottom.z;
-  
-  // use default orientation, 
-  // by which the coord of hand is identical to the base
-  //  grasp_ps.pose.orientation.w = 1;
-  //  grasp_ps.pose.orientation.x = 0;
-  //  grasp_ps.pose.orientation.y = 0;
-  //  grasp_ps.pose.orientation.z = 0;
-  
-  // use orientation calculated by gpd
-  getOrientation(grasp_max_score, grasp_pose.pose.orientation);
-  
-  graspPubPose_.publish(grasp_pose);
+
+  geometry_msgs::PoseStamped offset;
+  bool in_range = isInGraspRange(grasp_pose.pose.position.x,
+                                 grasp_pose.pose.position.y,
+                                 grasp_pose.pose.position.z,
+                                 offset);
+  if (in_range) {
+    grasp_pose.header.frame_id = base_frame_;
+    grasp_pose.header.stamp = msg->header.stamp;
+
+    /* Use default orientation, which indicates that the
+     * hand's coord is identical to the base */
+    //grasp_ps.pose.orientation.w = 1;
+    //grasp_ps.pose.orientation.x = 0;
+    //grasp_ps.pose.orientation.y = 0;
+    //grasp_ps.pose.orientation.z = 0;
+
+    // Get orientation from message calculated by gpd
+    getOrientation(grasp_max_score, grasp_pose.pose.orientation);
+
+    graspPubPose_.publish(grasp_pose);
+  }
+  else {
+    offset.header.frame_id = base_frame_;
+    offset.header.stamp = msg->header.stamp;
+
+    // Set the rest values in offset
+    offset.pose.position.z = 0;
+    offset.pose.orientation.w = 1;
+    offset.pose.orientation.x = 0;
+    offset.pose.orientation.y = 0;
+    offset.pose.orientation.z = 0;
+    graspPubLocation_.publish(offset);
+  }
   
   // Publish marker of grasp pose
-  publishMarker(grasp.bottom.x, grasp.bottom.y,
-                grasp.bottom.z, msg->header);
+  publishMarker(grasp_max_score.bottom.x, grasp_max_score.bottom.y,
+                grasp_max_score.bottom.z, msg->header);
   
   hasGraspPlan_ = true;
   posePublished_ = true;
@@ -484,15 +505,13 @@ int main(int argc, char **argv)
   
   graspPubStatus_ = nh.advertise<std_msgs::Bool>("status/grasp/feedback", 1);
   graspPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/pose", 1);
+  graspPubLocation_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/location", 1);
   graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("grasp/marker", 1);
   
   ros::Subscriber sub_track = nh.subscribe<drv_msgs::recognized_target>("track/recognized_target",
                                                                         1, trackResultCallback);
   
 #ifdef USE_CENTER
-  graspPubLocation_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/location", 1);
-  
-  // sub images to get point coordinate
   int queueSize = 3;
   image_transport::SubscriberFilter imageDepthSub_;
   message_filters::Subscriber<sensor_msgs::CameraInfo> cameraInfoSub_;

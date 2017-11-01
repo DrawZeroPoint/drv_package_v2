@@ -80,6 +80,8 @@ and the training will then be performed. Notice that this all run in GPU worksta
 0: normal (green)
 1: warning (yellow) 2: error (red) 3: fatal error (red flash)
 10: fully bright (white) 11: extinguished (black) 12: breathing light (flashing purple)
+To set the status, message should be published to '/vision/error'
+2. The servo angles are published to /vision/servo, and transfered to /vision/motor which directly received by servos. These messages are in `std_msgs::UInt16MultiArray` format and the vector can contain 2, 3 or 4 parameters, including [pitch_angle, yaw_angle], [pitch_angle, yaw_angle, speed_for_both] or [pitch_angle, yaw_angle, pitch_speed, yaw_speed]. The pitch angle is in range [60, 140], and yaw angle is in range [0, 180]. You can publish the message like this: `rostopic pub /vision/servo std_msgs/UInt16MultiArray '{data: [90, 90]}' --once`, you should not directly publish to `/vision/motor`.
 
 ## Author
 [Zhipeng Dong](https://github.com/DrawZeroPoint) zhipengdongneu@gmail.com (Discussion about this program is welcome) 

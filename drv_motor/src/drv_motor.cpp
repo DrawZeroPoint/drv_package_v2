@@ -18,7 +18,7 @@
 
 using namespace std;
 
-// publish motor control params
+// Publish motor control params
 ros::Publisher motorPub_;
 
 const float pi = 3.14159265359;
@@ -52,7 +52,8 @@ void setBoundary(int &pitch_angle, int &yaw_angle)
   else if (yaw_angle < 0) yaw_angle = 0.0;
 }
 
-void motorPublish(int pitch_angle, int yaw_angle, int pitch_speed, int yaw_speed)
+void motorPublish(int pitch_angle, int yaw_angle,
+                  int pitch_speed, int yaw_speed)
 {
   std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch_angle);
@@ -64,7 +65,7 @@ void motorPublish(int pitch_angle, int yaw_angle, int pitch_speed, int yaw_speed
 
 void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
 {
-  // this callback should always active
+  // This callback should always active
   int pitchAngle = 90;
   int yawAngle = 90;
   int pitchSpeed = 50;
@@ -86,7 +87,7 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
     yawSpeed = msg->data[3];
   }
   else {
-    ROS_WARN_THROTTLE(11, "Servo message has wrong number of params.");
+    ROS_WARN_THROTTLE(11, "Servo params invalid.");
   }
 
   setBoundary(pitchAngle, yawAngle);
@@ -102,7 +103,7 @@ int main(int argc, char **argv)
   motorPub_ = nh.advertise<std_msgs::UInt16MultiArray>("motor", 1, true);
 
   // This node should be launched in namespace /vision
-  ros::Subscriber sub_servo_cmd = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 2, servoCallback);
+  ros::Subscriber sub_servo_cmd = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
 
   while (ros::ok())
   {
