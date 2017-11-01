@@ -26,33 +26,34 @@ CLASSES = ('__background__',
            'motorbike', 'person', 'plant',
            'sheep', 'sofa', 'train', 'tv')
 
-dir_prefix = os.environ['DRV'] + '/supplements/object_recognize/'
-prototxt = dir_prefix + 'faster_rcnn_test.pt'
-caffemodel = dir_prefix + 'VGG16_faster_rcnn_final.caffemodel'
-
 use_gpu = True
+cfg.TEST.HAS_RPN = True  # Use RPN for proposals
+
 if use_gpu:
     caffe.set_mode_gpu()
     caffe.set_device(0)
     cfg.GPU_ID = 0
 else:
     caffe.set_mode_cpu()
+
+dir_prefix = os.environ['DRV'] + '/supplements/object_recognize/'
+
+if "DRV" not in os.environ:
+    print "Can not find environment variable DRV."
+
+prototxt = dir_prefix + 'faster_rcnn_test.pt'
+caffemodel = dir_prefix + 'VGG16_faster_rcnn_final.caffemodel'
+
+if os.path.isfile(prototxt) and os.path.isfile(caffemodel):
+    print 'Found Caffe prototxt and model.'
+else:
+    print 'Caffe prototxt or model not found!'
+
 net = caffe.Net(prototxt, caffemodel, caffe.TEST)
 
 
 def process(im):
     result = []
-
-    cfg.TEST.HAS_RPN = True  # Use RPN for proposals
-    if "DRV" not in os.environ:
-        print "Can't find environment variable DRV."
-        return result
-
-    if os.path.isfile(prototxt) and os.path.isfile(caffemodel):
-        print 'Found Caffe prototxt and model.'
-    else:
-        print 'Caffe prototxt or model not found!'
-        return result
 
     global net
     scores, boxes = im_detect(net, im)
@@ -77,8 +78,6 @@ def process(im):
 
             instance = [bbox, score, cls]
             result.append(instance)
-            # result += str(int(bbox[0])) + ',' + str(int(bbox[1])) + ',' + str(int(bbox[2])) + ',' + str(
-            #     int(bbox[3])) + ',' + str(cls) + ','
 
     print result
     return result
