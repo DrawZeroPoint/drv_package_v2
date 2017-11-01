@@ -26,6 +26,19 @@ CLASSES = ('__background__',
            'motorbike', 'person', 'plant',
            'sheep', 'sofa', 'train', 'tv')
 
+dir_prefix = os.environ['DRV'] + '/supplements/object_recognize/'
+prototxt = dir_prefix + 'faster_rcnn_test.pt'
+caffemodel = dir_prefix + 'VGG16_faster_rcnn_final.caffemodel'
+
+use_gpu = True
+if use_gpu:
+    caffe.set_mode_gpu()
+    caffe.set_device(0)
+    cfg.GPU_ID = 0
+else:
+    caffe.set_mode_cpu()
+net = caffe.Net(prototxt, caffemodel, caffe.TEST)
+
 
 def process(im):
     result = []
@@ -35,25 +48,13 @@ def process(im):
         print "Can't find environment variable DRV."
         return result
 
-    dir_prefix = os.environ['DRV'] + '/supplements/object_recognize/'
-    prototxt = dir_prefix + 'faster_rcnn_test.pt'
-    caffemodel = dir_prefix + 'VGG16_faster_rcnn_final.caffemodel'
-
     if os.path.isfile(prototxt) and os.path.isfile(caffemodel):
         print 'Found Caffe prototxt and model.'
     else:
         print 'Caffe prototxt or model not found!'
         return result
 
-    use_gpu = True
-    if use_gpu:
-        caffe.set_mode_gpu()
-        caffe.set_device(0)
-        cfg.GPU_ID = 0
-    else:
-        caffe.set_mode_cpu()
-    net = caffe.Net(prototxt, caffemodel, caffe.TEST)
-
+    global net
     scores, boxes = im_detect(net, im)
 
     conf_thresh = 0.8
