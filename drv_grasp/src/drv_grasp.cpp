@@ -84,11 +84,14 @@ float x_min_ = 0.4;
 float x_max_ = 0.6;
 float y_min_ = 0.2;
 float y_max_ = 0.35;
+float tolerance_ = 0.02;
 
 /* This location will be published if the target is out of range
    This describe the offset x, y value to be adjusted, z and
    orientation are not used */
 ros::Publisher graspPubLocation_;
+
+bool offsetNeedPub_ = true;
 
 #ifdef USE_CENTER
 int idx_;
@@ -189,6 +192,9 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
 bool isInGraspRange(float x, float y, float z,
                     geometry_msgs::PoseStamped &offset)
 {
+  if (!offsetNeedPub_)
+    return true;
+
   // Upper value
   float x_off_u = x - x_max_;
   float y_off_u = y - y_max_;
@@ -197,22 +203,24 @@ bool isInGraspRange(float x, float y, float z,
   float y_off_l = y - y_min_;
 
   if (x_off_u > 0)
-    offset.pose.position.x = x_off_u; // foreward
+    offset.pose.position.x = x_off_u; // Robot move foreward
   else if (x_off_l < 0)
-    offset.pose.position.x = x_off_l; // backward
+    offset.pose.position.x = x_off_l; // Robot move backward
   else
     offset.pose.position.x = 0;
 
   if (y_off_u > 0)
-    offset.pose.position.y = y_off_u;
+    offset.pose.position.y = y_off_u; // To left
   else if (y_off_l < 0)
-    offset.pose.position.y = y_off_l;
+    offset.pose.position.y = y_off_l; // To right
   else
     offset.pose.position.y = 0;
 
-  if (offset.pose.position.x == 0 &&
-      offset.pose.position.y == 0)
+  if (fabs(offset.pose.position.x) < tolerance_ &&
+      fabs(offset.pose.position.y) < tolerance_) {
+    offsetNeedPub_ = false;
     return true;
+  }
   else
     return false;
 }
@@ -312,7 +320,7 @@ void depthCallback(
     posePublished_ = true;
   }
   else
-    ROS_ERROR("Get grasp point failed!\n");
+    ROS_INFO("Get grasp point failed!");
 }
 #else
 void getCloudByInliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
@@ -552,6 +560,7 @@ int main(int argc, char **argv)
     if (modeType_ != m_track) {
       hasGraspPlan_ = false;
       posePublished_ = false;
+      offsetNeedPub_ = true;
       continue;
     }
     
