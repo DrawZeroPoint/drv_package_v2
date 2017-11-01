@@ -35,12 +35,12 @@ def process(im):
         print "Can't find environment variable DRV."
         return result
 
-    dir_prefix = os.environ['DRV']
-    prototxt = dir_prefix + '/supplements/object_recognize/faster_rcnn_test.pt'
-    caffemodel = dir_prefix + '/supplements/object_recognize/VGG16_faster_rcnn_final.caffemodel'
+    dir_prefix = os.environ['DRV'] + '/supplements/object_recognize/'
+    prototxt = dir_prefix + 'faster_rcnn_test.pt'
+    caffemodel = dir_prefix + 'VGG16_faster_rcnn_final.caffemodel'
 
     if os.path.isfile(prototxt) and os.path.isfile(caffemodel):
-        print 'Caffe prototxt and model found.'
+        print 'Found Caffe prototxt and model.'
     else:
         print 'Caffe prototxt or model not found!'
         return result

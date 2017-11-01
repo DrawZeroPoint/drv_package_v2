@@ -23,7 +23,7 @@ def handle_recognize(req):
         (rows, cols, channels) = cv_image.shape
 
         if cols != 640 or rows != 480:
-            rospy.WARN('Can\'t get image.\n')
+            rospy.WARN('Can not get image.')
             return rsp
         else:
             result = ps.process(cv_image)
@@ -34,7 +34,8 @@ def handle_recognize(req):
                 score = i[1]
                 class_name = i[2]
 
-                cv2.rectangle(cv_image, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255, 0, 255), 2)
+                cv2.rectangle(cv_image, (int(bbox[0]), int(bbox[1])),
+                              (int(bbox[2]), int(bbox[3])), (255, 0, 255), 2)
                 cv2.putText(cv_image, '{:s} {:.3f}'.format(class_name, score),
                             (int(bbox[0]), int(bbox[1]) - 2),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
