@@ -125,19 +125,19 @@ void setup() {
   
   p_sv.attach(32, 500, 2500);
   y_sv.attach(33, 500, 2500);
-  p_sv.write(90, servo_speed, true); // set the intial position of the servo
+  p_sv.write(90, servo_speed, true); // Set the intial position of the servo
   y_sv.write(90, servo_speed, true); 
 
   while (Serial1.available()) 
   {
-    JY901.CopeSerialData(Serial1.read()); //Call JY901 data cope function
+    JY901.CopeSerialData(Serial1.read());
   }
 }
 
 void loop() {
   while (Serial1.available()) 
   {
-    JY901.CopeSerialData(Serial1.read()); //Call JY901 data cope function
+    JY901.CopeSerialData(Serial1.read()); // Call JY901 data copy function
   }
   x_ang = (float)JY901.stcAngle.Angle[0]/32768*180;
   y_ang = (float)JY901.stcAngle.Angle[1]/32768*180;
@@ -146,7 +146,7 @@ void loop() {
   pitch_msg.data = x_ang; // We make x axis as yaw
   pub_pitch.publish(&pitch_msg);
   
-  yaw_msg.data = 90.0 - z_ang;
+  yaw_msg.data = 90.0 + z_ang;
   pub_yaw.publish(&yaw_msg);
 
   float x_acc = (float)JY901.stcAcc.a[0]/32768*16;
@@ -155,7 +155,6 @@ void loop() {
   checkVibration(x_acc, y_acc, z_acc);
 
   nh.spinOnce();
-  delay(50);
 
   checkSleep();
 
