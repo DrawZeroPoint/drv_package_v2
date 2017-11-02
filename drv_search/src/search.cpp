@@ -27,28 +27,22 @@ Search::Search(int minpx = 0, int maxpx = 180, int xstep = 30,
 
 bool Search::getNextPosition(int & yaw, int & pitch)
 {
-  if (moveDirection)
-  {
-    if (yaw + xStep > maxPX)
-    {
+  if (moveDirection) {
+    if (yaw + xStep > maxPX) {
       yaw -= xStep;
       moveDirection = !moveDirection;
       return true;
     }
-    else
-    {
+    else {
       yaw += xStep;
     }
   }
-  else
-  {
-    if (yaw - xStep < minPX)
-    {
+  else {
+    if (yaw - xStep < minPX) {
       moveDirection = true; // reset
       return false;
     }
-    else
-    {
+    else {
       yaw -= xStep;
     }
   }
@@ -56,16 +50,19 @@ bool Search::getNextPosition(int & yaw, int & pitch)
 }
 
 
-bool Search::getTargetPosition(std::vector<std_msgs::UInt16MultiArray> bbox_array,
+bool Search::getTargetPosition(vector<std_msgs::UInt16MultiArray> bbox_array,
                                int num, int &delta_pitch, int &delta_yaw)
 {
-  std_msgs::UInt16MultiArray array = bbox_array[num - 1]; // array index start from 0, while num start from 1
+  // Array index starts from 0, while num starts from 1
+  std_msgs::UInt16MultiArray array = bbox_array[num - 1];
   int roix = (array.data[0] + array.data[2]) / 2;
   int roiy = (array.data[1] + array.data[3]) / 2;
 
-  // convert image pixel distance to angle
+  // Convert image pixel distance to angle
   int d_x = roix - 320;
   int d_y = roiy - 240;
-  delta_yaw = - int(d_x * apRatio); // offset the robot head need to turn
+
+  // Offset angle the robot head needs to turn
+  delta_yaw = - int(d_x * apRatio);
   delta_pitch = - int(d_y * apRatio);
 }

@@ -15,12 +15,15 @@
 #include <drv_msgs/user_select.h>
 #include <drv_msgs/recognize.h>
 
+using namespace std;
+using namespace cv;
+
 class TargetSelect
 {
 public:
   TargetSelect();
 
-  int select(std::string targetLabel, drv_msgs::recognizeResponse response,
+  int select(string targetLabel, drv_msgs::recognizeResponse response,
              sensor_msgs::Image img_in, cv_bridge::CvImagePtr &img_out, int &choosed_id);
 
 private:
@@ -33,16 +36,16 @@ private:
   ros::ServiceClient client;
 
   int callService(int num);
-  void paintTarget(cv::Mat &img, int id, int fc, std::vector<std_msgs::UInt16MultiArray> box_array);
+  void paintTarget(Mat &img, int id, int fc, vector<std_msgs::UInt16MultiArray> box_array);
 
-  inline std::string intToString(int number)
+  inline string intToString(int number)
   {
-    std::stringstream ss;
+    stringstream ss;
     ss << number;
     return ss.str();
   }
 
-  inline void pubInfo(std::string info)
+  inline void pubInfo(string info)
   {
     ROS_INFO(info.c_str());
     std_msgs::String msg;

@@ -19,8 +19,7 @@ bool SmoothServo::moveServoTo(int pitch, int yaw)
   vector<vector<int> > path;
 
   if (smooth(path, pitch, yaw)) {
-    for (size_t j = 0; j < path[0].size(); j++)
-    {
+    for (size_t j = 0; j < path[0].size(); j++) {
       // Notice that this array should be cleaned in each loop
       std_msgs::UInt16MultiArray array;
       array.data.push_back(path[0][j]);
@@ -28,8 +27,7 @@ bool SmoothServo::moveServoTo(int pitch, int yaw)
       servoPubSearch_.publish(array);
       ros::Duration(0.1).sleep();
     }
-    for (size_t j = 0; j < path[1].size(); j++)
-    {
+    for (size_t j = 0; j < path[1].size(); j++) {
       // Notice that this array should be cleaned in each loop
       std_msgs::UInt16MultiArray array;
       array.data.push_back(pitch);

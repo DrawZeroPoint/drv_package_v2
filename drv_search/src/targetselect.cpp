@@ -1,7 +1,5 @@
 #include "targetselect.h"
 
-using namespace cv;
-
 TargetSelect::TargetSelect() : rgb_it(nh)
 {
   searchPubImage_ = rgb_it.advertise("search/labeled_image", 1);
@@ -9,8 +7,9 @@ TargetSelect::TargetSelect() : rgb_it(nh)
   client = nh.serviceClient<drv_msgs::user_select>("drv_user");
 }
 
-int TargetSelect::select(std::string targetLabel, drv_msgs::recognizeResponse response,
-                         sensor_msgs::Image img_in, cv_bridge::CvImagePtr &img_out, int &choosed_id)
+int TargetSelect::select(string targetLabel, drv_msgs::recognizeResponse response,
+                         sensor_msgs::Image img_in, cv_bridge::CvImagePtr &img_out,
+                         int &choosed_id)
 {
   int selectedNum = 0; // 0 represent no target
 
@@ -24,14 +23,12 @@ int TargetSelect::select(std::string targetLabel, drv_msgs::recognizeResponse re
     ROS_ERROR("cv_bridge exception: %s", e.what());
   }
 
-  std::vector<int> id_candidate;
+  vector<int> id_candidate;
 
   // fetch target(s) number and paint on image
   int fc = 0;
-  for (size_t i = 0; i < response.obj_info.labels.size(); i++)
-  {
-    if (targetLabel == response.obj_info.labels[i].data)
-    {
+  for (size_t i = 0; i < response.obj_info.labels.size(); i++) {
+    if (targetLabel == response.obj_info.labels[i].data) {
       id_candidate.push_back(i);
       fc++;
       paintTarget(img_out->image, i, fc, response.obj_info.bbox_arrays);
@@ -41,12 +38,9 @@ int TargetSelect::select(std::string targetLabel, drv_msgs::recognizeResponse re
   searchPubImage_.publish(img_out->toImageMsg());
 
   if (fc == 0)
-  {
     selectedNum = 0;
-  }
-  else
-  {
-    ROS_INFO("Found %d object(s) that may be the target!\n", fc);
+  else {
+    ROS_INFO("Found %d object(s) that may be the target!", fc);
     selectedNum = callService(fc); // value range [0,inf)
   }
 
@@ -60,44 +54,41 @@ int TargetSelect::callService(int num)
 {
   drv_msgs::user_select srv;
 
-  srv.request.select_num = num;// target number to be selected, start from 1
+  // Target number to be selected, starts from 1
+  srv.request.select_num = num;
   int result = 0;
 
-  if (client.call(srv))
-  {
+  if (client.call(srv)) {
     result = srv.response.selected_id;
+
     if (result == 0)
-    {
       ROS_INFO("You have confirmed current scene have no target.");
-    }
-    else
-    {
+
+    else {
       if (result <= num && result >= 1)
-      {
-        ROS_INFO("The number %d object confirmed to be the target!\n", result);
-      }
-      else
-      {
+        ROS_INFO("The number %d object confirmed to be the target!", result);
+
+      else {
         result = 0;
-        ROS_ERROR("Invalid target number, the selectd number should between 1 to %d!\n", num);
+        ROS_ERROR("Invalid target number, the selectd number should between 1 to %d!", num);
       }
     }
   }
   else
-  {
     ROS_ERROR("Failed to call user select service.");
-  }
 
   return result;
 }
 
-void TargetSelect::paintTarget(cv::Mat &img, int id, int fc, std::vector<std_msgs::UInt16MultiArray> box_array)
+void TargetSelect::paintTarget(Mat &img, int id, int fc,
+                               vector<std_msgs::UInt16MultiArray> box_array)
 {
-  std_msgs::UInt16MultiArray array = box_array[id]; // array index start from 0, while num start from 1
+  // Array index starts from 0, while num starts from 1
+  std_msgs::UInt16MultiArray array = box_array[id];
   int x = (array.data[0] + array.data[2]) / 2;
   int y = (array.data[1] + array.data[3]) / 2;
 
-  Scalar color = Scalar(195, 42, 242); // bgr order, don't miss 'Scalar'
+  Scalar color = Scalar(195, 42, 242); // In bgr order, don't miss 'Scalar'
 
   circle(img, Point(x,y), 12, color, 2);
   if(y - 25 > 0)

@@ -32,7 +32,7 @@ int modeType_ = m_wander; // record current mode status
 string param_running_mode = "/status/running_mode";
 
 
-// servo position angle
+// Params that store servo position angles
 string param_servo_pitch = "/status/servo/pitch";
 string param_servo_yaw = "/status/servo/yaw";
 int yawAngle_ = 90;
@@ -40,10 +40,10 @@ int pitchAngle_ = 60;
 
 string targetLabel_;
 
-// global status control params
+// Global status control params
 bool servoInitialized_ = false;
-// feedback, -1 indicate no result around,
-// 0 indicate current no result, 1 has result
+// Feedback of search, -1 indicates no result around,
+// 0 indicates current no result, 1 for got result
 int searchResult_ = 0;
 int selectedNum_ = 0; // selected target number
 
@@ -54,6 +54,9 @@ sensor_msgs::Image img_msg_;
 
 cv_bridge::CvImageConstPtr imagePtr_;
 cv_bridge::CvImageConstPtr depthPtr_;
+
+// 0: faster-rcnn 1: color
+int recognize_method_ = 0;
 
 
 void imageCallback(const sensor_msgs::ImageConstPtr & image_msg)
@@ -97,6 +100,7 @@ int main(int argc, char **argv)
 
   ros::NodeHandle nh;
   ros::NodeHandle pnh;
+
   ros::NodeHandle rgb_nh(nh, "rgb");
   ros::NodeHandle rgb_pnh(pnh, "rgb");
   image_transport::ImageTransport it_rgb_sub(rgb_nh);
@@ -108,9 +112,16 @@ int main(int argc, char **argv)
   image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1,
                                                              imageCallback, hints_rgb);
 
-  ros::ServiceClient client = nh.serviceClient<drv_msgs::recognize>("drv_recognize");
+  ros::NodeHandle cnh("~");
+  cnh.getParam("recognize_method", recognize_method_);
 
-  ROS_INFO("Search function initialized!");
+  ros::ServiceClient client;
+  if (recognize_method_ == 0)
+    client = nh.serviceClient<drv_msgs::recognize>("drv_recognize");
+  else if (recognize_method_ == 1)
+    client = nh.serviceClient<drv_msgs::recognize>("drv_recognize_color");
+
+  ROS_INFO("Search function initialized with method %d!", recognize_method_);
 
   Search sh;
   TargetSelect ts;
@@ -118,8 +129,7 @@ int main(int argc, char **argv)
   //Segment sg;
   //Utilities ut;
 
-  while (ros::ok())
-  {
+  while (ros::ok()) {
     if (ros::param::has(param_servo_pitch))
       ros::param::get(param_servo_pitch, pitchAngle_);
 
@@ -153,14 +163,14 @@ int main(int argc, char **argv)
     int choosed_id = -1;
 
     // Call object recognize service
-    if (client.call(srv))
-    {
-      // re-check the running mode, incase that mode didn't change quickly
+    if (client.call(srv)) {
+      // Re-check the running mode, incase that mode didn't change rapidly
       if (!checkRunningMode())
         continue;
 
       cv_bridge::CvImagePtr img_labeled;
-      selectedNum_ = ts.select(targetLabel_, srv.response, img_msg_, img_labeled, choosed_id);
+      selectedNum_ = ts.select(targetLabel_, srv.response, img_msg_,
+                               img_labeled, choosed_id);
 
       int a_s = srv.response.obj_info.bbox_arrays.size();
       bbox_arrays_.resize(a_s);
@@ -182,7 +192,7 @@ int main(int argc, char **argv)
       int pitch_angle = pitchAngle_;
       int yaw_angle = yawAngle_;
       bool has_next_pos = sh.getNextPosition(yaw_angle, pitch_angle);
-      ROS_INFO("Search angle: yaw = %d, pitch = %d.", yaw_angle, pitch_angle);
+      ROS_INFO("Search at angle: yaw %d, pitch %d.", yaw_angle, pitch_angle);
 
       if (!has_next_pos)
         searchResult_ = -1;
