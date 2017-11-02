@@ -1,16 +1,16 @@
 <launch>
   <arg name="vision_namespace" default="vision"/>
 
-  <!-- vision system referance frame on the robot -->
+  <!-- Vision system referance frame on the robot -->
   <arg name="base_link_frame" default="base_link"/>
 
-  <!-- initialize NVG 2.0 (Astra S camera and Arduino Mega 2560) -->
+  <!-- Initialize NVG 2.0 (Astra S camera and Arduino Mega 2560) -->
   <node ns="$(arg vision_namespace)" pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
     <param name="port" value="/dev/Arduino_vision"/>
     <param name="baud" value="57600"/>
   </node>
 
-  <!-- Not need to give namespace here, cause camera act as namespace -->
+  <!-- No need to give namespace here, cause arg 'camera' act as namespace -->
   <include file="$(find astra_launch)/launch/astra.launch">
     <arg name="camera" value="$(arg vision_namespace)" />
     <!-- Hardware depth registration -->
@@ -19,19 +19,24 @@
     <arg name="color_depth_synchronization" value="true" />
   </include>
 
-  <!-- initialize motor message publisher -->
+  <!-- Initialize motor message publisher -->
   <node ns="$(arg vision_namespace)" name="drv_motor" pkg="drv_motor" type="drv_motor" output="screen">
   </node>
 
-  <!-- initialize central control -->
+  <!-- Initialize central control -->
   <node ns="$(arg vision_namespace)" name="drv_brain" pkg="drv_brain" type="drv_brain" output="screen">
+    <!-- The range of pitch and yaw servos of NVG 2.0, in degree -->
+    <param name="pitch_min" value="60" />
+    <param name="pitch_max" value="140" />
+    <param name="yaw_min" value="0" />
+    <param name="yaw_max" value="180" />
   </node>
 
-  <!-- initialize action service -->
+  <!-- Initialize action service -->
   <node ns="$(arg vision_namespace)" name="drv_action" pkg="drv_action" type="drv_action" output="screen">
   </node>
 
-  <!-- broadcast transform among frames -->
+  <!-- Broadcast transform among frames -->
   <node ns="$(arg vision_namespace)" name="drv_tf" pkg="drv_tf" type="drv_tf" output="screen">
     <param name="camera_frame_id" value="$(arg vision_namespace)_link" />
     <param name="root_frame_id" value="$(arg base_link_frame)" />
@@ -47,15 +52,15 @@
     <param name="dz_pitch_to_yaw_value" value="0.159" />
   </node>
 
-  <!-- initialize user selection service -->
+  <!-- Initialize user selection service -->
   <node ns="$(arg vision_namespace)" name="drv_user" pkg="drv_user" type="drv_user.py" output="screen">
   </node>
 
-  <!-- initialize tracking function -->
+  <!-- Initialize tracking function -->
   <node ns="$(arg vision_namespace)" name="drv_track_kcf" pkg="drv_track_kcf" type="drv_track_kcf" output="screen">
   </node>
 
-  <!-- initialize grasp planning function -->
+  <!-- Initialize grasp planning function -->
   <node ns="$(arg vision_namespace)" name="drv_grasp" pkg="drv_grasp" type="drv_grasp" output="screen">
     <!-- No slash on the front -->
     <param name="base_frame_id" value="$(arg base_link_frame)" />

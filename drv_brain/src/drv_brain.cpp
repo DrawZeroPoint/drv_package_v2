@@ -11,7 +11,7 @@
 #include <std_msgs/UInt16MultiArray.h>
 #include <std_msgs/Int32MultiArray.h>
 
-//Custom message
+// Customized message
 #include <drv_msgs/target_info.h>
 
 #include <stdio.h>
@@ -21,9 +21,10 @@
 #include "targetlistener.h"
 
 using namespace std;
+using namespace std_msgs;
 
-/* global params */
-// feedback
+/* Global params */
+// Feedback
 // 0:not working, 1:working, 2:failed, 3:finished with success
 string param_vision_feedback = "/comm/param/feedback/vision/overall";
 // 0:wandering, 1:searching, 2:tracking
@@ -42,7 +43,7 @@ string param_vision_shared_switch = "/comm/param/shared/vision/switch";
 
 bool centralSwitch_ = true; // main switch
 
-// target properties
+// Target properties
 bool targetSetTemp_ = false;
 string param_target_label = "/vision/target/label";
 enum TargetType{t_null, t_onTable, t_onGround, t_onHead, t_onHand};
@@ -52,24 +53,30 @@ int tgtType_ = t_null;
 string param_target_type = "/status/target/type";
 
 
-// target status control
+// Target status control
 string targetLabel_ = "";
 bool isTargetSet_ = false;
 
-//target status feedback
+// Target status feedback
 bool foundTarget_ = false;
 
-// publish servo initial position
+// Publish servo initial position
 ros::Publisher servoPub_;
 bool servo_initialized_ = false;
 
-// servo position angle
+// Servo initial angles
 int pitchAngle_ = 70;
 int yawAngle_ = 90;
+// Range of servo angles
+int pitch_min_ = 60;
+int pitch_max_ = 140;
+int yaw_min_ = 0;
+int yaw_max_ = 180;
+// The rosparam that store pitch and yaw values
 string param_servo_pitch = "/status/servo/pitch";
 string param_servo_yaw = "/status/servo/yaw";
 
-// mode control params
+// Mode control params
 enum ModeType{m_wander, m_search, m_track};
 int modeType_ = m_wander;
 int modeTypeTemp_ = -1;
@@ -77,10 +84,12 @@ string modeName[3] = {"wandering", "searching", "tracking"};
 string param_running_mode = "/status/running_mode";
 ros::Publisher drvPubMode_; // vision system mode publisher
 
-//general infomation publisher
+// General infomation publisher
 ros::Publisher drvPubInfo_;
 
-
+/* This function is used for servo initialization and
+ * publishing servo angles received from cellphone
+ */
 void pubServo(int pitch_angle, int yaw_angle)
 {
   std_msgs::UInt16MultiArray array;
@@ -92,24 +101,24 @@ void pubServo(int pitch_angle, int yaw_angle)
 void pubInfo(string info)
 {
   ROS_INFO(info.c_str());
-  std_msgs::String msg;
+  String msg;
   msg.data = info;
   drvPubInfo_.publish(msg);
 }
 
-void teleOpCallback(const std_msgs::Int32MultiArrayConstPtr &msg)
+void teleOpCallback(const Int32MultiArrayConstPtr &msg)
 {
-  if (msg->data.empty() || (msg->data[0] == 0 && msg->data[1] ==0))
+  if (msg->data.empty() || (msg->data[0] == 0 && msg->data[1] == 0))
     return;
 
   int pitch_temp = pitchAngle_ + msg->data[0];
-  if (pitch_temp < 60 || pitch_temp > 140)
+  if (pitch_temp < pitch_min_ || pitch_temp > pitch_max_)
     return;
   else
     pitchAngle_ = pitch_temp;
 
   int yaw_temp = yawAngle_ - msg->data[1];
-  if (yaw_temp < 0 || pitch_temp > 180)
+  if (yaw_temp < yaw_max_ || yaw_temp > yaw_max_)
     return;
   else
     yawAngle_ = yaw_temp;
@@ -117,9 +126,9 @@ void teleOpCallback(const std_msgs::Int32MultiArrayConstPtr &msg)
   pubServo(pitchAngle_, yawAngle_);
 }
 
-void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
+void servoCallback(const UInt16MultiArrayConstPtr &msg)
 {
-  // this callback should always active
+  // This callback should always active
   pitchAngle_ = msg->data[0];
   yawAngle_ = msg->data[1];
 
@@ -127,7 +136,7 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
   ros::param::set(param_servo_yaw, yawAngle_);
 }
 
-void searchCallback(const std_msgs::Int8ConstPtr &msg)
+void searchCallback(const Int8ConstPtr &msg)
 {
   if (modeType_ == m_search) {
     if (msg->data == -1) {
@@ -151,11 +160,11 @@ void searchCallback(const std_msgs::Int8ConstPtr &msg)
 }
 
 
-void trackCallback(const std_msgs::BoolConstPtr &msg)
+void trackCallback(const BoolConstPtr &msg)
 {
   if (modeType_ == m_track) {
     if (!msg->data) {
-      ROS_WARN("Track report: Target lost!");
+      ROS_INFO("Track report: Target lost!");
       foundTarget_ = false;
       ros::param::set(param_vision_feedback_track, -1);
       ros::param::set(param_vision_feedback, 1);
@@ -169,11 +178,11 @@ void trackCallback(const std_msgs::BoolConstPtr &msg)
   }
 }
 
-void graspCallback(const std_msgs::BoolConstPtr &msg)
+void graspCallback(const BoolConstPtr &msg)
 {
   if (modeType_ == m_track) {
     if (!msg->data) {
-      ROS_WARN("Grasp report: Failed.");
+      ROS_INFO("Grasp report: Failed.");
       ros::param::set(param_vision_feedback_grasp, -1);
       ros::param::set(param_vision_feedback, 1);
     }
@@ -185,7 +194,7 @@ void graspCallback(const std_msgs::BoolConstPtr &msg)
   }
 }
 
-void faceRecognizeCallback(const std_msgs::BoolConstPtr &msg)
+void faceRecognizeCallback(const BoolConstPtr &msg)
 {
   if (modeType_ == m_wander) {
     if (!msg->data) {
@@ -204,7 +213,7 @@ void faceRecognizeCallback(const std_msgs::BoolConstPtr &msg)
 
 void resetStatus()
 {
-  // reset global params
+  // Reset global params
   ros::param::set(param_vision_feedback, 0);
   ros::param::set(param_vision_feedback_search, 0);
   ros::param::set(param_vision_feedback_track, 0);
@@ -227,30 +236,35 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ros::NodeHandle pnh("~");
 
-  servoPub_ = nh.advertise<std_msgs::UInt16MultiArray>("servo", 1, true);
-  drvPubMode_ = nh.advertise<std_msgs::String>("/comm/msg/vision/mode", 1); // used for mode info output
-  drvPubInfo_ = nh.advertise<std_msgs::String>("/comm/msg/vision/info", 1);
+  pnh.getParam("pitch_min", pitch_min_);
+  pnh.getParam("pitch_max", pitch_max_);
+  pnh.getParam("yaw_min", yaw_min_);
+  pnh.getParam("yaw_max", yaw_max_);
 
-  // don't change the order without reason
-  ros::Subscriber sub_servo_ctrl = nh.subscribe<std_msgs::Int32MultiArray>("/joy_teleop/servo", 2, teleOpCallback);
-  ros::Subscriber sub_servo = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
-  //		ros::Subscriber sub_tgt = nh.subscribe<drv_msgs::target_info>("recognize/target", 1, targetCallback);
-  ros::Subscriber sub_sh = nh.subscribe<std_msgs::Int8>("status/search/feedback", 1, searchCallback);
-  ros::Subscriber sub_tk = nh.subscribe<std_msgs::Bool>("status/track/feedback", 1, trackCallback);
-  ros::Subscriber sub_gp = nh.subscribe<std_msgs::Bool>("status/grasp/feedback", 1, graspCallback);
-  ros::Subscriber sub_fr = nh.subscribe<std_msgs::Bool>("status/face/feedback", 1, faceRecognizeCallback);
+  servoPub_ = nh.advertise<UInt16MultiArray>("servo", 1, true);
+  // For publishing mode info
+  drvPubMode_ = nh.advertise<String>("/comm/msg/vision/mode", 1);
+  drvPubInfo_ = nh.advertise<String>("/comm/msg/vision/info", 1);
+
+  // Don't change the order without reason
+  ros::Subscriber sub_servo_ctrl = nh.subscribe<Int32MultiArray>("/joy_teleop/servo", 1, teleOpCallback);
+  ros::Subscriber sub_servo = nh.subscribe<UInt16MultiArray>("servo", 1, servoCallback);
+  //ros::Subscriber sub_tgt = nh.subscribe<drv_msgs::target_info>("recognize/target", 1, targetCallback);
+  ros::Subscriber sub_sh = nh.subscribe<Int8>("status/search/feedback", 1, searchCallback);
+  ros::Subscriber sub_tk = nh.subscribe<Bool>("status/track/feedback", 1, trackCallback);
+  ros::Subscriber sub_gp = nh.subscribe<Bool>("status/grasp/feedback", 1, graspCallback);
+  ros::Subscriber sub_fr = nh.subscribe<Bool>("status/face/feedback", 1, faceRecognizeCallback);
 
   AndroidListener al;
   FaceListener fl;
   TargetListener tl;
 
-  // initialize
   resetStatus();
 
   pubInfo("Deep Robot Vision system initialized!");
 
   while (ros::ok()) {
-    // main on/off control
+    // Main on/off control
     if (ros::param::has(param_vision_shared_switch)) {
       bool temp = true;
       ros::param::get(param_vision_shared_switch, temp);
@@ -272,10 +286,10 @@ int main(int argc, char **argv)
       ROS_INFO("Servo initialized.");
     }
 
-    // get feedback from search and track to determine is target found
+    // Get feedback to determine whether target were found
     ros::spinOnce();
 
-    // get target if params were set
+    // Get target label if the params were set
     tl.getTargetStatus(isTargetSet_, targetLabel_);
     ros::param::set(param_target_label, targetLabel_);
     
@@ -290,20 +304,20 @@ int main(int argc, char **argv)
       targetSetTemp_ = isTargetSet_;
     }
 
-    // if user selects target on cellphone, publish the target
+    // If user selects target on cellphone, publish the target
     al.publishOnceIfTargetSelected(isTargetSet_, foundTarget_);
 
-    //mode selection, Notice that modeType_ should only be set by central control
+    // Mode selection, notice that modeType_ should only be set by central control
     if (isTargetSet_) {
       if (foundTarget_) {
-        // No matter the target is searched or selected by user, as long as it
-        // was found, track it.
+        // No matter whether the target is searched or selected by user,
+        // as long as it was found, track it.
         modeType_ = m_track;
       }
       else {
         if (targetLabel_ == "user selected object") {
-          // If the target is selected by user but no more been found, which means
-          // tracking has lost it, reset.
+          // If the target is selected by user but no more been found,
+          // which means tracking has lost it, reset.
           resetStatus();
         }
         else
@@ -312,14 +326,14 @@ int main(int argc, char **argv)
     }
     else {
       modeType_ = m_wander;
-      fl.isNeedRecognizeFace(); // only recognize face in wander mode
+      fl.isNeedRecognizeFace(); // Only recognize face in wander mode
     }
 
-    // set mode
+    // Set running mode
     ros::param::set(param_running_mode, modeType_);
 
     if (modeType_ != modeTypeTemp_) {
-      std_msgs::String mode_msg;
+      String mode_msg;
       mode_msg.data = modeName[modeType_];
       drvPubMode_.publish(mode_msg);
       ROS_INFO("Current mode: %s.", modeName[modeType_].c_str());
