@@ -58,9 +58,18 @@
 
   <!-- Initialize color recognize service, this is used as a simplified object recognizer -->
   <node ns="$(arg vision_namespace)" name="drv_recognize_color" pkg="drv_recognize" type="drv_recognize_color" output="screen">
-    <param name="blue_value" value="0" />
-    <param name="green_value" value="200" />
-    <param name="red_value" value="200" />
+    <param name="hue_low" value="40" />
+    <param name="sat_low" value="200" />
+    <param name="val_low" value="200" />
+    <param name="hue_high" value="70" />
+    <param name="sat_high" value="255" />
+    <param name="val_high" value="255" />
+  </node>
+
+  <!-- Initialize the search client -->
+  <node ns="$(arg vision_namespace)" name="drv_search" pkg="drv_search" type="drv_search" output="screen">
+    <!-- Use color method -->
+    <param name="recognize_method" value="1">
   </node>
 
   <!-- Initialize tracking function -->

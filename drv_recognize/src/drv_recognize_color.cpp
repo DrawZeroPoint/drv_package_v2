@@ -12,10 +12,13 @@
 using namespace std;
 using namespace cv;
 
-// Target color
-int blue_ = 0;
-int green_ = 200;
-int red_ = 200;
+// Target color in HSV color space
+int hue_low_ = 40;
+int sat_low_ = 200;
+int val_low_ = 200;
+int hue_high_ = 70;
+int sat_high_ = 255;
+int val_high_ = 255;
 
 DetectColor dc_;
 
@@ -24,6 +27,9 @@ bool recognize_color(drv_msgs::recognize::Request  &req,
 {
   cv_bridge::CvImagePtr src = cv_bridge::toCvCopy(req.img_in, "bgr8");
 
+  // Set color region
+  dc_.setHSV(hue_low_, sat_low_, val_low_, hue_high_, sat_high_, val_high_);
+  
   // Detect certain color in input image
   Mat img_out;
   vector<vector<int> > bbox_array;
@@ -56,9 +62,12 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   ros::NodeHandle pnh("~");
 
-  pnh.getParam("blue_value", blue_);
-  pnh.getParam("green_value", green_);
-  pnh.getParam("red_value", red_);
+  pnh.getParam("hue_low", hue_low_);
+  pnh.getParam("sat_low", sat_low_);
+  pnh.getParam("val_low", val_low_);
+  pnh.getParam("hue_high", hue_low_);
+  pnh.getParam("sat_high", sat_low_);
+  pnh.getParam("val_high", val_low_);
 
   ros::ServiceServer srv = n.advertiseService("drv_recognize_color", recognize_color);
   ROS_INFO("Ready to recognize color.");
