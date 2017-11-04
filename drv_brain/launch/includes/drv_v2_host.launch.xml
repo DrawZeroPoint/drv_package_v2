@@ -56,6 +56,13 @@
   <node ns="$(arg vision_namespace)" name="drv_user" pkg="drv_user" type="drv_user.py" output="screen">
   </node>
 
+  <!-- Initialize color recognize service, this is used as a simplified object recognizer -->
+  <node ns="$(arg vision_namespace)" name="drv_recognize_color" pkg="drv_recognize" type="drv_recognize_color" output="screen">
+    <param name="blue_value" value="0" />
+    <param name="green_value" value="200" />
+    <param name="red_value" value="200" />
+  </node>
+
   <!-- Initialize tracking function -->
   <node ns="$(arg vision_namespace)" name="drv_track_kcf" pkg="drv_track_kcf" type="drv_track_kcf" output="screen">
   </node>

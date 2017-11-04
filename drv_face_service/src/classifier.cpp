@@ -23,7 +23,7 @@ void Classifier::SetupNetwork(const string& deploy_proto,
                               const int gpu_id,
                               const bool do_train) {
 #ifdef CPU_ONLY
-  printf("Setting up Caffe in CPU mode\n");
+  printf("Setting up Caffe in CPU mode.");
   caffe::Caffe::set_mode(caffe::Caffe::CPU);
 #else
   printf("Setting up Caffe in GPU mode with ID: %d\n", gpu_id);
@@ -39,14 +39,14 @@ void Classifier::SetupNetwork(const string& deploy_proto,
   if (caffe_model != "NONE") {
     net_->CopyTrainedLayersFrom(caffe_model_);
   } else {
-    printf("Not initializing network from pre-trained model\n");
+    printf("Not initializing network from pre-trained model.");
   }
 
   Blob<float>* input_layer = net_->input_blobs()[0];
 
   num_channels_ = input_layer->channels();
-  CHECK(num_channels_ == 3 || num_channels_ == 1) << "Input layer should have 1 or 3 channels.";
-  input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
+
+  input_geometry_ = Size(input_layer->width(), input_layer->height());
 
   // Load the binaryproto mean file.
   SetMean();
@@ -62,13 +62,14 @@ void Classifier::Classify(cv::Mat image_in, int &id, float &trust) {
 
   // Reshape the input blobs to be the appropriate size.
   Blob<float>* input_image = net_->input_blobs()[0];
-  input_image->Reshape(1, num_channels_, input_geometry_.height, input_geometry_.width);
+  input_image->Reshape(1, num_channels_,
+                       input_geometry_.height, input_geometry_.width);
 
   // Forward dimension change to all layers.
   net_->Reshape();
 
   // Process the inputs so we can set them.
-  std::vector<cv::Mat> image_channels;
+  vector<Mat> image_channels;
   WrapInputLayer(&image_channels);
 
   Preprocess(image_in, &image_channels);
@@ -82,12 +83,11 @@ void Classifier::Classify(cv::Mat image_in, int &id, float &trust) {
   GetOutput(id, trust);
 }
 
-// Wrap the input layer of the network in separate cv::Mat objects
-// (one per channel). This way we save one memcpy operation and we
-// don't need to rely on cudaMemcpy2D. The last preprocessing
-// operation will write the separate channels directly to the input
-// layer.
-void Classifier::WrapInputLayer(std::vector<cv::Mat>* target_channels) {
+/* Wrap the input layer of the network in separate cv::Mat objects
+   (one per channel). This way we save one memcpy operation and we
+   don't need to rely on cudaMemcpy2D. The last preprocessing
+   operation will write the separate channels directly to the input layer. */
+void Classifier::WrapInputLayer(vector<Mat>* target_channels) {
   Blob<float>* input_layer_target = net_->input_blobs()[0];
 
   int target_width = input_layer_target->width();
@@ -100,37 +100,33 @@ void Classifier::WrapInputLayer(std::vector<cv::Mat>* target_channels) {
   }
 }
 
-void Classifier::Preprocess(const cv::Mat& img, std::vector<cv::Mat>* input_channels) {
+void Classifier::Preprocess(const Mat& img, vector<Mat>* input_channels) {
   // Convert the input image to the input image format of the network.
-  cv::Mat sample;
+  Mat sample;
   if (img.channels() == 3 && num_channels_ == 1)
-    cv::cvtColor(img, sample, CV_BGR2GRAY);
+    cvtColor(img, sample, CV_BGR2GRAY);
   else if (img.channels() == 4 && num_channels_ == 1)
-    cv::cvtColor(img, sample, CV_BGRA2GRAY);
-  else if (img.channels() == 4 && num_channels_ == 3)
-    cv::cvtColor(img, sample, CV_BGRA2BGR);
-  else if (img.channels() == 1 && num_channels_ == 3)
-    cv::cvtColor(img, sample, CV_GRAY2BGR);
+    cvtColor(img, sample, CV_BGRA2GRAY);
   else
     sample = img;
 
   // Convert the input image to the expected size.
-  cv::Mat sample_resized;
+  Mat sample_resized;
   if (sample.size() != input_geometry_)
     cv::resize(sample, sample_resized, input_geometry_);
   else
     sample_resized = sample;
 
   // Convert the input image to the expected number of channels.
-  cv::Mat sample_float;
+  Mat sample_float;
   if (num_channels_ == 3)
     sample_resized.convertTo(sample_float, CV_32FC3);
   else
     sample_resized.convertTo(sample_float, CV_32FC1);
 
   // Subtract the image mean to try to make the input 0-mean.
-  cv::Mat sample_normalized;
-  cv::subtract(sample_float, mean_, sample_normalized);
+  Mat sample_normalized;
+  subtract(sample_float, mean_, sample_normalized);
 
   // This operation will write the separate BGR planes directly to the
   // input layer of the network because it is wrapped by the cv::Mat
@@ -156,13 +152,13 @@ void Classifier::GetFeatures(const string& feature_name, int &id, float &trust) 
   // Copy all elements in this layer to a vector.
   const float* begin = layer->cpu_data();
 
-  std::vector<float> featureList;
+  vector<float> featureList;
   featureList.resize(layer->offset(1));
 
   for (int i = 0;i < layer->offset(1); i++)
     featureList[i] = begin[i];
 
-  std::vector<int> top_ids = Argmax(featureList, featureList.size());
+  vector<int> top_ids = Argmax(featureList, featureList.size());
   // only output the id with highest trust
   id = top_ids[0];
   trust = featureList[id];
@@ -174,13 +170,13 @@ bool PairCompare(std::pair<float, int>& lhs, std::pair<float, int>& rhs)
 }
 
 /* Return the indices of the top N values of vector v. */
-std::vector<int> Classifier::Argmax(std::vector<float> v, int N) {
-  std::vector<std::pair<float, int> > pairs;
+vector<int> Classifier::Argmax(vector<float> v, int N) {
+  vector<pair<float, int> > pairs;
   for (size_t i = 0; i < v.size(); ++i)
-    pairs.push_back(std::make_pair(v[i], i));
-  std::partial_sort(pairs.begin(), pairs.begin() + N, pairs.end(), PairCompare);
+    pairs.push_back(make_pair(v[i], i));
+  partial_sort(pairs.begin(), pairs.begin() + N, pairs.end(), PairCompare);
 
-  std::vector<int> result;
+  vector<int> result;
   for (int i = 0; i < N; ++i)
     result.push_back(pairs[i].second);
   return result;

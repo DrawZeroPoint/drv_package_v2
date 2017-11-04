@@ -7,12 +7,14 @@
 
 #include "processface.h"
 
-char* drv_path_env = std::getenv("DRV");
+using namespace std;
 
-std::string drv_path_ = std::string(drv_path_env);
+char* drv_path_env = getenv("DRV");
 
-std::string prototxt = drv_path_ + "/supplements/face_recognize/face_deploy.prototxt";
-std::string caffemodel = drv_path_ + "/supplements/face_recognize/face_deploy.caffemodel";
+string drv_path_ = string(drv_path_env) + "/supplements/face_recognize/";
+
+string prototxt = drv_path_ + "face_deploy.prototxt";
+string caffemodel = drv_path_ + "face_deploy.caffemodel";
 
 ProcessFace pf_(prototxt, caffemodel, 0, false);
 bool pf_init = false;
@@ -21,13 +23,7 @@ float face_th_ = 0.9;
 
 bool recognize_face(drv_msgs::face_recognize::Request  &req,
                     drv_msgs::face_recognize::Response &res)
-{
-  // Incase the model is not generated when initialize pf
-//  if (!pf_init) {
-//    pf_.initClassifier(prototxt, caffemodel, 0);
-//    pf_init = true;
-//  }
-  
+{ 
   size_t im = req.images_in.size();
   vector<int> result_id;
   for (size_t i = 0;i < im; i++) {
@@ -36,15 +32,15 @@ bool recognize_face(drv_msgs::face_recognize::Request  &req,
     float result_trust = 0.0;
     pf_.processFace(src->image, id, result_trust);
     
-    // result_id starting from 0, when result_id=0 the face is "unknown",
-    // while known person id starting from 1 which is result_id+1
+    // The result_id starts from 0. When result_id=0 the face is "unknown",
+    // while known person id starts from 1 which is result_id + 1
     if (result_trust < face_th_)
       result_id.push_back(0);
     else
       result_id.push_back(id + 1);
   }
   res.face_label_ids = result_id;
-  return true; // return bool is necessary for service
+  return true; // Return bool is necessary for service
 }
 
 int main(int argc, char **argv)

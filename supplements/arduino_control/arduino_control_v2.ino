@@ -155,6 +155,7 @@ void loop() {
   checkVibration(x_acc, y_acc, z_acc);
 
   nh.spinOnce();
+  delay(50); // To restrain shaking
 
   checkSleep();
 
