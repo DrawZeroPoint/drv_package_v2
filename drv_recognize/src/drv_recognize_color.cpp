@@ -60,7 +60,7 @@ int main(int argc, char **argv)
   pnh.getParam("green_value", green_);
   pnh.getParam("red_value", red_);
 
-  ros::ServiceServer srv = n.advertiseService("drv_color_recognize_service", recognize_color);
+  ros::ServiceServer srv = n.advertiseService("drv_recognize_color", recognize_color);
   ROS_INFO("Ready to recognize color.");
   ros::spin();
 

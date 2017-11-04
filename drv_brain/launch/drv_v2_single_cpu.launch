@@ -5,7 +5,7 @@
 
   <include file="$(find drv_brain)/launch/includes/drv_v2_host.launch.xml">
     <arg name="vision_namespace" value="$(arg ns)"/>
-    <!-- referance frame of the vision system -->
+    <!-- Referance frame of the vision system -->
     <arg name="base_link_frame" value="$(arg base_frame)"/>
   </include>
 
