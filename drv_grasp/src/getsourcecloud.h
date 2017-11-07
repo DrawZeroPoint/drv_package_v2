@@ -28,14 +28,17 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+using namespace std;
+using namespace cv;
+
 class GetSourceCloud
 {
 public:
   GetSourceCloud();
-
-  static bool getPoint(cv::Mat depth, int row, int col, float fx, float fy, float cx, float cy,
+  
+  static bool getPoint(Mat depth, int row, int col, float fx, float fy, float cx, float cy,
                        float maxDepth, float minDepth, pcl::PointXYZ &point);
-
+  
 };
 
 #endif // GETSOURCECLOUD_H

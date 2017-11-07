@@ -1,5 +1,8 @@
 #include "smoothservo.h"
 
+string param_servo_pitch = "/status/servo/pitch";
+string param_servo_yaw = "/status/servo/yaw";
+
 SmoothServo::SmoothServo()
 {
   pitch_temp = 60;
@@ -8,14 +11,21 @@ SmoothServo::SmoothServo()
   servoPubSearch_ = nh.advertise<std_msgs::UInt16MultiArray>("/vision/servo", 1);
 }
 
-void SmoothServo::getCurrentServoAngle(int pitch, int yaw)
+void SmoothServo::getCurrentServoAngle(int &pitch, int &yaw)
 {
+  if (ros::param::has(param_servo_pitch))
+    ros::param::get(param_servo_pitch, pitch);
+
+  if (ros::param::has(param_servo_yaw))
+    ros::param::get(param_servo_yaw, yaw);
+  
   pitch_temp = pitch;
   yaw_temp = yaw;
 }
 
 bool SmoothServo::moveServoTo(int pitch, int yaw)
 {
+  /*
   vector<vector<int> > path;
 
   if (smooth(path, pitch, yaw)) {
@@ -37,6 +47,14 @@ bool SmoothServo::moveServoTo(int pitch, int yaw)
     }
     ros::Duration(0.2).sleep(); // give the servo time for getting to position
   }
+  */
+  
+  // Simplified method that using velocity param of servo
+  std_msgs::UInt16MultiArray array;
+  array.data.push_back(pitch);
+  array.data.push_back(yaw);
+  array.data.push_back(30); // Speed: 0~255
+  servoPubSearch_.publish(array);
   return true;
 }
 

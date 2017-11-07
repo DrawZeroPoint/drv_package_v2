@@ -13,7 +13,7 @@ public:
   SmoothServo();
 
   bool moveServoTo(int pitch, int yaw);
-  void getCurrentServoAngle(int pitch, int yaw);
+  void getCurrentServoAngle(int &pitch, int &yaw);
 
 private:
   int pitch_temp;

@@ -33,8 +33,6 @@ string param_running_mode = "/status/running_mode";
 
 
 // Params that store servo position angles
-string param_servo_pitch = "/status/servo/pitch";
-string param_servo_yaw = "/status/servo/yaw";
 int yawAngle_ = 90;
 int pitchAngle_ = 60;
 
@@ -100,6 +98,8 @@ int main(int argc, char **argv)
 
   ros::NodeHandle nh;
   ros::NodeHandle pnh;
+  ros::NodeHandle cnh("~");
+  cnh.getParam("recognize_method", recognize_method_);
 
   ros::NodeHandle rgb_nh(nh, "rgb");
   ros::NodeHandle rgb_pnh(pnh, "rgb");
@@ -111,9 +111,6 @@ int main(int argc, char **argv)
 
   image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1,
                                                              imageCallback, hints_rgb);
-
-  ros::NodeHandle cnh("~");
-  cnh.getParam("recognize_method", recognize_method_);
 
   ros::ServiceClient client;
   if (recognize_method_ == 0)
@@ -130,12 +127,6 @@ int main(int argc, char **argv)
   //Utilities ut;
 
   while (ros::ok()) {
-    if (ros::param::has(param_servo_pitch))
-      ros::param::get(param_servo_pitch, pitchAngle_);
-
-    if (ros::param::has(param_servo_yaw))
-      ros::param::get(param_servo_yaw, yawAngle_);
-
     if (ros::param::has(param_running_mode))
       ros::param::get(param_running_mode, modeType_);
 

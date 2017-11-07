@@ -15,25 +15,12 @@ inline bool uIsFinite(const T & value)
 }
 
 
-float getDepth(const cv::Mat & depthImage, float x, float y,
+float getDepth(const Mat &depthImage, int x, int y,
                bool smoothing, float maxZError, bool estWithNeighborsIfNull)
 {
-  int u = int(x + 0.5f);
-  int v = int(y + 0.5f);
-  if(u == depthImage.cols && x<float(depthImage.cols))
-  {
-    u = depthImage.cols - 1;
-  }
-  if(v == depthImage.rows && y<float(depthImage.rows))
-  {
-    v = depthImage.rows - 1;
-  }
-
-  if(!(u >=0 && u<depthImage.cols && v >=0 && v<depthImage.rows))
-  {
-    return 0;
-  }
-
+  int u = x;
+  int v = y;
+  
   bool isInMM = depthImage.type() == CV_16UC1; // is in mm?
 
   // Inspired from RGBDFrame::getGaussianMixtureDistribution() method from
@@ -42,94 +29,72 @@ float getDepth(const cv::Mat & depthImage, float x, float y,
   //  | 1 | 2 | 1 |
   //  | 2 | 4 | 2 |
   //  | 1 | 2 | 1 |
-  int u_start = std::max(u-1, 0);
-  int v_start = std::max(v-1, 0);
-  int u_end = std::min(u+1, depthImage.cols-1);
-  int v_end = std::min(v+1, depthImage.rows-1);
+  int u_start = max(u - 1, 0);
+  int v_start = max(v - 1, 0);
+  int u_end = min(u + 1, depthImage.cols - 1);
+  int v_end = min(v + 1, depthImage.rows - 1);
 
   float depth = 0.0f;
-  if(isInMM)
-  {
-    if(depthImage.at<unsigned short>(v,u) > 0 &&
-       depthImage.at<unsigned short>(v,u) < std::numeric_limits<unsigned short>::max())
-    {
-      depth = float(depthImage.at<unsigned short>(v,u))*0.001f;
+  if(isInMM) {
+    if(depthImage.at<unsigned short>(v, u) > 0 &&
+       depthImage.at<unsigned short>(v, u) < numeric_limits<unsigned short>::max()) {
+      depth = float(depthImage.at<unsigned short>(v, u)) * 0.001f;
     }
   }
   else
-  {
-    depth = depthImage.at<float>(v,u);
-  }
+    depth = depthImage.at<float>(v, u);
 
-  if((depth==0.0f || !uIsFinite(depth)) && estWithNeighborsIfNull)
-  {
+  if((depth == 0.0f || !uIsFinite(depth)) && estWithNeighborsIfNull) {
     // all cells no2 must be under the zError to be accepted
     float tmp = 0.0f;
     int count = 0;
-    for(int uu = u_start; uu <= u_end; ++uu)
-    {
-      for(int vv = v_start; vv <= v_end; ++vv)
-      {
-        if((uu == u && vv!=v) || (uu != u && vv==v))
-        {
+    for(int uu = u_start; uu <= u_end; ++uu) {
+      for(int vv = v_start; vv <= v_end; ++vv) {
+        if((uu == u && vv != v) || (uu != u && vv == v)) {
           float d = 0.0f;
-          if(isInMM)
-          {
-            if(depthImage.at<unsigned short>(vv,uu) > 0 &&
-               depthImage.at<unsigned short>(vv,uu) < std::numeric_limits<unsigned short>::max())
-            {
-              depth = float(depthImage.at<unsigned short>(vv,uu))*0.001f;
+          if(isInMM) {
+            if(depthImage.at<unsigned short>(vv, uu) > 0 &&
+               depthImage.at<unsigned short>(vv, uu) < numeric_limits<unsigned short>::max()) {
+              depth = float(depthImage.at<unsigned short>(vv, uu)) * 0.001f;
             }
           }
-          else
-          {
-            d = depthImage.at<float>(vv,uu);
+          else {
+            d = depthImage.at<float>(vv, uu);
           }
-          if(d!=0.0f && uIsFinite(d))
-          {
-            if(tmp == 0.0f)
-            {
+          if(d != 0.0f && uIsFinite(d)) {
+            if(tmp == 0.0f) {
               tmp = d;
               ++count;
             }
             else if(fabs(d - tmp) < maxZError)
             {
-              tmp+=d;
+              tmp += d;
               ++count;
             }
           }
         }
       }
     }
-    if(count > 1)
-    {
-      depth = tmp/float(count);
+    if(count > 1) {
+      depth = tmp / float(count);
     }
   }
 
-  if(depth!=0.0f && uIsFinite(depth))
-  {
-    if(smoothing)
-    {
+  if(depth != 0.0f && uIsFinite(depth)) {
+    if(smoothing) {
       float sumWeights = 0.0f;
       float sumDepths = 0.0f;
-      for(int uu = u_start; uu <= u_end; ++uu)
-      {
-        for(int vv = v_start; vv <= v_end; ++vv)
-        {
-          if(!(uu == u && vv == v))
-          {
+      for(int uu = u_start; uu <= u_end; ++uu) {
+        for(int vv = v_start; vv <= v_end; ++vv) {
+          if(!(uu == u && vv == v)) {
             float d = 0.0f;
-            if(isInMM)
-            {
+            if(isInMM) {
               if(depthImage.at<unsigned short>(vv,uu) > 0 &&
-                 depthImage.at<unsigned short>(vv,uu) < std::numeric_limits<unsigned short>::max())
-              {
+                 depthImage.at<unsigned short>(vv,uu) < numeric_limits<unsigned short>::max()) {
                 depth = float(depthImage.at<unsigned short>(vv,uu))*0.001f;
               }
             }
-            else
-            {
+            else {
               d = depthImage.at<float>(vv,uu);
             }
 
@@ -138,11 +103,10 @@ float getDepth(const cv::Mat & depthImage, float x, float y,
             {
               if(uu == u || vv == v)
               {
-                sumWeights+=2.0f;
-                d*=2.0f;
+                sumWeights += 2.0f;
+                d *= 2.0f;
               }
-              else
-              {
+              else {
                 sumWeights+=1.0f;
               }
               sumDepths += d;
@@ -158,22 +122,21 @@ float getDepth(const cv::Mat & depthImage, float x, float y,
       depth = (depth+sumDepths)/sumWeights;
     }
   }
-  else
-  {
+  else {
     depth = 0;
   }
   return depth;
 }
 
 
-pcl::PointXYZ projectDepthTo3D(const cv::Mat & depthImage, float x, float y,
-                               float cx, float cy, float fx, float fy, bool smoothing, float maxZError)
+pcl::PointXYZ projectDepthTo3D(const Mat &depthImage, int x, int y,
+                               float cx, float cy, float fx, float fy, 
+                               bool smoothing, float maxZError)
 {
   pcl::PointXYZ pt;
 
   float depth = getDepth(depthImage, x, y, smoothing, maxZError, true);
-  if(depth > 0.0f)
-  {
+  if(depth > 0.0f) {
     // Use correct principal point from calibration
     cx = cx > 0.0f ? cx : float(depthImage.cols/2) - 0.5f; //cameraInfo.K.at(2)
     cy = cy > 0.0f ? cy : float(depthImage.rows/2) - 0.5f; //cameraInfo.K.at(5)
@@ -183,8 +146,7 @@ pcl::PointXYZ projectDepthTo3D(const cv::Mat & depthImage, float x, float y,
     pt.y = (y - cy) * depth / fy;
     pt.z = depth;
   }
-  else
-  {
+  else {
     pt.x = pt.y = pt.z = std::numeric_limits<float>::quiet_NaN();
   }
   return pt;
