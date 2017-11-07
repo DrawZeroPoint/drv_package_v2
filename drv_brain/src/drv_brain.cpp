@@ -87,6 +87,25 @@ ros::Publisher drvPubMode_; // vision system mode publisher
 // General infomation publisher
 ros::Publisher drvPubInfo_;
 
+void resetStatus()
+{
+  // Reset global params
+  ros::param::set(param_vision_feedback, 0);
+  ros::param::set(param_vision_feedback_search, 0);
+  ros::param::set(param_vision_feedback_track, 0);
+  ros::param::set(param_vision_feedback_grasp, 0);
+  ros::param::set(param_vision_feedback_face, 0);
+
+  tgtType_ = t_null;
+  targetLabel_ = "";
+
+  isTargetSet_ = false;
+  foundTarget_ = false;
+
+  modeType_ = m_wander;
+}
+
+
 /* This function is used for servo initialization and
  * publishing servo angles received from cellphone
  */
@@ -170,7 +189,7 @@ void trackCallback(const BoolConstPtr &msg)
       ros::param::set(param_vision_feedback, 1);
     }
     else {
-      ROS_INFO_THROTTLE(2, "Track report: Tracking...");
+      ROS_INFO_THROTTLE(7, "Track report: Tracking...");
       foundTarget_ = true;
       ros::param::set(param_vision_feedback_track, 1);
       ros::param::set(param_vision_feedback, 1);
@@ -178,18 +197,23 @@ void trackCallback(const BoolConstPtr &msg)
   }
 }
 
-void graspCallback(const BoolConstPtr &msg)
+void graspCallback(const Int8ConstPtr &msg)
 {
   if (modeType_ == m_track) {
     if (!msg->data) {
-      ROS_INFO("Grasp report: Failed.");
+      ROS_INFO_THROTTLE(3, "Grasp report: Failed.");
       ros::param::set(param_vision_feedback_grasp, -1);
       ros::param::set(param_vision_feedback, 1);
     }
-    else {
-      ROS_INFO("Grasp report: Successed.");
+    else if (msg->data == 1) {
+      ROS_INFO_THROTTLE(3, "Grasp report: Reaching to the target...");
       ros::param::set(param_vision_feedback_grasp, 1);
-      ros::param::set(param_vision_feedback, 3);
+      ros::param::set(param_vision_feedback, 1);
+    }
+    else {
+      ROS_INFO("Grasp report: Target in reach.");
+      // Reset if grasping has been performed
+      resetStatus();
     }
   }
 }
@@ -208,25 +232,6 @@ void faceRecognizeCallback(const BoolConstPtr &msg)
       ros::param::set(param_vision_feedback, 3);
     }
   }
-}
-
-
-void resetStatus()
-{
-  // Reset global params
-  ros::param::set(param_vision_feedback, 0);
-  ros::param::set(param_vision_feedback_search, 0);
-  ros::param::set(param_vision_feedback_track, 0);
-  ros::param::set(param_vision_feedback_grasp, 0);
-  ros::param::set(param_vision_feedback_face, 0);
-
-  tgtType_ = t_null;
-  targetLabel_ = "";
-
-  isTargetSet_ = false;
-  foundTarget_ = false;
-
-  modeType_ = m_wander;
 }
 
 int main(int argc, char **argv)
@@ -252,7 +257,7 @@ int main(int argc, char **argv)
   //ros::Subscriber sub_tgt = nh.subscribe<drv_msgs::target_info>("recognize/target", 1, targetCallback);
   ros::Subscriber sub_sh = nh.subscribe<Int8>("status/search/feedback", 1, searchCallback);
   ros::Subscriber sub_tk = nh.subscribe<Bool>("status/track/feedback", 1, trackCallback);
-  ros::Subscriber sub_gp = nh.subscribe<Bool>("status/grasp/feedback", 1, graspCallback);
+  ros::Subscriber sub_gp = nh.subscribe<Int8>("status/grasp/feedback", 1, graspCallback);
   ros::Subscriber sub_fr = nh.subscribe<Bool>("status/face/feedback", 1, faceRecognizeCallback);
 
   AndroidListener al;
@@ -296,8 +301,7 @@ int main(int argc, char **argv)
     if (isTargetSet_ != targetSetTemp_) {
       if (isTargetSet_)
         pubInfo("Target set to be '" + targetLabel_ + "'.");
-      else
-      {
+      else {
         pubInfo("Target cancelled.");
         resetStatus();
       }

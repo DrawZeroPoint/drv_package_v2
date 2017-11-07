@@ -15,6 +15,7 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <std_msgs/Bool.h>
+#include <std_msgs/Int8.h>
 #include <std_msgs/Header.h>
 #include <std_msgs/UInt16MultiArray.h>
 #include <visualization_msgs/Marker.h>
@@ -258,7 +259,7 @@ void depthCallback(
        imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) == 0 ||
        imageDepth->encoding.compare(sensor_msgs::image_encodings::MONO16) == 0))
   {
-    ROS_ERROR("Input type must be image_depth=32FC1,16UC1,mono16");
+    ROS_ERROR("Depth image type is wrong.");
     return;
   }
   
@@ -304,6 +305,8 @@ void depthCallback(
       grasp_ps.pose.orientation.y = 0;
       grasp_ps.pose.orientation.z = 0;
       graspPubPose_.publish(grasp_ps);
+
+      posePublished_ = true;
     }
     else {
       offset.header.frame_id = base_frame_;
@@ -315,9 +318,7 @@ void depthCallback(
       offset.pose.orientation.z = 0;
       graspPubLocation_.publish(offset);
     }
-    
     hasGraspPlan_ = true;
-    posePublished_ = true;
   }
   else
     ROS_INFO("Get grasp point failed!");
@@ -471,6 +472,7 @@ void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
     getOrientation(grasp_max_score, grasp_pose.pose.orientation);
 
     graspPubPose_.publish(grasp_pose);
+    posePublished_ = true;
   }
   else {
     offset.header.frame_id = base_frame_;
@@ -490,7 +492,6 @@ void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
                 grasp_max_score.bottom.z, msg->header);
   
   hasGraspPlan_ = true;
-  posePublished_ = true;
 }
 #endif
 
@@ -511,7 +512,7 @@ int main(int argc, char **argv)
   pnh.getParam("left_arm_x_max", x_max_);
   pnh.getParam("left_arm_y_max", y_max_);
   
-  graspPubStatus_ = nh.advertise<std_msgs::Bool>("status/grasp/feedback", 1);
+  graspPubStatus_ = nh.advertise<std_msgs::Int8>("status/grasp/feedback", 1);
   graspPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/pose", 1);
   graspPubLocation_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/location", 1);
   graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("grasp/marker", 1);
@@ -520,7 +521,6 @@ int main(int argc, char **argv)
                                                                         1, trackResultCallback);
   
 #ifdef USE_CENTER
-  int queueSize = 3;
   image_transport::SubscriberFilter imageDepthSub_;
   message_filters::Subscriber<sensor_msgs::CameraInfo> cameraInfoSub_;
   
@@ -534,7 +534,7 @@ int main(int argc, char **argv)
   cameraInfoSub_.subscribe(depth_nh, "camera_info", 1);
   
   approxSyncDepth_ = new message_filters::Synchronizer<MyApproxSyncDepthPolicy>(
-        MyApproxSyncDepthPolicy(queueSize), imageDepthSub_, cameraInfoSub_);
+        MyApproxSyncDepthPolicy(1), imageDepthSub_, cameraInfoSub_);
   approxSyncDepth_->registerCallback(depthCallback);
 #else
   graspPubCloud_ = nh.advertise<sensor_msgs::PointCloud2>("grasp/points", 1);
@@ -554,9 +554,6 @@ int main(int argc, char **argv)
     if (ros::param::has(param_running_mode))
       ros::param::get(param_running_mode, modeType_);
     
-    std_msgs::Bool flag;
-    flag.data = true;
-    
     if (modeType_ != m_track) {
       hasGraspPlan_ = false;
       posePublished_ = false;
@@ -565,7 +562,7 @@ int main(int argc, char **argv)
     }
     
     try {
-      // the 1st frame is the base frame for transform
+      // The 1st frame is the base frame for transform
       trans_c_ = tfBufferCameraToBase_.lookupTransform(base_frame_, camera_optical_frame_,
                                                        ros::Time(0));
     }
@@ -576,8 +573,15 @@ int main(int argc, char **argv)
     }
     
     ros::spinOnce();
+
+    std_msgs::Int8 flag;
+    flag.data = 0;
+
+    if (hasGraspPlan_ && !posePublished_)
+      flag.data = 1;
+    if (hasGraspPlan_ && posePublished_)
+      flag.data = 2;
     
-    flag.data = hasGraspPlan_;
     graspPubStatus_.publish(flag);
   }
   
