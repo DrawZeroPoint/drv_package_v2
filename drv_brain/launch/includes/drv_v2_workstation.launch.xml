@@ -11,7 +11,7 @@
   <!-- Initialize the search client -->
   <node ns="$(arg vision_namespace)" name="drv_search" pkg="drv_search" type="drv_search" output="screen">
     <!-- Use RCNN method -->
-    <param name="recognize_method" value="0">
+    <param name="recognize_method" value="0" />
   </node>
 
   <!-- initialize face recognition service -->
