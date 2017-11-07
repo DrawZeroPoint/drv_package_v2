@@ -16,8 +16,8 @@ public:
   void getCurrentServoAngle(int &pitch, int &yaw);
 
 private:
-  int pitch_temp;
-  int yaw_temp;
+  int pitch_temp_;
+  int yaw_temp_;
   int step;
 
   ros::NodeHandle nh;

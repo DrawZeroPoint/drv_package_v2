@@ -2,8 +2,9 @@
  * This code subscribe motor control messages, process it and send them out,
  * so that can be recived by Arduino and executed by motors of NVG 2.0
 */
-
+#include <signal.h>
 #include <ros/ros.h>
+#include <ros/xmlrpc_manager.h>
 #include <ros/console.h>
 
 #include <math.h>
@@ -22,6 +23,9 @@ using namespace std;
 ros::Publisher motorPub_;
 
 const float pi = 3.14159265359;
+
+// Signal-safe flag for whether shutdown is requested
+sig_atomic_t volatile g_request_shutdown = 0;
 
 float to_rad(float angle_deg)
 {
@@ -87,16 +91,43 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
     yawSpeed = msg->data[3];
   }
   else {
-    ROS_WARN_THROTTLE(11, "Servo params invalid.");
+    ROS_WARN_THROTTLE(3, "Servo params invalid.");
   }
 
   setBoundary(pitchAngle, yawAngle);
   motorPublish(pitchAngle, yawAngle, pitchSpeed, yawSpeed);
 }
 
+// Replacement SIGINT handler
+void mySigIntHandler(int sig)
+{
+  g_request_shutdown = 1;
+}
+
+// Replacement "shutdown" XMLRPC callback
+void shutdownCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
+{
+  int num_params = 0;
+  if (params.getType() == XmlRpc::XmlRpcValue::TypeArray)
+    num_params = params.size();
+  if (num_params > 1) {
+    string reason = params[1];
+    ROS_WARN("Shutdown request received. Reason: [%s]", reason.c_str());
+    g_request_shutdown = 1; // Set flag
+  }
+
+  result = ros::xmlrpc::responseInt(1, "", 0);
+}
+
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "drv_motor");
+  // Override SIGINT handler
+  ros::init(argc, argv, "drv_motor", ros::init_options::NoSigintHandler);
+  signal(SIGINT, mySigIntHandler);
+
+  // Override XMLRPC shutdown
+  ros::XMLRPCManager::instance()->unbind("shutdown");
+  ros::XMLRPCManager::instance()->bind("shutdown", shutdownCallback);
 
   ros::NodeHandle nh;
 
@@ -105,11 +136,15 @@ int main(int argc, char **argv)
   // This node should be launched in namespace /vision
   ros::Subscriber sub_servo_cmd = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
 
-  while (ros::ok())
+  while (!g_request_shutdown)
   {
     ros::spinOnce();
   }
 
+  motorPublish(90, 90, 40, 30);
+  ros::Duration(1).sleep();
+
+  ros::shutdown();
   return 0;
 }
 

@@ -85,8 +85,7 @@ bool checkRunningMode()
 
   if (modeType_ == m_search)
     return true;
-  else
-  {
+  else {
     resetStatus();
     return false;
   }
@@ -127,9 +126,6 @@ int main(int argc, char **argv)
   //Utilities ut;
 
   while (ros::ok()) {
-    if (ros::param::has(param_running_mode))
-      ros::param::get(param_running_mode, modeType_);
-
     if (!checkRunningMode())
       continue;
 
@@ -144,6 +140,7 @@ int main(int argc, char **argv)
     if (ros::param::has(param_target_label))
       ros::param::get(param_target_label, targetLabel_);
 
+    // Get rgb image
     ros::spinOnce();
 
     // Initialize request of recognize service

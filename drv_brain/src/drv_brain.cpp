@@ -114,6 +114,7 @@ void pubServo(int pitch_angle, int yaw_angle)
   std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch_angle);
   array.data.push_back(yaw_angle);
+  array.data.push_back(50);
   servoPub_.publish(array);
 }
 

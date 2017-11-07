@@ -102,27 +102,27 @@ void resultCallback(const drv_msgs::recognized_targetConstPtr &msg)
 
 bool verifyDetection(Rect roi) {
   if (roi.area() < 20) {
-    ROS_WARN("Target area in image is %d, too small to be tracked.\n", roi.area());
+    ROS_INFO("Target area in image is %d, too small to be tracked.", roi.area());
     return false;
   }
   if (roi.x < 0 || roi.x >= 640) {
-    ROS_WARN("ROI X is %d.\n", roi.x);
+    ROS_INFO("ROI X is %d.", roi.x);
     return false;
   }
   if (roi.y < 0 || roi.y >= 480) {
-    ROS_WARN("ROI Y is %d.\n", roi.y);
+    ROS_INFO("ROI Y is %d.", roi.y);
     return false;
   }
   if (roi.x + roi.width >= 640) {
-    ROS_WARN("ROI X+W is %d.\n", roi.x + roi.width);
+    ROS_INFO("ROI X+W is %d.", roi.x + roi.width);
     return false;
   }
   if (roi.y + roi.height >= 480) {
-    ROS_WARN("ROI Y+H is %d.\n", roi.y + roi.height);
+    ROS_INFO("ROI Y+H is %d.", roi.y + roi.height);
     return false;
   }
   if (roi.width <= 0 || roi.height <= 0) {
-    ROS_WARN("ROI W, H is %d, %d.\n", roi.width, roi.height);
+    ROS_INFO("ROI W, H is %d, %d.", roi.width, roi.height);
     return false;
   }
   return true;
