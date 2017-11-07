@@ -85,7 +85,7 @@ float x_min_ = 0.4;
 float x_max_ = 0.6;
 float y_min_ = 0.2;
 float y_max_ = 0.35;
-float tolerance_ = 0.02;
+float tolerance_ = 0.03;
 
 /* This location will be published if the target is out of range
    This describe the offset x, y value to be adjusted, z and
@@ -99,17 +99,14 @@ int idx_;
 int row_;
 int col_;
 
-float fx_ = 538.77;
-float fy_ = 540.23;
-float cx_ = 314.76;
-float cy_ = 239.95;
+float fx_ = 579.77;
+float fy_ = 584.94;
+float cx_ = 333.77;
+float cy_ = 237.86;
 
-double min_depth_ = 0.3;
-double max_depth_ = 3.0;
+double min_depth_ = 0.2;
+double max_depth_ = 5.0;
 
-typedef message_filters::sync_policies::ApproximateTime
-<sensor_msgs::Image, sensor_msgs::CameraInfo> MyApproxSyncDepthPolicy;
-message_filters::Synchronizer<MyApproxSyncDepthPolicy> * approxSyncDepth_;
 #else
 pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
 ros::Publisher graspPubCloud_;
@@ -247,9 +244,7 @@ void doTransform(pcl::PointXYZ p_in, pcl::PointXYZ &p_out,
   p_out.z = point.z();
 }
 
-void depthCallback(
-    const sensor_msgs::ImageConstPtr& imageDepth,
-    const sensor_msgs::CameraInfoConstPtr& cameraInfo)
+void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
 {
   // In simple mode, pose only publish once after one detection
   if (modeType_ != m_track || (pub_pose_once_ && posePublished_))
@@ -264,13 +259,6 @@ void depthCallback(
   }
   
   cv_bridge::CvImageConstPtr imageDepthPtr = cv_bridge::toCvShare(imageDepth);
-  
-  image_geometry::PinholeCameraModel model;
-  model.fromCameraInfo(*cameraInfo);
-  fx_ = model.fx();
-  fy_ = model.fy();
-  cx_ = model.cx();
-  cy_ = model.cy();
   
   MakePlan MP;
   
@@ -293,18 +281,18 @@ void depthCallback(
     geometry_msgs::PoseStamped offset;
     bool in_range = isInGraspRange(graspPt.x, graspPt.y, graspPt.z, offset);
     if (in_range) {
-      geometry_msgs::PoseStamped grasp_ps;
-      grasp_ps.header.frame_id = base_frame_;
-      grasp_ps.header.stamp = imageDepth->header.stamp;
-      grasp_ps.pose.position.x = graspPt.x;
-      grasp_ps.pose.position.y = graspPt.y;
-      grasp_ps.pose.position.z = graspPt.z;
+      geometry_msgs::PoseStamped grasp_pose;
+      grasp_pose.header.frame_id = base_frame_;
+      grasp_pose.header.stamp = imageDepth->header.stamp;
+      grasp_pose.pose.position.x = graspPt.x;
+      grasp_pose.pose.position.y = graspPt.y;
+      grasp_pose.pose.position.z = graspPt.z;
       
-      grasp_ps.pose.orientation.w = 1;
-      grasp_ps.pose.orientation.x = 0;
-      grasp_ps.pose.orientation.y = 0;
-      grasp_ps.pose.orientation.z = 0;
-      graspPubPose_.publish(grasp_ps);
+      grasp_pose.pose.orientation.w = 1;
+      grasp_pose.pose.orientation.x = 0;
+      grasp_pose.pose.orientation.y = 0;
+      grasp_pose.pose.orientation.z = 0;
+      graspPubPose_.publish(grasp_pose);
 
       posePublished_ = true;
     }
@@ -521,21 +509,13 @@ int main(int argc, char **argv)
                                                                         1, trackResultCallback);
   
 #ifdef USE_CENTER
-  image_transport::SubscriberFilter imageDepthSub_;
-  message_filters::Subscriber<sensor_msgs::CameraInfo> cameraInfoSub_;
-  
   ros::NodeHandle cnh;
   ros::NodeHandle depth_nh(nh, "depth");
   ros::NodeHandle depth_pnh(cnh, "depth");
   image_transport::ImageTransport depth_it(depth_nh);
   image_transport::TransportHints hintsDepth("compressedDepth", ros::TransportHints(), depth_pnh);
-  
-  imageDepthSub_.subscribe(depth_it, depth_nh.resolveName("image_rect"), 1, hintsDepth);
-  cameraInfoSub_.subscribe(depth_nh, "camera_info", 1);
-  
-  approxSyncDepth_ = new message_filters::Synchronizer<MyApproxSyncDepthPolicy>(
-        MyApproxSyncDepthPolicy(1), imageDepthSub_, cameraInfoSub_);
-  approxSyncDepth_->registerCallback(depthCallback);
+
+  image_transport::Subscriber sub_depth = depth_it.subscribe("image_rect", 1, depthCallback, hintsDepth);
 #else
   graspPubCloud_ = nh.advertise<sensor_msgs::PointCloud2>("grasp/points", 1);
   ros::Subscriber sub_cloud = nh.subscribe("depth_registered/points", 1, sourceCloudCallback);
