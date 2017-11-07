@@ -45,10 +45,10 @@ ros::Publisher trackPubTargetLocation_;
 
 // Image temps
 cv_bridge::CvImageConstPtr src_;
-cv::Mat src_img_;
+Mat src_img_;
 
 cv_bridge::CvImagePtr track_ptr_(new cv_bridge::CvImage());
-cv::Mat track_img_;
+Mat track_img_;
 
 // Run mode
 enum ModeType{m_wander, m_search, m_track};
@@ -60,7 +60,7 @@ bool isInTracking_ = true;
 
 // Target infomation
 std_msgs::String tgt_label_;
-cv::Rect roi_init_;
+Rect roi_init_;
 
 // Global params that record servo angle status
 string param_servo_pitch = "/status/servo/pitch";
@@ -83,7 +83,7 @@ void publishServo(int pitch_angle, int yaw_angle)
 
 void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
 {
-  // this callback should always active
+  // This callback should always active
   pitch_ = msg->data[0];
   yaw_ = msg->data[1];
 }
@@ -96,7 +96,7 @@ void resultCallback(const drv_msgs::recognized_targetConstPtr &msg)
   int max_x = msg->tgt_bbox_array.data[2];
   int max_y = msg->tgt_bbox_array.data[3];
 
-  roi_init_ = cv::Rect(min_x, min_y, max_x - min_x, max_y - min_y);
+  roi_init_ = Rect(min_x, min_y, max_x - min_x, max_y - min_y);
   tracker.initialized_ = false;
 }
 
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
   if (ros::param::has(param_servo_yaw))
     ros::param::get(param_servo_yaw, yaw_);
 
-  ROS_INFO("KCF tracking function initialized!\n");
+  ROS_INFO("KCF tracking function initialized.");
 
   while (ros::ok())
   {
