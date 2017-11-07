@@ -22,6 +22,9 @@ private:
   Scalar hsv_low_;
   Scalar hsv_high_;
 
+  void morphOps(Mat &thresh);
+  bool process(Mat img_in, Mat threshold, Mat &img_out,
+               vector<vector<int> > &bbox_array);
 };
 
 #endif // DETECTCOLOR_H

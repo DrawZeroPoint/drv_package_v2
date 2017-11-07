@@ -11,6 +11,7 @@ endif()
 
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
+  dynamic_reconfigure
   drv_msgs
   image_transport
   roscpp
@@ -27,6 +28,9 @@ add_definitions(${Caffe_DEFINITIONS})    # ex. -DCPU_ONLY
 set(OpenCV_DIR "/usr/share/OpenCV")
 find_package(OpenCV REQUIRED )
 message("Open CV version is ${OpenCV_VERSION}")
+
+# Add dynamic reconfigure API
+generate_dynamic_reconfigure_options(cfg/recog.cfg)
 
 catkin_package(
 )

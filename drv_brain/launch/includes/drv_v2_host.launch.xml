@@ -4,6 +4,8 @@
   <!-- Vision system referance frame on the robot -->
   <arg name="base_link_frame" default="base_link"/>
 
+  <arg name="recog_method" default="1"/>
+
   <!-- Initialize NVG 2.0 (Astra S camera and Arduino Mega 2560) -->
   <node ns="$(arg vision_namespace)" pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen">
     <param name="port" value="/dev/Arduino_vision"/>
@@ -58,19 +60,22 @@
 
   <!-- Initialize color recognize service, this is used as a simplified object recognizer -->
   <node ns="$(arg vision_namespace)" name="drv_recognize_color" pkg="drv_recognize" type="drv_recognize_color" output="screen">
-    <param name="hue_low" value="40" />
-    <param name="sat_low" value="200" />
-    <param name="val_low" value="200" />
-    <param name="hue_high" value="70" />
+    <!-- Suit for detecting green tee bottle -->
+    <param name="hue_low" value="26" />
+    <param name="sat_low" value="34" />
+    <param name="val_low" value="46" />
+    <param name="hue_high" value="77" />
     <param name="sat_high" value="255" />
     <param name="val_high" value="255" />
   </node>
 
-  <!-- Initialize the search client -->
-  <node ns="$(arg vision_namespace)" name="drv_search" pkg="drv_search" type="drv_search" output="screen">
-    <!-- Use color method -->
-    <param name="recognize_method" value="1">
-  </node>
+  <group if="$(arg recog_method)">
+    <!-- Initialize the search client -->
+    <node ns="$(arg vision_namespace)" name="drv_search" pkg="drv_search" type="drv_search" output="screen">
+      <!-- Use color method -->
+      <param name="recognize_method" value="$(arg recog_method)" />
+    </node>
+  </group>
 
   <!-- Initialize tracking function -->
   <node ns="$(arg vision_namespace)" name="drv_track_kcf" pkg="drv_track_kcf" type="drv_track_kcf" output="screen">
@@ -90,7 +95,5 @@
     <param name="left_arm_y_max" value="0.28" />
   </node>
 
-  <include file="$(find drv_brain)/launch/drv_gpd_port.launch">
-  </include>
 
 </launch>

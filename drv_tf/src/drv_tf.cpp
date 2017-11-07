@@ -80,7 +80,7 @@ void imuPitchCallback(const std_msgs::Float32ConstPtr & msg)
 void imuYawCallback(const std_msgs::Float32ConstPtr & msg)
 {
   // This callback only valid for NVG 2.0
-//  yaw_ = (msg->data - 90) * to_rad;
+  //yaw_ = (msg->data - 90) * to_rad;
 }
 
 void imageCallback(const sensor_msgs::ImageConstPtr &image_msg)
@@ -161,7 +161,7 @@ int main(int argc, char** argv){
   pnh.getParam("dy_pitch_to_yaw_value", dy_pitch_to_yaw);
   pnh.getParam("dz_pitch_to_yaw_value", dz_pitch_to_yaw);
 
-  // set up dynamic reconfigure callback
+  // Set up dynamic reconfigure callback
   dynamic_reconfigure::Server<drv_tf::tfConfig> server;
   dynamic_reconfigure::Server<drv_tf::tfConfig>::CallbackType f;
 

@@ -118,7 +118,7 @@ void teleOpCallback(const Int32MultiArrayConstPtr &msg)
     pitchAngle_ = pitch_temp;
 
   int yaw_temp = yawAngle_ - msg->data[1];
-  if (yaw_temp < yaw_max_ || yaw_temp > yaw_max_)
+  if (yaw_temp < yaw_min_ || yaw_temp > yaw_max_)
     return;
   else
     yawAngle_ = yaw_temp;

@@ -25,7 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(PCL 1.7 REQUIRED)
 
-#add dynamic reconfigure API
+# Add dynamic reconfigure API
 generate_dynamic_reconfigure_options(cfg/tf.cfg)
 
 catkin_package()
