@@ -13,11 +13,27 @@
 # --------------------------------------------------------
 
 import os
+import sys
 from fast_rcnn.config import cfg
 from fast_rcnn.test import im_detect
 from fast_rcnn.nms_wrapper import nms
 import numpy as np
 import caffe
+import timeit
+
+if "DRV" not in os.environ:
+    print "Can't find environment variable DRV."
+    sys.exit(1)
+
+dir_prefix = os.environ['DRV'] + '/supplements/object_recognize/'
+prototxt = dir_prefix + 'faster_rcnn_test.pt'
+caffemodel = dir_prefix + 'VGG16_faster_rcnn_final.caffemodel'
+
+if os.path.isfile(prototxt) and os.path.isfile(caffemodel):
+    print 'Found Caffe prototxt and model.'
+else:
+    print 'Caffe prototxt or model not found!'
+    sys.exit(2)
 
 CLASSES = ('__background__',
            'aeroplane', 'bicycle', 'bird', 'boat',
@@ -28,22 +44,10 @@ CLASSES = ('__background__',
 
 
 def process(im):
+    start_time = timeit.default_timer()
     result = []
 
     cfg.TEST.HAS_RPN = True  # Use RPN for proposals
-    if "DRV" not in os.environ:
-        print "Can't find environment variable DRV."
-        return result
-
-    dir_prefix = os.environ['DRV'] + '/supplements/object_recognize/'
-    prototxt = dir_prefix + 'faster_rcnn_test.pt'
-    caffemodel = dir_prefix + 'VGG16_faster_rcnn_final.caffemodel'
-
-    if os.path.isfile(prototxt) and os.path.isfile(caffemodel):
-        print 'Found Caffe prototxt and model.'
-    else:
-        print 'Caffe prototxt or model not found!'
-        return result
 
     use_gpu = True
     if use_gpu:
@@ -73,14 +77,13 @@ def process(im):
         inds = np.where(dets[:, -1] >= conf_thresh)[0]
 
         for i in inds:
-            # left up corner x, y; bottom down corner x, y
+            # Left up corner x, y; bottom down corner x, y
             bbox = dets[i, :4]
             score = dets[i, -1]
 
             instance = [bbox, score, cls]
             result.append(instance)
-            # result += str(int(bbox[0])) + ',' + str(int(bbox[1])) + ',' + str(int(bbox[2])) + ',' + str(
-            #     int(bbox[3])) + ',' + str(cls) + ','
 
-    print result
+    elapsed = timeit.default_timer() - start_time
+    print 'Detection finished in ' + elapsed + ' seconds.'
     return result

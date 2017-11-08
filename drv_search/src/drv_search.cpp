@@ -57,7 +57,7 @@ cv_bridge::CvImageConstPtr depthPtr_;
 int recognize_method_ = 0;
 
 
-void imageCallback(const sensor_msgs::ImageConstPtr & image_msg)
+void imageCallback(const sensor_msgs::ImageConstPtr &image_msg)
 {
   if (modeType_ != m_search)
     return;

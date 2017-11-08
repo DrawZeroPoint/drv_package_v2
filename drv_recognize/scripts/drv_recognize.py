@@ -19,6 +19,10 @@ def handle_recognize(req):
 
     bridge = CvBridge()
     try:
+        # Convert rosmsg to cv image
+        # np_array = np.fromstring(req.img_in.data, np.uint8)
+        # image = cv2.imdecode(np_array, cv2.CV_LOAD_IMAGE_COLOR)
+
         cv_image = bridge.imgmsg_to_cv2(req.img_in, "bgr8")
         (rows, cols, channels) = cv_image.shape
 
@@ -69,4 +73,8 @@ def recognize_server():
 
 
 if __name__ == "__main__":
-    recognize_server()
+    try:
+        recognize_server()
+    except rospy.ROSInterruptException:
+        rospy.loginfo("RCNN detection server terminated.")
+
