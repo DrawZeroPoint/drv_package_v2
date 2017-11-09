@@ -285,6 +285,7 @@ int main(int argc, char **argv)
         // Reset faceName after generating files needed
         faceName_ = "";
         nameAdded_ = true;
+        ROS_INFO("Name added, start capturing face.");
       }
     }
     
