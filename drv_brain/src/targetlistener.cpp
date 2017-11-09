@@ -31,7 +31,7 @@ bool TargetListener::checkLabel(string label)
   
   // Divide label by the first space
   string str_p = label.substr(0, space);
-  string str_s = label.substr(space);
+  string str_s = label.substr(space + 1);
   
   string name = "name";
   string train = "train";

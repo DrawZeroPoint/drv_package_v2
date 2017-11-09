@@ -156,7 +156,7 @@ void saveCurrentName()
 
 void generateTrainList()
 {
-  /* train list is a file list which contains lines in such format:
+  /* Train list is a file list which contains lines in such format:
     /path/to/image.jpg image_label
     example:
     /caffe/data/images/8.jpg 1
@@ -213,7 +213,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr & image_msg)
     if (imageCount_ == image_num_) {
       ROS_WARN("Capturing face image finished.");
       resetStatus();
-      ros::param::set(param_face_train_name_, "");
+      ros::param::del(param_face_train_name_);
       ros::param::set(param_face_need_train_, true);
     }
   }
@@ -268,7 +268,7 @@ int main(int argc, char **argv)
         ros::param::get(param_password_, password_);
         if (!checkAuthority()) {
           resetStatus();
-          ros::param::set(param_face_train_name_, "");
+          ros::param::del(param_face_train_name_);
           continue;
         }
         else
@@ -281,13 +281,14 @@ int main(int argc, char **argv)
         saveCurrentName();
         generateTrainList();
         nameAdded_ = true;
+        ros::param::del(param_face_train_name_);
       }
     }
     
     ros::spinOnce();
     
     if (nameAdded_) {
-      imshow("Capture face", faceROI_);
+      imshow("Face image", faceROI_);
       waitKey(50);
     }
     
@@ -319,6 +320,8 @@ int main(int argc, char **argv)
       resetStatus();
       ros::param::set(param_face_need_train_, false);
       faceTrainResult = false;
+      
+      destroyAllWindows();
     }
   }
   return 0;

@@ -138,8 +138,7 @@ int main(int argc, char **argv)
     if (ros::param::has(param_running_mode))
       ros::param::get(param_running_mode, modeType_);
 
-    if (modeType_ != m_wander)
-    {
+    if (modeType_ != m_wander) {
       resetStatus();
       continue;
     }
@@ -147,7 +146,7 @@ int main(int argc, char **argv)
     if (ros::param::has(param_need_recognize))
       ros::param::get(param_need_recognize, needRecognize_);
 
-    ros::spinOnce(); // get source image
+    ros::spinOnce(); // Get source image
 
     if (!needRecognize_)
       continue;
@@ -155,17 +154,17 @@ int main(int argc, char **argv)
     if (imagePtr_ == NULL)
       continue;
 
-    // get face region from source image, if no face found, continue
+    // Get face region from source image, if no face found, continue
     Mat img_out;
     vector<Rect> face_roi;
-    std::vector<Mat> face_imgs;
+    vector<Mat> face_imgs;
     if (!fd.Process(imagePtr_->image, img_out, face_roi, face_imgs))
       continue;
 
     vector<sensor_msgs::Image> face_msgs;
     imgToSensorMsg(face_imgs, face_msgs);
 
-    // call face recognize service
+    // Call face recognize service
     drv_msgs::face_recognize srv;
 
     srv.request.images_in = face_msgs;
@@ -181,7 +180,7 @@ int main(int argc, char **argv)
       }
       facePubFace_.publish(rf);
 
-      // put name string on image and publish
+      // Put name string on image and publish
       drawText(img_out, face_roi, rf.names);
       cv_bridge::CvImage cv_pub;
       cv_pub.encoding = sensor_msgs::image_encodings::BGR8;
