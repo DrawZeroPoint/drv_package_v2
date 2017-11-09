@@ -330,15 +330,15 @@ layers {
 }
 layers {
   bottom: "fc7"
-  top: "fc8_5"
-  name: "fc8_5"
+  top: "fc8_6"
+  name: "fc8_6"
   type: INNER_PRODUCT
   inner_product_param {
-    num_output: 5
+    num_output: 6
   }
 }
 layers {
-  bottom: "fc8_5"
+  bottom: "fc8_6"
   top: "prob"
   name: "prob"
   type: SOFTMAX

@@ -65,15 +65,18 @@ void TargetListener::getTargetStatus(bool &is_tgt_set, string &tgt_label)
           if (ros::param::has(param_target_label)) {
             string label;
             ros::param::get(param_target_label, label);
-            // Check if the label contains a object or name to be trained
+            // Check if the label contains a object or not
             if (checkLabel(label)) {
               // checkLabel return true indicate that the label is a object
               is_tgt_set = true;
               tgt_label = label;
             }
             else {
+              // If the target is not detection object, reset the params
               is_tgt_set = false;
               tgt_label = "";
+              ros::param::del(param_target_label);
+              ros::param::del(param_target_set);
             }
           }
           else {
