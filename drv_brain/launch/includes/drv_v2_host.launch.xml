@@ -21,8 +21,18 @@
     <arg name="color_depth_synchronization" value="true" />
   </include>
 
+  <!-- Limit the image quality to speed up -->
   <node pkg="dynamic_reconfigure" type="dynparam" name="resetter" 
-        args="set /$(arg vision_namespace)/rgb/image_rect_color/compressed jpeg_quality 40" />
+        args="set /$(arg vision_namespace)/rgb/image_rect_color/compressed jpeg_quality 40" 
+  </node>
+
+  <node pkg="dynamic_reconfigure" type="dynparam" name="dynparam" 
+        args="set_from_parameters /$(arg vision_namespace)/driver">
+    <!-- Using 25Hz instead of 30 Hz to speed up -->
+    <param name="ir_mode" value="6" />
+    <param name="color_mode" value="6" /> 
+    <param name="depth_mode" value="6" />
+  </node>
 
   <!-- Initialize motor message publisher -->
   <node ns="$(arg vision_namespace)" name="drv_motor" pkg="drv_motor" type="drv_motor" output="screen">
