@@ -35,7 +35,7 @@ const long interval = 60000;
 
 /* Servo control */
 #include <VarSpeedServo.h>
-const int servo_speed = 50; // 0-255
+const int servo_speed = 60; // 0-255
 VarSpeedServo p_sv;
 VarSpeedServo y_sv;
 
@@ -122,9 +122,10 @@ void setup() {
   // nh.advertise(pub_yaw);
   nh.subscribe(sub_error);
   nh.subscribe(sub_servo);
-  
+
+  // Adjust 450 and 2500 can tune the 90 deg position of the servo
   p_sv.attach(32, 500, 2500);
-  y_sv.attach(33, 500, 2500);
+  y_sv.attach(33, 450, 2500);
   p_sv.write(90, servo_speed, true); // Set the intial position of the servo
   y_sv.write(90, servo_speed, true); 
 

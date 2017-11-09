@@ -109,12 +109,12 @@ void resetStatus()
 /* This function is used for servo initialization and
  * publishing servo angles received from cellphone
  */
-void pubServo(int pitch_angle, int yaw_angle)
+void pubServo(int pitch_angle, int yaw_angle, int power)
 {
   std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch_angle);
   array.data.push_back(yaw_angle);
-  array.data.push_back(50);
+  array.data.push_back(50 * power);
   servoPub_.publish(array);
 }
 
@@ -128,6 +128,7 @@ void pubInfo(string info)
 
 void teleOpCallback(const Int32MultiArrayConstPtr &msg)
 {
+  int power = 2;
   if (msg->data.empty() || (msg->data[0] == 0 && msg->data[1] == 0))
     return;
 
@@ -143,7 +144,7 @@ void teleOpCallback(const Int32MultiArrayConstPtr &msg)
   else
     yawAngle_ = yaw_temp;
 
-  pubServo(pitchAngle_, yawAngle_);
+  pubServo(pitchAngle_, yawAngle_, power);
 }
 
 void servoCallback(const UInt16MultiArrayConstPtr &msg)
@@ -287,7 +288,7 @@ int main(int argc, char **argv)
 
     // Initialize servo position
     if (!servo_initialized_) {
-      pubServo(90, 90);
+      pubServo(90, 90, 1);
       servo_initialized_ = true;
       ROS_INFO("Servo initialized.");
     }
