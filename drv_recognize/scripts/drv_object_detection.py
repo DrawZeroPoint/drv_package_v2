@@ -1,4 +1,21 @@
 #!/usr/bin/env python
+
+# This is a upgraded version of drv_recognize.py, which increase the speed of detection
+# to approximately 0.4s compared with former 1.4s on a Quadro K2200 GPU
+# The main difference is that the Net only initialized for once
+
+# Make sure these 2 lines are in your ~/.bashrc:
+
+# export PYTHONPATH="/home/USER/py-faster-rcnn/lib:/home/USER/py-faster-rcnn/caffe-fast-rcnn/python:${PYTHONPATH}"
+# export DRV=/home/USER/catkin_ws/src/drv_package
+
+# Change 'USER' according to your environment
+
+# Author: Zhipeng Dong
+# 2017.11.9
+
+# --------------------------------------------------------
+
 import os
 import sys
 from fast_rcnn.config import cfg
@@ -13,6 +30,7 @@ import cv2
 from std_msgs.msg import String
 from std_msgs.msg import UInt16MultiArray
 from utils.timer import Timer
+from cv_bridge import CvBridge
 
 if "DRV" not in os.environ:
     print "Can't find environment variable DRV."
@@ -74,8 +92,10 @@ class FasterRCNN:
             caffe.set_mode_cpu()
 
         # Convert rosmsg to cv image
-        np_array = np.fromstring(req.img_in.data, np.uint8)
-        image = cv2.imdecode(np_array, cv2.CV_LOAD_IMAGE_COLOR)
+        # np_array = np.fromstring(req.img_in.data, np.uint8)
+        # image = cv2.imdecode(np_array, cv2.CV_LOAD_IMAGE_COLOR)
+        bridge = CvBridge()
+        image = bridge.imgmsg_to_cv2(req.img_in, "bgr8")
 
         objects = self._detect(image)
 
@@ -142,8 +162,8 @@ class NodeMain:
     def __init__(self):
         rp.init_node('drv_object_detector', anonymous=False)
         rp.on_shutdown(self.shutdown)
-
-        node = FasterRCNN('drv_recognize', 0.8, 0.3)
+        conf_thresh = rp.get_param('conf_thresh', 0.8)
+        node = FasterRCNN('drv_recognize', conf_thresh, 0.3)
         rp.spin()
 
     @staticmethod

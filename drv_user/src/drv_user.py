@@ -9,7 +9,8 @@ from drv_msgs.srv import *
 pubSR = rospy.Publisher('/comm/msg/vision/select_request', UInt32, queue_size=1)
 pubInfo = rospy.Publisher('/comm/msg/vision/info', String, queue_size=1)
 
-param_vision_search_param_lock = '/vision/select/param/lock'  # this is used for getting select here and in JARVIS
+# This is used for getting selection here and in JARVIS
+param_vision_search_param_lock = '/vision/select/param/lock'
 
 
 def handle_user_select(req):
@@ -54,7 +55,7 @@ def handle_user_select(req):
 
     rsp = user_selectResponse()
     rsp.selected_id = int(selected)
-    # reset the select parameter for next selection
+    # Reset the select parameter for next selection
     rospy.set_param(param_control_user_selected, -1)
     rospy.set_param(param_vision_search_param_lock, True)
 

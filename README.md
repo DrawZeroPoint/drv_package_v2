@@ -2,8 +2,8 @@
 
 ![overview](https://github.com/DrawZeroPoint/drv_package_v2/blob/master/supplements/figures/1.png )
 
-Deep Robot Vision 2.0 system for NEU Vision Gear, see the [wiki](https://github.com/DrawZeroPoint/drv_package_v2/wiki) for details.
-For the former version of DRV, refer https://github.com/NEU-TEAM/drv_package. 
+Deep Robot Vision (DRV) 2.0 system for NEU Vision Gear, a functional robot head with 1 RGB-D sensor, 2 DOF and 3D printed shell. Have a glance over the [wiki](https://github.com/DrawZeroPoint/drv_package_v2/wiki) for details.
+For the 1.0 version of DRV, refer https://github.com/NEU-TEAM/drv_package. 
 *We refer this package, aka drv_package_v2 as DRV in the following instructions.*
 
 ## 1. Software prerequisites
@@ -11,11 +11,11 @@ For the former version of DRV, refer https://github.com/NEU-TEAM/drv_package.
 We run this package in **indigo**, other versions of ROS *may not* be supported.
 
 ### 1.2 py-faster-rcnn
-This package is not included in the `drv_package`, you need to get it from <https://github.com/rbgirshick/py-faster-rcnn>, and install it following official guide (the customized Caffe installation part is basicly the same with installing ordinary Caffe when using cmake). Notice that if you use cuDNN 5.0 or above, `git clone https://github.com/donghongwen/py-faster-rcnn_cudnnv5.git` instead and cmake (or make). 
-After that, you need download the *VGG16_faster_rcnn_final.caffemodel*  into `DRV/supplements/object_recognize` which you can obtain by executing `./data/scripts/fetch_faster_rcnn_models.sh` in `$PY_FASTER_RCNN`. Notice that the download address of the model has been changed to https://dl.dropboxusercontent.com/s/6joa55k64xo2h68/Makefile.config?dl=0
+This package is not included in the `drv_package_v2`, you need to get it from <https://github.com/rbgirshick/py-faster-rcnn>, and install it following the official guide (the customized Caffe installation part is basicly the same with installing ordinary Caffe when using cmake). Notice that if you use cuDNN 5.0 or above, `git clone https://github.com/donghongwen/py-faster-rcnn_cudnnv5.git` instead. 
+After that, you need download the *VGG16_faster_rcnn_final.caffemodel* by executing `./data/scripts/fetch_faster_rcnn_models.sh` in `$PY_FASTER_RCNN` and put it into `DRV/supplements/object_recognize`. Notice that the download address of the model has been changed to https://dl.dropboxusercontent.com/s/6joa55k64xo2h68/Makefile.config?dl=0
 
 ### 1.3 rosserial
-Please refer [Arduino IDE Setup](http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup) for using rosserial. To install it, we basicly need to 1) `sudo apt-get install ros-indigo-rosserial-arduino` and `sudo apt-get install ros-indigo-rosserial`. 2) Install the library ros_lib. 3) Install the libraries you might not have: FastLed, VerSpeedServo and JY901. The first two can be found in Arduino offical library, the last is provided in DRV/supplements/arduino_control.
+Please refer [Arduino IDE Setup](http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup) for using rosserial. To use it with NVG, we basicly need to 1) `sudo apt-get install ros-indigo-rosserial-arduino` and `sudo apt-get install ros-indigo-rosserial`. 2) Install the library ros_lib. 3) Install the libraries you might not have: FastLed, VerSpeedServo and JY901. The first two libraries can be found in Arduino offical repository, the last is provided in DRV/supplements/arduino_control.
 We use **rosserial_arduino** to communicate between one Arduino Mega 2560 board and an JY61 6-axis accelerator. The Arduino controls 2 servos, one for pitching the RGBD-camera (Orbbec ASTRA S) and the other for rotating it. The accelerator measures the pitch and yaw angles of the camera. The .ino file loaded on the Arduino board is provided in folder `$DRV/supplements/arduino_control`, you can load it to your board with Arduino IDE <http://arduino.cc/en/Main/Software>.
 
 ### 1.4 Orbbec Astra
@@ -53,7 +53,7 @@ export DRV=/home/USER/catkin_ws/src/drv_package_v2
  **Replace 'USER' with your actual username**
 
 ## 4. Usage
-1. Run `roscore` first. Plug in the NVG (NEU Vision Gear).
+1. Run `roscore` first. Plug in the power supply and cabels of NVG.
 2. There are multiple ways you can run drv_package by launch file. First, if you are on a single machine with GPU, you can run `roslaunch drv_brain drv_v2_single_gpu.launch` which will start all nodes in drv_package. Second, if you are on a single machine with only CPU, you can run `roslaunch drv_brain drv_v2_single_cpu.launch` to launch the GPU-free nodes, which means the recognition functions will not work. 
 If you are in 2 machines configuration, which means you have 2 PCs and one of them is the host on the robot with only CPU and the another is your workstation having GPU, you can SSH to your host from the workstation and run `roslaunch drv_brain drv_v2_host.launch`, and run `roslaunch drv_brain drv_v2_workstation.launch` so that the GPU computation will be performed remotely. 
 3. If you let arg "pub_pose_once_id" in drv_v2_workstation_simple.launch.xml to be true, it will publish object pose for only once for one detection. 
