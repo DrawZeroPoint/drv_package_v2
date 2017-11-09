@@ -23,8 +23,7 @@
 
   <!-- Limit the image quality to speed up -->
   <node pkg="dynamic_reconfigure" type="dynparam" name="resetter" 
-        args="set /$(arg vision_namespace)/rgb/image_rect_color/compressed jpeg_quality 40" 
-  </node>
+        args="set /$(arg vision_namespace)/rgb/image_rect_color/compressed jpeg_quality 40" />
 
   <node pkg="dynamic_reconfigure" type="dynparam" name="dynparam" 
         args="set_from_parameters /$(arg vision_namespace)/driver">
