@@ -3,7 +3,9 @@
 ![overview](https://github.com/DrawZeroPoint/drv_package_v2/blob/master/supplements/figures/1.png )
 
 Deep Robot Vision (DRV) 2.0 system for NEU Vision Gear, a functional robot head with 1 RGB-D sensor, 2 DOF and 3D printed shell. Have a glance over the [wiki](https://github.com/DrawZeroPoint/drv_package_v2/wiki) for details.
-For the 1.0 version of DRV, refer https://github.com/NEU-TEAM/drv_package. 
+
+For the 1.0 version of DRV, refer https://github.com/NEU-TEAM/drv_package.
+
 *We refer this package, aka drv_package_v2 as DRV in the following instructions.*
 
 ## 1. Software prerequisites
@@ -66,10 +68,9 @@ If you are in 2 machines configuration, which means you have 2 PCs and one of th
 Notice that this only happens in *wander mode*. With these params set, the system will use model described in 1.6 to detect faces. 
 9. You can also train on your own dataset by capturing face image online. To do that, First you need set param to capture images: 
 `rosparam set /vision/face/train/name NAME`. 
-Replace NAME with the actual name of that person. After that, the person shall stand in front of the camera and 100 face images will be captured by default. 
-Then you can perform training by set param:
-`rosparam set /vision/face/need_train true` 
-and the training will then be performed. Notice that this all run in GPU workstation. If you use password, you may set it by `rosparam set /password PASSWORD`, the default password is 'admin' which stored in 'DRV/supplements/password'
+Replace NAME with the actual name of that person. 
+After that, the person shall stand in front of the camera and 100 face images will be captured by default. 
+Then you can perform training by set param: `rosparam set /vision/face/need_train true` and the training will then be performed. Notice that this will run in GPU workstation. If you use password, you may set it by `rosparam set /password PASSWORD`, the default password is 'admin' which stored in 'DRV/supplements/password'
 
 ## 5. Trouble Shooting
 1. If custom message issue occurred when running catkin_make, run `catkin_make --pkg drv_msgs --force-cmake` first to make the msg header files needed, and then run `catkin_make`.
@@ -78,10 +79,16 @@ and the training will then be performed. Notice that this all run in GPU worksta
 ## 6. Development details
 1. To demonstrate the status of the robot, we use full-color LEDs to show the status with these light code (std_msgs::UInt16) defination:
 0: normal (green)
+
 1: warning (yellow) 2: error (red) 3: fatal error (red flash)
+
 10: fully bright (white) 11: extinguished (black) 12: breathing light (flashing purple)
+
 To set the status, message should be published to '/vision/error'
+
 2. The servo angles are published to /vision/servo, and transfered to /vision/motor which directly received by servos. These messages are in `std_msgs::UInt16MultiArray` format and the vector can contain 2, 3 or 4 parameters, including [pitch_angle, yaw_angle], [pitch_angle, yaw_angle, speed_for_both] or [pitch_angle, yaw_angle, pitch_speed, yaw_speed]. The pitch angle is in range [60, 140], and yaw angle is in range [0, 180]. You can publish the message like this: `rostopic pub /vision/servo std_msgs/UInt16MultiArray '{data: [90, 90]}' --once`, you should not directly publish to `/vision/motor`.
+
+3. To speed up the system, we let the image being published in 15Hz by setting data_skip as 1. Besides, we let the most used image topic to have jpeg_quality equal to 40, and search result image quality to be 20. See the launch files for detail.
 
 ## Author
 [Zhipeng Dong](https://github.com/DrawZeroPoint) zhipengdongneu@gmail.com (Discussion about this program is welcome) 

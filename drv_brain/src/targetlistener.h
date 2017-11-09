@@ -2,6 +2,7 @@
 #define TARGETLISTENER_H
 
 #include <ros/ros.h>
+#include <string>
 
 using namespace std;
 
@@ -15,12 +16,19 @@ private:
   bool isTargetSet_;
   string targetLabel_;
 
-  // target info from control
+  // Target info from Android device
   string param_target_set;
   string param_target_label;
-  // target info from action
+  
+  // Training face recognition info
+  string param_train_face_name;
+  string param_train_face_run;
+  
+  // Target info from action
   string param_action_target_set;
   string param_action_target_label;
+  
+  bool checkLabel(string label);
 };
 
 #endif // TARGETLISTENER_H
