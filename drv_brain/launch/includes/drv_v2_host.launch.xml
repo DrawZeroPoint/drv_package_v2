@@ -21,6 +21,9 @@
     <arg name="color_depth_synchronization" value="true" />
   </include>
 
+  <node pkg="dynamic_reconfigure" type="dynparam" name="resetter" 
+        args="set /$(arg vision_namespace)/rgb/image_rect_color/compressed jpeg_quality 40" />
+
   <!-- Initialize motor message publisher -->
   <node ns="$(arg vision_namespace)" name="drv_motor" pkg="drv_motor" type="drv_motor" output="screen">
   </node>
