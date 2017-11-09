@@ -2,6 +2,7 @@
 
   <include file="$(find drv_brain)/launch/includes/drv_v2_workstation.launch.xml">
     <arg name="vision_namespace" default="vision"/>
+    <arg name="need_authentication" default="false"/>
   </include>
 
 </launch>
