@@ -26,7 +26,6 @@ bool TargetListener::checkLabel(string label)
   size_t space = label.find_first_of(":");
   if (space == string::npos) {
     // No space in current string, so it should be target
-    ROS_INFO("The label %s indicate a object.", label.c_str());
     return true;
   }
   
@@ -38,7 +37,6 @@ bool TargetListener::checkLabel(string label)
   string train = "train";
   string face = "face";
   if (str_p.find(name) != string::npos) {
-    ROS_INFO("The name is %s.", str_s.c_str());
     ros::param::set(param_train_face_name, str_s);
   }
   else if (str_p.find(train) != string::npos && 

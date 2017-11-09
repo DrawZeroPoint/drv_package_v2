@@ -201,19 +201,20 @@ void imageCallback(const sensor_msgs::ImageConstPtr & image_msg)
   
   if (fd_.getOneFace(imagePtr_->image, faceROI_)) {
     // If captured image contains only one face, save it
-    string n = nameVec_[currNameId_];
-    assert(n == faceName_);
-    
+    if (!faceROI_.empty()) {
+      imshow("Face image", faceROI_);
+      waitKey(10);
+    }
     saveImage(faceROI_, currNameId_);
-    ROS_WARN("Face image number %d captured.", imageCount_);
+    ROS_INFO("Face image number %d captured.", imageCount_);
     imageCount_++;
     
     /* If captured image reached demanded number, 
      * stop capturing and try starting training */
     if (imageCount_ == image_num_) {
-      ROS_WARN("Capturing face image finished.");
+      ROS_INFO("Capturing face image finished.");
       resetStatus();
-      ros::param::del(param_face_train_name_);
+
       ros::param::set(param_face_need_train_, true);
     }
   }
@@ -245,8 +246,6 @@ int main(int argc, char **argv)
   
   ROS_INFO("Ready to train the face recognition network.");
   
-  namedWindow("Capture face");
-  
   while (ros::ok()) {
     if (ros::param::has(param_running_mode))
       ros::param::get(param_running_mode, modeType_);
@@ -258,6 +257,7 @@ int main(int argc, char **argv)
     
     if (ros::param::has(param_face_train_name_)) {
       ros::param::get(param_face_train_name_, faceName_);
+      ros::param::del(param_face_train_name_);
     }
     
     if (faceName_ != "") {
@@ -268,7 +268,6 @@ int main(int argc, char **argv)
         ros::param::get(param_password_, password_);
         if (!checkAuthority()) {
           resetStatus();
-          ros::param::del(param_face_train_name_);
           continue;
         }
         else
@@ -278,19 +277,18 @@ int main(int argc, char **argv)
       /* If authentication is passed, check whether the name 
        * has been added, the added name will be retrained */
       if (!nameAdded_) {
+        // If faceName has not been added, add it to name.txt
+        // and generate training file
         saveCurrentName();
         generateTrainList();
+        
+        // Reset faceName after generating files needed
+        faceName_ = "";
         nameAdded_ = true;
-        ros::param::del(param_face_train_name_);
       }
     }
     
     ros::spinOnce();
-    
-    if (nameAdded_ && !faceROI_.empty()) {
-      imshow("Face image", faceROI_);
-      waitKey(50);
-    }
     
     bool needTrain = false;
     // After capturing all images, defaultly set needTrain=true
@@ -320,8 +318,6 @@ int main(int argc, char **argv)
       resetStatus();
       ros::param::set(param_face_need_train_, false);
       faceTrainResult = false;
-      
-      destroyAllWindows();
     }
   }
   return 0;
