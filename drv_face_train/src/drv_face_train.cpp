@@ -287,7 +287,7 @@ int main(int argc, char **argv)
     
     ros::spinOnce();
     
-    if (nameAdded_) {
+    if (nameAdded_ && !faceROI_.empty()) {
       imshow("Face image", faceROI_);
       waitKey(50);
     }

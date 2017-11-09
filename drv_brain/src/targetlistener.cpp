@@ -23,7 +23,7 @@ bool TargetListener::checkLabel(string label)
    * name Wang          name to be added (face add)
    * train face         train on face data
    */
-  size_t space = label.find_first_of(" ");
+  size_t space = label.find_first_of(":");
   if (space == string::npos) {
     // No space in current string, so it should be target
     return true;
