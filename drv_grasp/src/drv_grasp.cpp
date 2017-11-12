@@ -535,9 +535,11 @@ int main(int argc, char **argv)
       ros::param::get(param_running_mode, modeType_);
     
     if (modeType_ != m_track) {
+      // Reset the status
       hasGraspPlan_ = false;
       posePublished_ = false;
       offsetNeedPub_ = true;
+      pub_pose_once_ = false;
       continue;
     }
     
@@ -559,8 +561,11 @@ int main(int argc, char **argv)
 
     if (hasGraspPlan_ && !posePublished_)
       flag.data = 1;
-    if (hasGraspPlan_ && posePublished_)
+    if (hasGraspPlan_ && posePublished_) {
+      // Force pub_pose_once_ = true to prevent the pose being published twice
+      pub_pose_once_ = true;
       flag.data = 2;
+    }
     
     graspPubStatus_.publish(flag);
   }
