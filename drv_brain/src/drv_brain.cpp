@@ -52,8 +52,8 @@ string targetTypeName[5] = {"in air", "on the table", "on the ground",
 int tgtType_ = t_null;
 string param_target_type = "/status/target/type";
 
-string param_target_set =   "/comm/param/control/target/is_set";
-string param_target_label = "/comm/param/control/target/label";
+string param_comm_target_set =   "/comm/param/control/target/is_set";
+string param_comm_target_label = "/comm/param/control/target/label";
 
 // Target status control
 string targetLabel_ = "";
@@ -106,8 +106,8 @@ void resetStatus()
 
   modeType_ = m_wander;
   
-  ros::param::set(param_target_set, false);
-  ros::param::set(param_target_label, "");
+  ros::param::set(param_comm_target_set, false);
+  ros::param::set(param_comm_target_label, "");
 }
 
 
