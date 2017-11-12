@@ -48,7 +48,8 @@ bool TargetListener::checkLabel(string label)
 
 void TargetListener::getTargetStatus(bool &is_tgt_set, string &tgt_label)
 {
-  // First get target from action, then from Android device
+  // First get target from action, then from Android deviceaicrobo@stake:~$ 
+
   if (ros::param::has(param_action_target_set)) {
     ros::param::get(param_action_target_set, is_tgt_set);
     if (is_tgt_set) {
