@@ -49,4 +49,8 @@
   <include file="$(find drv_brain)/launch/drv_gpd_port.launch">
   </include>
 
+  <!-- Initialize image_view2 to select the target -->
+  <node ns="$(arg vision_namespace)" name="image_view2" pkg="image_view2" type="image_view2" output="screen">
+  </node>
+
 </launch>

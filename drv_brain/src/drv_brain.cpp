@@ -329,6 +329,7 @@ int main(int argc, char **argv)
         if (targetLabel_ == "user selected object") {
           // If the target is selected by user but no more been found,
           // which means tracking has lost it, reset.
+          pubInfo("Tracking did not follow.");
           resetStatus();
         }
         else

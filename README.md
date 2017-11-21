@@ -36,6 +36,9 @@ We also provide the online training method of the face recognition model. To use
 ### 1.7 gpd
 We optionally use [gpd](https://github.com/atenpas/gpd) to generate grasp pose. You may need to install it first to compile DRV. We provide the launch file `drv_gpd_port.launch` to run gpd in `DRV/drv_brain/launch`
 
+### 1.8 image_view2
+We optionally use [image_view2](https://github.com/NEU-TEAM/image_view2) which developed by [jsk](https://github.com/jsk-ros-pkg/jsk_common.git) to select the target. We modified the code add removed some OpenCV 3 features to be compatible with ROS Indigo.
+
 ## 2 Hardware
 To run searching and tracking modules smoothly, a workstation with NVIDIA GPU which has at least 4GB of GRAM is necessary. If the machine has no GPU, it can only run in **simple** mode which means no searching or face recognition can be performed.
 The host computer's CPUs run at frequencies exceeding 2.4 GHz. Low frequencies will lead to a delay in point cloud capturing and communication between the workstation and the host PC.
