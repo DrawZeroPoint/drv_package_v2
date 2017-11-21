@@ -15,6 +15,8 @@ AndroidListener::AndroidListener()
 void AndroidListener::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
 {
   if (targetNeedPub_) {
+    std::string param_target_set = "/comm/param/control/target/is_set";
+    ros::param::set(param_target_set, true);
     is_tgt_set = true;
     ALPubROI_.publish(rt_);
     targetNeedPub_ = false;
