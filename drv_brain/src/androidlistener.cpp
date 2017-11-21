@@ -70,6 +70,8 @@ void AndroidListener::IVCallback(const geometry_msgs::PolygonStampedConstPtr &ro
   }
   else {
     ROS_INFO("Rect from ImageView2 should have 2 points.");
+    std::string param_target_set = "/comm/param/control/target/is_set";
+    ros::param::set(param_target_set, false);
     targetNeedPub_ = false;
   }
 }
