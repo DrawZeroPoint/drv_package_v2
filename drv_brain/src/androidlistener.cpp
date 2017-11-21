@@ -12,9 +12,10 @@ AndroidListener::AndroidListener()
   subImageView2ROI_ = nh.subscribe<geometry_msgs::PolygonStamped>(roi_str, 1, &AndroidListener::IVCallback, this);
 }
 
-void AndroidListener::publishOnceIfTargetSelected(bool is_tgt_set, bool &is_tgt_found)
+void AndroidListener::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
 {
-  if (is_tgt_set && targetNeedPub_) {
+  if (targetNeedPub_) {
+    is_tgt_set = true;
     ALPubROI_.publish(rt_);
     targetNeedPub_ = false;
     is_tgt_found = true;

@@ -16,7 +16,7 @@ public:
   AndroidListener();
 
   ros::NodeHandle nh;
-  void publishOnceIfTargetSelected(bool is_tgt_set, bool &is_tgt_found);
+  void publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found);
 
 private:
   ros::Publisher ALPubROI_;
