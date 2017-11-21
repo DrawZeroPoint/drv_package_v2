@@ -6,6 +6,7 @@
 #include <std_msgs/UInt16MultiArray.h>
 
 #include <geometry_msgs/Point32.h>
+#include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PolygonStamped.h>
 
 #include <drv_msgs/recognized_target.h>
@@ -27,7 +28,10 @@ private:
   
   // subImageView2ROI_ sub roi from ImageView2 and process it with 
   ros::Subscriber subImageView2ROI_;
-  void IVCallback(const geometry_msgs::PolygonStampedConstPtr &roi_msg);
+  void IVROICallback(const geometry_msgs::PolygonStampedConstPtr &roi_msg);
+  
+  ros::Subscriber subImageView2P_;
+  void IVPCallback(const geometry_msgs::PointStampedConstPtr &p_msg);
 
   drv_msgs::recognized_target rt_;
   bool targetNeedPub_;

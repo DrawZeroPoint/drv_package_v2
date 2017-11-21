@@ -7,9 +7,13 @@ AndroidListener::AndroidListener()
   ALPubROI_ = nh.advertise<drv_msgs::recognized_target>("search/recognized_target", 1);
   ALSubROI_ = nh.subscribe<std_msgs::Float32MultiArray>("/jarvis/roi", 1, &AndroidListener::roiCallback, this);
   
-  // Sub from image_view2 from jsk
+  // Sub rectangle bbox from image_view2 (developed by jsk)
   std::string roi_str = "/vision/rgb/image_rect_color/screenrectangle";
-  subImageView2ROI_ = nh.subscribe<geometry_msgs::PolygonStamped>(roi_str, 1, &AndroidListener::IVCallback, this);
+  subImageView2ROI_ = nh.subscribe<geometry_msgs::PolygonStamped>(roi_str, 1, &AndroidListener::IVROICallback, this);
+  
+  // Sub point from image_view2, only for cancel the target
+  std::string p_str = "/vision/rgb/image_rect_color/screenpoint";
+  subImageView2P_ = nh.subscribe<geometry_msgs::PointStamped>(p_str, 1, &AndroidListener::IVPCallback, this);
 }
 
 void AndroidListener::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
@@ -47,7 +51,7 @@ void AndroidListener::roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi
     targetNeedPub_ = false;
 }
 
-void AndroidListener::IVCallback(const geometry_msgs::PolygonStampedConstPtr &roi_msg)
+void AndroidListener::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &roi_msg)
 {
   if (roi_msg->polygon.points.size() == 2) {
     std_msgs::UInt16MultiArray array;
@@ -74,4 +78,12 @@ void AndroidListener::IVCallback(const geometry_msgs::PolygonStampedConstPtr &ro
     ros::param::set(param_target_set, false);
     targetNeedPub_ = false;
   }
+}
+
+void AndroidListener::IVPCallback(const geometry_msgs::PointStampedConstPtr &p_msg)
+{
+  ROS_INFO("Target canceled by ImageView2.");
+  std::string param_target_set = "/comm/param/control/target/is_set";
+  ros::param::set(param_target_set, false);
+  targetNeedPub_ = false;
 }
