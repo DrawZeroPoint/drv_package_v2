@@ -3,11 +3,11 @@
 
 #include <opencv2/opencv.hpp>
 
-//default capture width and height
+// Default capture width and height
 const int FRAME_WIDTH = 640;
 const int FRAME_HEIGHT = 480;
 
-//minimum and maximum object area
+// Minimum and maximum object area
 const int MIN_OBJECT_AREA = 400;
 const int MAX_OBJECT_AREA =  160000;
 const float COLOR_DIFF = 10;

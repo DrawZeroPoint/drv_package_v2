@@ -9,7 +9,7 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/UInt16MultiArray.h>
 
-// custom message
+// Custom message
 #include <drv_msgs/recognized_target.h>
 
 // STL
@@ -101,35 +101,34 @@ void resultCallback(const drv_msgs::recognized_targetConstPtr &msg)
 }
 
 bool verifyDetection(Rect roi) {
-  if (roi.area() < 20) {
-    ROS_INFO("Target area in image is %d, too small to be tracked.", roi.area());
-    return false;
+  /* If the roi is out of image region, cut it to fit the image */
+  if (roi.x < 0) {
+    roi.x = 0;
   }
-  if (roi.x < 0 || roi.x >= 640) {
-    ROS_INFO("ROI X is %d.", roi.x);
-    return false;
+  if (roi.x >= 640) {
+    roi.x = 639;
   }
-  if (roi.y < 0 || roi.y >= 480) {
-    ROS_INFO("ROI Y is %d.", roi.y);
-    return false;
+  if (roi.y < 0) {
+    roi.y = 0;
+  }
+  if (roi.y >= 480) {
+    roi.y = 479;
   }
   if (roi.x + roi.width >= 640) {
-    ROS_INFO("ROI X+W is %d.", roi.x + roi.width);
-    return false;
+    roi.width = 639 - roi.x;
   }
   if (roi.y + roi.height >= 480) {
-    ROS_INFO("ROI Y+H is %d.", roi.y + roi.height);
-    return false;
+    roi.height = 479 - roi.y;
   }
-  if (roi.width <= 0 || roi.height <= 0) {
-    ROS_INFO("ROI W, H is %d, %d.", roi.width, roi.height);
+  if (roi.area() < MIN_OBJECT_AREA || roi.area() > MAX_OBJECT_AREA) {
+    ROS_WARN("Target ROI is unnormal.");
     return false;
   }
   return true;
 }
 
 void pubTarget(std_msgs::Header header, vector<unsigned int> mask_id, Rect roi) {
-  // publish new target info
+  // Publish new target info
   drv_msgs::recognized_target result;
   result.header = header;
   result.label = tgt_label_;
@@ -147,9 +146,6 @@ void pubTarget(std_msgs::Header header, vector<unsigned int> mask_id, Rect roi) 
 bool postProcess(Rect roi, Mat &track_img)
 {
   if (!verifyDetection(roi))
-    return false;
-
-  if (roi.area() < MIN_OBJECT_AREA || roi.area() > MAX_OBJECT_AREA)
     return false;
 
   Utilities::markImage(roi, track_img);
@@ -190,13 +186,13 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
       return;
     }
 
-    // publish image of target with bounding box
+    // Publish image of target with bounding box
     track_ptr_->header = image_msg->header;
     track_ptr_->image = track_img_;
     track_ptr_->encoding = sensor_msgs::image_encodings::BGR8;
     trackPubImage_.publish(track_ptr_->toImageMsg());
 
-    // drive the camera so that the center of the image captured is on object center
+    // Move the camera so that the center of the image captured is on object center
     int d_x = roi.x + roi.width / 2 - 320;
     int d_y = roi.y + roi.height / 2 - 240;
     int deg_x = int(d_x * x_to_angle); // offset the robot head
@@ -207,26 +203,26 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     pubTarget(image_msg->header, mask_id, roi);
 
     if (abs(deg_x) < angle_step && abs(deg_y) < angle_step) {
-      // target on image center, continuing tracking..
+      // Target on image center, continue tracking..
       isInTracking_ = true;
       delay_ = WAIT_LOOP;
       pubTarget(image_msg->header, mask_id, roi);
       return;
     }
     if (abs(deg_x) >= angle_step && abs(deg_y) < angle_step) {
-      // need move in x direction
+      // Need move in x direction
       if (deg_x < -angle_step) deg_x = -angle_step;
       if (deg_x > angle_step) deg_x = angle_step;
       deg_y = 0;
     }
     if (abs(deg_x) < angle_step && abs(deg_y) >= angle_step) {
-      // need move in y direction
+      // Need move camera in y direction
       if (deg_y < -angle_step) deg_y = -angle_step;
       if (deg_y > angle_step) deg_y = angle_step;
       deg_x = 0;
     }
     if (abs(deg_x) >= angle_step && abs(deg_y) >= angle_step) {
-      // need move in both directions
+      // Need move in both directions
       if (deg_x < -angle_step) deg_x = -angle_step;
       if (deg_x > angle_step) deg_x = angle_step;
       if (deg_y < -angle_step) deg_y = -angle_step;
@@ -236,7 +232,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     int y_ang = - deg_y + pitch_;
 
     if (!(x_ang >= 0 && x_ang <= 180 && y_ang >= 60 && y_ang <= 140)) {
-      // target center out of camera movable region
+      // Target center out of camera movable region
       pubTarget(image_msg->header, mask_id, roi);
       ROS_WARN_THROTTLE(31, "Target out of camera movable area.");
       // Although out of movable area, still in tracking
@@ -244,7 +240,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
       // tracker.initialized_ = false;
     }
     else {
-      // target center is in camera movable region, so move the camera
+      // Target center is in camera movable region, so move the camera
       publishServo(y_ang, x_ang);
     }
   }
