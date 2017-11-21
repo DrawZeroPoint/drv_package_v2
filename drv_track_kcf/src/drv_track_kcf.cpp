@@ -76,6 +76,7 @@ void publishServo(int pitch_angle, int yaw_angle)
   std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch_angle);
   array.data.push_back(yaw_angle);
+  array.data.push_back(30); // Servo speed
   pitch_ = pitch_angle;
   yaw_ = yaw_angle;
   trackPubServo_.publish(array);

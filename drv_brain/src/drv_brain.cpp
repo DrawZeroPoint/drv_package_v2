@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 
-#include "androidlistener.h"
+#include "targetselecter.h"
 #include "facelistener.h"
 #include "targetlistener.h"
 
@@ -267,10 +267,10 @@ int main(int argc, char **argv)
   ros::Subscriber sub_gp = nh.subscribe<Int8>("status/grasp/feedback", 1, graspCallback);
   ros::Subscriber sub_fr = nh.subscribe<Bool>("status/face/feedback", 1, faceRecognizeCallback);
 
-  AndroidListener al;
   FaceListener fl;
   TargetListener tl;
-
+  TargetSelecter ts;
+  
   resetStatus();
 
   pubInfo("Deep Robot Vision system initialized!");
@@ -316,7 +316,7 @@ int main(int argc, char **argv)
     }
 
     // If user selects target on cellphone, publish the target
-    al.publishOnceIfTargetSelected(isTargetSet_, foundTarget_);
+    ts.publishOnceIfTargetSelected(isTargetSet_, foundTarget_);
 
     // Mode selection, notice that modeType_ should only be set by central control
     if (isTargetSet_) {

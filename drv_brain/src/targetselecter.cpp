@@ -1,22 +1,22 @@
-#include "androidlistener.h"
+#include "targetselecter.h"
 #include <string>
 
-AndroidListener::AndroidListener()
+TargetSelecter::TargetSelecter()
 {
   targetNeedPub_ = false;
   ALPubROI_ = nh.advertise<drv_msgs::recognized_target>("search/recognized_target", 1);
-  ALSubROI_ = nh.subscribe<std_msgs::Float32MultiArray>("/jarvis/roi", 1, &AndroidListener::roiCallback, this);
+  ALSubROI_ = nh.subscribe<std_msgs::Float32MultiArray>("/jarvis/roi", 1, &TargetSelecter::roiCallback, this);
   
   // Sub rectangle bbox from image_view2 (developed by jsk)
   std::string roi_str = "/vision/rgb/image_rect_color/screenrectangle";
-  subImageView2ROI_ = nh.subscribe<geometry_msgs::PolygonStamped>(roi_str, 1, &AndroidListener::IVROICallback, this);
+  subImageView2ROI_ = nh.subscribe<geometry_msgs::PolygonStamped>(roi_str, 1, &TargetSelecter::IVROICallback, this);
   
   // Sub point from image_view2, only for cancel the target
   std::string p_str = "/vision/rgb/image_rect_color/screenpoint";
-  subImageView2P_ = nh.subscribe<geometry_msgs::PointStamped>(p_str, 1, &AndroidListener::IVPCallback, this);
+  subImageView2P_ = nh.subscribe<geometry_msgs::PointStamped>(p_str, 1, &TargetSelecter::IVPCallback, this);
 }
 
-void AndroidListener::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
+void TargetSelecter::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
 {
   if (targetNeedPub_) {
     std::string param_target_set = "/comm/param/control/target/is_set";
@@ -28,7 +28,7 @@ void AndroidListener::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt
   }
 }
 
-void AndroidListener::roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi_msg)
+void TargetSelecter::roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi_msg)
 {
   if (roi_msg->data.size() == 4) {
     std_msgs::UInt16MultiArray array;
@@ -47,11 +47,15 @@ void AndroidListener::roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi
     targetNeedPub_ = true;
     ROS_INFO("User selected target received.");
   }
-  else
+  else {
+    ROS_INFO("Target cancelled by JARVIS.");
+    std::string param_target_set = "/comm/param/control/target/is_set";
+    ros::param::set(param_target_set, false);
     targetNeedPub_ = false;
+  }
 }
 
-void AndroidListener::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &roi_msg)
+void TargetSelecter::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &roi_msg)
 {
   if (roi_msg->polygon.points.size() == 2) {
     std_msgs::UInt16MultiArray array;
@@ -80,9 +84,9 @@ void AndroidListener::IVROICallback(const geometry_msgs::PolygonStampedConstPtr 
   }
 }
 
-void AndroidListener::IVPCallback(const geometry_msgs::PointStampedConstPtr &p_msg)
+void TargetSelecter::IVPCallback(const geometry_msgs::PointStampedConstPtr &p_msg)
 {
-  ROS_INFO("Target canceled by ImageView2.");
+  ROS_INFO("Target cancelled by ImageView2.");
   std::string param_target_set = "/comm/param/control/target/is_set";
   ros::param::set(param_target_set, false);
   targetNeedPub_ = false;

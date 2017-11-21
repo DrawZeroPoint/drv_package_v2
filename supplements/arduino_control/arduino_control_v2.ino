@@ -82,14 +82,15 @@ ros::Subscriber<std_msgs::UInt16MultiArray> sub_servo("motor", servo_cb);
 
 /* IMU */
 #include <JY901.h>
-float x_ang = 0.0; // roll angle
-// float y_ang = 0.0; // ptich angle
+/* x toward right, y toward up, z toward back */
+float p_ang = 0.0; // pitch angle along x axis
+float y_ang = 0.0; // yaw angle along y axis
 // float z_ang = 0.0; // yaw angle
 
 std_msgs::Float32 pitch_msg;
 std_msgs::Float32 yaw_msg;
 ros::Publisher pub_pitch("camera_pitch", &pitch_msg);
-// ros::Publisher pub_yaw("camera_yaw", &yaw_msg);
+ros::Publisher pub_yaw("camera_yaw", &yaw_msg);
 
 /* LED control */
 #include <FastLED.h>
@@ -119,7 +120,7 @@ void setup() {
   nh.getHardware()->setBaud(57600);
   nh.initNode();
   nh.advertise(pub_pitch);
-  // nh.advertise(pub_yaw);
+  nh.advertise(pub_yaw);
   nh.subscribe(sub_error);
   nh.subscribe(sub_servo);
 
@@ -140,15 +141,15 @@ void loop() {
   {
     JY901.CopeSerialData(Serial1.read()); // Call JY901 data copy function
   }
-  x_ang = (float)JY901.stcAngle.Angle[0]/32768*180;
-  // y_ang = (float)JY901.stcAngle.Angle[1]/32768*180;
+  p_ang = (float)JY901.stcAngle.Angle[0]/32768*180;
+  y_ang = (float)JY901.stcAngle.Angle[1]/32768*180;
   // z_ang = (float)JY901.stcAngle.Angle[2]/32768*180;
   
-  pitch_msg.data = x_ang; // We make x axis as yaw
+  pitch_msg.data = p_ang;
   pub_pitch.publish(&pitch_msg);
   
-  // yaw_msg.data = 90.0 + z_ang;
-  // pub_yaw.publish(&yaw_msg);
+  yaw_msg.data = 90.0 + y_ang;
+  pub_yaw.publish(&yaw_msg);
 
   float x_acc = (float)JY901.stcAcc.a[0]/32768*16;
   float y_acc = (float)JY901.stcAcc.a[1]/32768*16;
