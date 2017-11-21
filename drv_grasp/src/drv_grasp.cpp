@@ -309,7 +309,7 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
     hasGraspPlan_ = true;
   }
   else
-    ROS_INFO("Get grasp point failed!");
+    ROS_INFO_THROTTLE(11, "Get grasp point failed!");
 }
 #else
 void getCloudByInliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
@@ -528,7 +528,7 @@ int main(int argc, char **argv)
   // This is mandatory and should be declared before while loop
   tf2_ros::TransformListener tfListener(tfBufferCameraToBase_);
   
-  ROS_INFO("Grasp planning function initialized!");
+  ROS_INFO("Grasp planning function initialized.");
   
   while (ros::ok()) {
     if (ros::param::has(param_running_mode))

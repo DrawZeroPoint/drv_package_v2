@@ -133,7 +133,6 @@ void pubInfo(string info)
 
 void teleOpCallback(const Int32MultiArrayConstPtr &msg)
 {
-  int power = 2;
   if (msg->data.empty() || (msg->data[0] == 0 && msg->data[1] == 0))
     return;
 
@@ -149,6 +148,7 @@ void teleOpCallback(const Int32MultiArrayConstPtr &msg)
   else
     yawAngle_ = yaw_temp;
 
+  int power = 2;
   pubServo(pitchAngle_, yawAngle_, power);
 }
 
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
     if (!servo_initialized_) {
       pubServo(90, 90, 1);
       servo_initialized_ = true;
-      ROS_INFO("Servo initialized.");
+      ROS_INFO("Servo reset.");
     }
 
     // Get feedback to determine whether target were found
@@ -350,6 +350,10 @@ int main(int argc, char **argv)
       drvPubMode_.publish(mode_msg);
       ROS_INFO("Current mode: %s.", modeName[modeType_].c_str());
       modeTypeTemp_ = modeType_;
+      if (modeType_ == m_wander) {
+        // Reset head pose
+        servo_initialized_ = false;
+      }
     }
   }
 

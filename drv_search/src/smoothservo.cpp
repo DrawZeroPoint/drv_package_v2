@@ -53,7 +53,7 @@ bool SmoothServo::moveServoTo(int pitch, int yaw)
   std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch);
   array.data.push_back(yaw);
-  array.data.push_back(40); // Speed: 0~255
+  array.data.push_back(30); // Speed: 0~255
   servoPubSearch_.publish(array);
   ros::Duration(1).sleep(); // give the servo time for getting to position
   return true;
