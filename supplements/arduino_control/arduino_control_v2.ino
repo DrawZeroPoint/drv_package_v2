@@ -35,7 +35,7 @@ const long interval = 60000;
 
 /* Servo control */
 #include <VarSpeedServo.h>
-const int servo_speed = 60; // 0-255
+const int servo_speed = 40; // default speed range 0-255
 VarSpeedServo p_sv;
 VarSpeedServo y_sv;
 
@@ -57,8 +57,8 @@ void servo_cb(const std_msgs::UInt16MultiArray& msg) {
       y_sv.write(y, msg.data[2], true);
     }
     else if (msg.data[2] >= 255) {
-      p_sv.write(p, 255, false);
-      y_sv.write(y, 255, true);
+      p_sv.write(p, servo_speed, false);
+      y_sv.write(y, servo_speed, true);
     }
   }
   else if (msg.data_length == 4) {
@@ -66,13 +66,13 @@ void servo_cb(const std_msgs::UInt16MultiArray& msg) {
       p_sv.write(p, msg.data[2], false);
     }
     else if (msg.data[2] >= 255) {
-      p_sv.write(p, 255, false);
+      p_sv.write(p, servo_speed, false);
     }
     if (msg.data[3] > 0 && msg.data[3] < 255) {
       y_sv.write(y, msg.data[3], true);
     }
     else if (msg.data[3] >= 255) {
-      y_sv.write(y, 255, true);
+      y_sv.write(y, servo_speed, true);
     }
   }
   active = true;
