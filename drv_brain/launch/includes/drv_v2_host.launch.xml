@@ -66,6 +66,8 @@
 
   <!-- Initialize user selection service -->
   <node ns="$(arg vision_namespace)" name="drv_user" pkg="drv_user" type="drv_user.py" output="screen">
+    <!-- If true, will select the target if only 1 candidate present -->
+    <param name="fast_select" value="true" />
   </node>
 
   <!-- Initialize color recognize service, this is used as a simplified object recognizer -->
