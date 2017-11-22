@@ -90,13 +90,15 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
   yaw_ = msg->data[1];
 }
 
-void resultCallback(const drv_msgs::recognized_targetConstPtr &msg)
+void searchROICallback(const drv_msgs::recognized_targetConstPtr &msg)
 {
   tgt_label_ = msg->label;
   int min_x = msg->tgt_bbox_array.data[0];
   int min_y = msg->tgt_bbox_array.data[1];
   int max_x = msg->tgt_bbox_array.data[2];
   int max_y = msg->tgt_bbox_array.data[3];
+  
+  ROS_INFO("Received ROI %d %d %d %d.", min_x, min_y, max_x, max_y);
 
   roi_init_ = Rect(min_x, min_y, max_x - min_x, max_y - min_y);
   tracker.initialized_ = false;
@@ -267,7 +269,7 @@ int main(int argc, char **argv)
   trackPubStatus_ = nh.advertise<std_msgs::Bool>("status/track/feedback", 1);
   trackPubTargetLocation_ = nh.advertise<drv_msgs::recognized_target>("track/recognized_target" , 1);
 
-  ros::Subscriber sub_res = nh.subscribe<drv_msgs::recognized_target>("search/recognized_target", 1, resultCallback);
+  ros::Subscriber sub_res = nh.subscribe<drv_msgs::recognized_target>("search/recognized_target", 1, searchROICallback);
   image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("image_rect_color", 1, imageCallback, hints_rgb);
   ros::Subscriber sub_s = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
 

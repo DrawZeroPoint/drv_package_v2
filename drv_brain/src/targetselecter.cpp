@@ -8,7 +8,7 @@ TargetSelecter::TargetSelecter()
 {
   targetNeedPub_ = false;
   ALPubROI_ = nh.advertise<drv_msgs::recognized_target>("search/recognized_target", 1);
-  ALSubROI_ = nh.subscribe<std_msgs::Float32MultiArray>("/jarvis/roi", 1, &TargetSelecter::roiCallback, this);
+  ALSubROI_ = nh.subscribe<std_msgs::Float32MultiArray>("/jarvis/roi", 1, &TargetSelecter::APPROICallback, this);
   
   // Sub rectangle bbox from image_view2 (developed by jsk)
   std::string roi_str = "/vision/rgb/image_rect_color/screenrectangle";
@@ -22,7 +22,6 @@ TargetSelecter::TargetSelecter()
 void TargetSelecter::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
 {
   if (targetNeedPub_) {
-    ROS_INFO("Target need publish.");
     ros::param::set(param_selected_target_label, "user selected object");
     ros::param::set(param_target_set, true);
     is_tgt_set = true;
@@ -32,7 +31,7 @@ void TargetSelecter::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_
   }
 }
 
-void TargetSelecter::roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi_msg)
+void TargetSelecter::APPROICallback(const std_msgs::Float32MultiArrayConstPtr &roi_msg)
 {
   if (roi_msg->data.size() == 4) {
     std_msgs::UInt16MultiArray array;
@@ -49,10 +48,10 @@ void TargetSelecter::roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi_
     rt_.tgt_bbox_center.data.push_back((array.data[0] + array.data[2])/2);
     rt_.tgt_bbox_center.data.push_back((array.data[1] + array.data[3])/2);
     targetNeedPub_ = true;
-    ROS_INFO("User selected target received.");
+    ROS_INFO("APPROICallback: User selected target received.");
   }
   else {
-    ROS_INFO("Target cancelled by JARVIS.");
+    ROS_INFO("APPROICallback: Target cancelled by JARVIS.");
     ros::param::set(param_target_set, false);
     targetNeedPub_ = false;
   }
@@ -77,10 +76,10 @@ void TargetSelecter::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &
     rt_.tgt_bbox_center.data.push_back((array.data[0] + array.data[2])/2);
     rt_.tgt_bbox_center.data.push_back((array.data[1] + array.data[3])/2);
     targetNeedPub_ = true;
-    ROS_INFO("User selected target received.");
+    ROS_INFO("IVROICallback: User selected target received.");
   }
   else {
-    ROS_INFO("Rect from ImageView2 should have 2 points.");
+    ROS_INFO("IVROICallback: Rect from ImageView2 should have 2 points.");
     ros::param::set(param_target_set, false);
     targetNeedPub_ = false;
   }
@@ -93,7 +92,7 @@ void TargetSelecter::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &
  */
 void TargetSelecter::IVPCallback(const geometry_msgs::PointStampedConstPtr &p_msg)
 {
-  ROS_INFO("Target cancelled by ImageView2.");
+  ROS_INFO("IVPCallback: Target cancelled by ImageView2.");
   ros::param::set(param_target_set, false);
   targetNeedPub_ = false;
 }

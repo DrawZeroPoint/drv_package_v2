@@ -24,7 +24,7 @@ private:
   
   // ALSubROI_ sub roi from Android App and process it with roiCallback
   ros::Subscriber ALSubROI_;
-  void roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi_msg);
+  void APPROICallback(const std_msgs::Float32MultiArrayConstPtr &roi_msg);
   
   // subImageView2ROI_ sub roi from ImageView2 and process it with 
   ros::Subscriber subImageView2ROI_;
