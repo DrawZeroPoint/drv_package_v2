@@ -22,6 +22,7 @@ TargetSelecter::TargetSelecter()
 void TargetSelecter::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
 {
   if (targetNeedPub_) {
+    ROS_INFO("Target need publish.");
     ros::param::set(param_selected_target_label, "user selected object");
     ros::param::set(param_target_set, true);
     is_tgt_set = true;

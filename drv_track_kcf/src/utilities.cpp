@@ -3,8 +3,8 @@
 using namespace std;
 using namespace cv;
 
-Scalar stroke_color(255, 128, 0);
-float thickness = 1.5;
+Scalar stroke_color(0, 128, 255);
+float thickness = 1.8;
 
 Utilities::Utilities()
 {

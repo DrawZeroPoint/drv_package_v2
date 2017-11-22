@@ -123,7 +123,7 @@ bool verifyDetection(Rect roi) {
     roi.height = 479 - roi.y;
   }
   if (roi.area() < MIN_OBJECT_AREA || roi.area() > MAX_OBJECT_AREA) {
-    ROS_WARN("Target ROI is unnormal.");
+    ROS_WARN("verifyDetection: Target ROI is unnormal.");
     return false;
   }
   return true;
@@ -160,7 +160,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     return;
 
   if (!verifyDetection(roi_init_)) {
-    ROS_WARN("Initial ROI can not be tracked.");
+    ROS_WARN("verifyDetection: Initial ROI can not be tracked.");
     isInTracking_ = false;
     tracker.initialized_ = false;
     return;
