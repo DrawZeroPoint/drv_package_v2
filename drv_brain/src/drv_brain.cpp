@@ -110,9 +110,12 @@ void resetStatus()
   ros::param::set(param_comm_target_label, "");
 }
 
-
-/* This function is used for servo initialization and
- * publishing servo angles received from cellphone
+/**
+ * @brief pubServo This function is used for servo initialization and
+ *                 publishing servo angles received from cellphone
+ * @param pitch_angle 
+ * @param yaw_angle
+ * @param power multiplies with basic speed
  */
 void pubServo(int pitch_angle, int yaw_angle, int power)
 {
@@ -131,6 +134,13 @@ void pubInfo(string info)
   drvPubInfo_.publish(msg);
 }
 
+/**
+ * @brief teleOpCallback
+ * Recieve servo value from JARVIS the Android App
+ * @param msg
+ * Contains 2 int representing increment in x and y direction
+ * with range in [-1, 1]
+ */
 void teleOpCallback(const Int32MultiArrayConstPtr &msg)
 {
   if (msg->data.empty() || (msg->data[0] == 0 && msg->data[1] == 0))

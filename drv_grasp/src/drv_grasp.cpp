@@ -117,13 +117,23 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
   if (modeType_ != m_track)
     return;
   
-  posePublished_ = false;
-  
 #ifdef USE_CENTER
   // Directly use bbox center as tgt location
-  idx_ = msg->tgt_bbox_center.data[0] + msg->tgt_bbox_center.data[1] * 640;
-  row_ = msg->tgt_bbox_center.data[1];
-  col_ = msg->tgt_bbox_center.data[0];
+  int x = msg->tgt_bbox_center.data[0];
+  int y = msg->tgt_bbox_center.data[1];
+  if (x <= 0 || x >= 640) {
+    ROS_WARN_ONCE("Target x value in image is unnormal.");
+    return;
+  }
+  if (y <= 0 || y >= 480) {
+    ROS_WARN_ONCE("Target y value in image is unnormal.");
+    return;
+  }
+  
+  posePublished_ = false;
+  idx_ = x + y * 640;
+  col_ = x;
+  row_ = y;
 #else
   inliers_->indices.clear();
   // use roi to extact point cloud
@@ -187,6 +197,17 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
   graspPubMarker_.publish(marker);
 }
 
+/**
+ * @brief isInGraspRange
+ * Estimate whether need offseting the robot to 
+ * get in graspable region of the target given
+ * @param x
+ * @param y
+ * @param z
+ * Current distance between reference_frame and target
+ * @param offset Value to be moved by robot base
+ * @return 
+ */
 bool isInGraspRange(float x, float y, float z,
                     geometry_msgs::PoseStamped &offset)
 {

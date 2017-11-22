@@ -162,7 +162,8 @@ pcl::PointXYZ pointFromDepth(const cv::Mat & imageDepth, int h, int w,
 }
 
 
-bool GetSourceCloud::getPoint(cv::Mat depth, int row, int col, float fx, float fy, float cx, float cy,
+bool GetSourceCloud::getPoint(cv::Mat depth, int row, int col, 
+                              float fx, float fy, float cx, float cy,
                               float maxDepth, float minDepth, pcl::PointXYZ &point)
 {
   point = pointFromDepth(depth, row, col, cx, cy, fx, fy);
