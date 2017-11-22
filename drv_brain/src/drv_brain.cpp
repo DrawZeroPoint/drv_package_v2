@@ -158,7 +158,7 @@ void teleOpCallback(const Int32MultiArrayConstPtr &msg)
   else
     yawAngle_ = yaw_temp;
 
-  int power = 2;
+  int power = 4;
   pubServo(pitchAngle_, yawAngle_, power);
 }
 

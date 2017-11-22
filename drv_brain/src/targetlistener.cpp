@@ -16,13 +16,18 @@ TargetListener::TargetListener()
   param_action_target_label = "/vision/param/action/target/label";
 }
 
+/**
+ * @brief TargetListener::checkLabel
+ * @param label
+ * Label formats:     Meanings
+ * bottle             target to be searched
+ * name:Wang          name to be added (by face training method)
+ * train:face         train on face data
+ * Notice that target label has no ':'
+ * @return 
+ */
 bool TargetListener::checkLabel(string label)
 {
-  /* The label may have these formats:
-   * bottle             target to be searched
-   * name Wang          name to be added (face add)
-   * train face         train on face data
-   */
   size_t space = label.find_first_of(":");
   if (space == string::npos) {
     // No space in current string, so it should be target

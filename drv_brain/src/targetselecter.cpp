@@ -1,6 +1,9 @@
 #include "targetselecter.h"
 #include <string>
 
+std::string param_target_set = "/comm/param/control/target/is_set";
+std::string param_selected_target_label = "/comm/param/control/target/label";
+
 TargetSelecter::TargetSelecter()
 {
   targetNeedPub_ = false;
@@ -19,7 +22,7 @@ TargetSelecter::TargetSelecter()
 void TargetSelecter::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
 {
   if (targetNeedPub_) {
-    std::string param_target_set = "/comm/param/control/target/is_set";
+    ros::param::set(param_selected_target_label, "user selected object");
     ros::param::set(param_target_set, true);
     is_tgt_set = true;
     ALPubROI_.publish(rt_);
@@ -49,7 +52,6 @@ void TargetSelecter::roiCallback(const std_msgs::Float32MultiArrayConstPtr &roi_
   }
   else {
     ROS_INFO("Target cancelled by JARVIS.");
-    std::string param_target_set = "/comm/param/control/target/is_set";
     ros::param::set(param_target_set, false);
     targetNeedPub_ = false;
   }
@@ -78,16 +80,19 @@ void TargetSelecter::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &
   }
   else {
     ROS_INFO("Rect from ImageView2 should have 2 points.");
-    std::string param_target_set = "/comm/param/control/target/is_set";
     ros::param::set(param_target_set, false);
     targetNeedPub_ = false;
   }
 }
 
+/**
+ * @brief TargetSelecter::IVPCallback
+ * If user has select a point on ImageView2, cancel current target
+ * @param p_msg
+ */
 void TargetSelecter::IVPCallback(const geometry_msgs::PointStampedConstPtr &p_msg)
 {
   ROS_INFO("Target cancelled by ImageView2.");
-  std::string param_target_set = "/comm/param/control/target/is_set";
   ros::param::set(param_target_set, false);
   targetNeedPub_ = false;
 }
