@@ -176,6 +176,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   // Adjust the camera view based on ROI center
   if (!tracker.initialized_) {
     tracker.init(roi_init_, src_img_);
+    isInTracking_ = true;
     tracker.initialized_ = true;
   }
   else {
