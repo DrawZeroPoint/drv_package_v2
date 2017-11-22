@@ -8,8 +8,8 @@ const int FRAME_WIDTH = 640;
 const int FRAME_HEIGHT = 480;
 
 // Minimum and maximum object area
-const int MIN_OBJECT_AREA = 400;
-const int MAX_OBJECT_AREA =  160000;
+const int MIN_OBJECT_AREA = 200;
+const int MAX_OBJECT_AREA =  200000;
 const float COLOR_DIFF = 10;
 
 class Utilities
