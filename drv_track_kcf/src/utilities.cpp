@@ -3,6 +3,9 @@
 using namespace std;
 using namespace cv;
 
+Scalar stroke_color(255, 128, 0);
+float thickness = 1.5;
+
 Utilities::Utilities()
 {
 }
@@ -22,7 +25,9 @@ void Utilities::markImage(Mat img_in, Rect roi, Mat &img_out,
   cvtColor(img_in, img_hsv, CV_BGR2HSV);
   Point roi_center = Point(roi.x + roi.width / 2, roi.y + roi.height / 2);
 
-  floodFill(img_hsv, mask, roi_center, Scalar(255,255,255), 0, Scalar(30,40,50), Scalar(30,40,50), 4 | (255 << 8) | CV_FLOODFILL_FIXED_RANGE | CV_FLOODFILL_MASK_ONLY);
+  floodFill(img_hsv, mask, roi_center, Scalar(255,255,255), 0, 
+            Scalar(30,40,50), Scalar(30,40,50), 4 | (255 << 8) | 
+            CV_FLOODFILL_FIXED_RANGE | CV_FLOODFILL_MASK_ONLY);
 
   Mat element(9, 9, CV_8U, Scalar(255));
   Mat closed;
@@ -31,13 +36,10 @@ void Utilities::markImage(Mat img_in, Rect roi, Mat &img_out,
   int hueTemp = 0;
   int count = 0;
 
-  // get the pixel id in mask
-  for (size_t r = 0; r < closed.rows; r++)
-  {
-    for (size_t c = 0; c < closed.cols; c++)
-    {
-      if (closed.at<uchar>(r, c) > 0)
-      {
+  // Get the pixel id in mask
+  for (size_t r = 0; r < closed.rows; r++) {
+    for (size_t c = 0; c < closed.cols; c++) {
+      if (closed.at<uchar>(r, c) > 0) {
         mask_id.push_back((r - 1) * 640 + c - 1);
         Vec3b hsvPixel = img_hsv.at<Vec3b>(r, c);
         hueTemp += hsvPixel[0];
@@ -45,7 +47,7 @@ void Utilities::markImage(Mat img_in, Rect roi, Mat &img_out,
       }
     }
   }
-  // use this to judge if the tracked object has changed
+  // Use this to judge if the tracked object has changed
   color_mean = hueTemp / count;
 
   vector<vector<Point> > contours;
@@ -58,32 +60,29 @@ void Utilities::markImage(Mat img_in, Rect roi, Mat &img_out,
 
 void Utilities::markImage(Rect roi, Mat &img_out)
 {
-  rectangle(img_out, roi, Scalar(0,153,0), 1.5);
+  rectangle(img_out, roi, stroke_color, thickness);
   Point roi_center = Point(roi.x + roi.width/2, roi.y + roi.height/2);
   drawCross(roi_center.x, roi_center.y, img_out);
 }
 
 void Utilities::drawCross(int x, int y, Mat &frame)
 {
-  //use some of the openCV drawing functions to draw crosshairs
-  //on your tracked image!
-
-  circle(frame,Point(x,y),12,Scalar(0,153,0),2);
-  if(y-25>0)
-    line(frame,Point(x,y),Point(x,y-25),Scalar(0,153,0),2);
-  else line(frame,Point(x,y),Point(x,0),Scalar(0,153,0),2);
+  circle(frame, Point(x,y), 12, stroke_color, thickness);
+  if(y - 25 > 0)
+    line(frame, Point(x,y), Point(x, y-25), stroke_color, thickness);
+  else line(frame,Point(x,y),Point(x,0), stroke_color, thickness);
   if(y+25<FRAME_HEIGHT)
-    line(frame,Point(x,y),Point(x,y+25),Scalar(0,153,0),2);
-  else line(frame,Point(x,y),Point(x,FRAME_HEIGHT),Scalar(0,153,0),2);
+    line(frame,Point(x,y),Point(x,y+25), stroke_color, thickness);
+  else line(frame,Point(x,y),Point(x,FRAME_HEIGHT), stroke_color, thickness);
   if(x-25>0)
-    line(frame,Point(x,y),Point(x-25,y),Scalar(0,153,0),2);
-  else line(frame,Point(x,y),Point(0,y),Scalar(0,153,0),2);
+    line(frame,Point(x,y),Point(x-25,y), stroke_color, thickness);
+  else line(frame,Point(x,y),Point(0,y), stroke_color, thickness);
   if(x+25<FRAME_WIDTH)
-    line(frame,Point(x,y),Point(x+25,y),Scalar(0,153,0),2);
-  else line(frame,Point(x,y),Point(FRAME_WIDTH,y),Scalar(0,153,0),2);
+    line(frame,Point(x,y), Point(x+25, y),stroke_color, thickness);
+  else line(frame,Point(x,y), Point(FRAME_WIDTH, y), stroke_color, thickness);
 
   putText(frame, intToString(x) + "," + intToString(y),
-          Point(x,y+30), 1, 1, Scalar(0,153,0), 1.5);
+          Point(x, y+30), 1, 1, stroke_color, thickness);
 }
 
 void Utilities::expandGt(Rect &gt, int margin)

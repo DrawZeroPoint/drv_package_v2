@@ -62,7 +62,8 @@ bool isInTracking_ = true;
 std_msgs::String tgt_label_;
 Rect roi_init_;
 
-// Global params that record servo angle status
+// Global params that record servo angle, 
+// only used for initialize pitch_ and yaw_
 string param_servo_pitch = "/status/servo/pitch";
 string param_servo_yaw = "/status/servo/yaw";
 int pitch_ = 70;
@@ -76,7 +77,7 @@ void publishServo(int pitch_angle, int yaw_angle)
   std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch_angle);
   array.data.push_back(yaw_angle);
-  array.data.push_back(30); // Servo speed
+  array.data.push_back(20); // Servo speed
   pitch_ = pitch_angle;
   yaw_ = yaw_angle;
   trackPubServo_.publish(array);
@@ -159,6 +160,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     return;
 
   if (!verifyDetection(roi_init_)) {
+    ROS_WARN("Initial ROI can not be tracked.");
     isInTracking_ = false;
     tracker.initialized_ = false;
     return;
