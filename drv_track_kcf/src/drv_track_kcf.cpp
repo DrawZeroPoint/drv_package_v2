@@ -98,7 +98,7 @@ void searchROICallback(const drv_msgs::recognized_targetConstPtr &msg)
   int max_x = msg->tgt_bbox_array.data[2];
   int max_y = msg->tgt_bbox_array.data[3];
   
-  ROS_INFO("Received ROI %d %d %d %d.", min_x, min_y, max_x, max_y);
+  ROS_INFO("Track: Received ROI %d %d %d %d.", min_x, min_y, max_x, max_y);
 
   roi_init_ = Rect(min_x, min_y, max_x - min_x, max_y - min_y);
   tracker.initialized_ = false;
@@ -125,7 +125,7 @@ bool verifyDetection(Rect roi) {
     roi.height = 479 - roi.y;
   }
   if (roi.area() < MIN_OBJECT_AREA || roi.area() > MAX_OBJECT_AREA) {
-    ROS_WARN("verifyDetection: Target ROI is unnormal.");
+    ROS_WARN("Track: Target ROI is unnormal.");
     return false;
   }
   return true;
@@ -162,7 +162,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     return;
 
   if (!verifyDetection(roi_init_)) {
-    ROS_WARN("verifyDetection: Initial ROI can not be tracked.");
+    ROS_WARN("Track: Initial ROI can not be tracked.");
     isInTracking_ = false;
     tracker.initialized_ = false;
     return;
@@ -240,7 +240,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     if (!(x_ang >= 0 && x_ang <= 180 && y_ang >= 60 && y_ang <= 140)) {
       // Target center out of camera movable region
       pubTarget(image_msg->header, mask_id, roi);
-      ROS_WARN_THROTTLE(31, "Target out of camera movable area.");
+      ROS_WARN_THROTTLE(31, "Track: Target out of camera movable area.");
       // Although out of movable area, still in tracking
       // isInTracking_ = false;
       // tracker.initialized_ = false;

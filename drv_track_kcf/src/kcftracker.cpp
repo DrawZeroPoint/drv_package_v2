@@ -281,7 +281,9 @@ void KCFTracker::train(cv::Mat x, float train_interp_factor)
 
 }
 
-// Evaluates a Gaussian kernel with bandwidth SIGMA for all relative shifts between input images X and Y, which must both be MxN. They must    also be periodic (ie., pre-processed with a cosine window).
+// Evaluates a Gaussian kernel with bandwidth SIGMA for all relative shifts 
+// between input images X and Y, which must both be MxN. 
+// They must also be periodic (ie., pre-processed with a cosine window).
 cv::Mat KCFTracker::gaussianCorrelation(cv::Mat x1, cv::Mat x2)
 {
   using namespace FFTTools;
@@ -310,7 +312,8 @@ cv::Mat KCFTracker::gaussianCorrelation(cv::Mat x1, cv::Mat x2)
     c = real(c);
   }
   cv::Mat d;
-  cv::max(( (cv::sum(x1.mul(x1))[0] + cv::sum(x2.mul(x2))[0])- 2. * c) / (size_patch[0]*size_patch[1]*size_patch[2]) , 0, d);
+  cv::max(((cv::sum(x1.mul(x1))[0] + cv::sum(x2.mul(x2))[0])- 2. * c) / 
+          (size_patch[0]*size_patch[1]*size_patch[2]) , 0, d);
 
   cv::Mat k;
   cv::exp((-d / (sigma * sigma)), k);
@@ -406,13 +409,14 @@ cv::Mat KCFTracker::getFeatures(const cv::Mat & image, bool inithann, float scal
     IplImage z_ipl = z;
     CvLSVMFeatureMapCaskade *map;
     getFeatureMaps(&z_ipl, cell_size, &map);
-    normalizeAndTruncate(map,0.2f);
+    normalizeAndTruncate(map, 0.2f);
     PCAFeatureMaps(map);
     size_patch[0] = map->sizeY;
     size_patch[1] = map->sizeX;
     size_patch[2] = map->numFeatures;
 
-    FeaturesMap = cv::Mat(cv::Size(map->numFeatures,map->sizeX*map->sizeY), CV_32F, map->map);  // Procedure do deal with cv::Mat multichannel bug
+    // Procedure do deal with cv::Mat multichannel bug
+    FeaturesMap = cv::Mat(cv::Size(map->numFeatures,map->sizeX*map->sizeY), CV_32F, map->map);
     FeaturesMap = FeaturesMap.t();
     freeFeatureMapObject(&map);
 

@@ -122,11 +122,11 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
   int x = msg->tgt_bbox_center.data[0];
   int y = msg->tgt_bbox_center.data[1];
   if (x <= 0 || x >= 640) {
-    ROS_WARN_ONCE("Target x value in image is unnormal.");
+    ROS_WARN_ONCE("Grasp: Target x value is unnormal.");
     return;
   }
   if (y <= 0 || y >= 480) {
-    ROS_WARN_ONCE("Target y value in image is unnormal.");
+    ROS_WARN_ONCE("Grasp: Target y value is unnormal.");
     return;
   }
   
@@ -275,7 +275,7 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
        imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) == 0 ||
        imageDepth->encoding.compare(sensor_msgs::image_encodings::MONO16) == 0))
   {
-    ROS_ERROR("Depth image type is wrong.");
+    ROS_ERROR("Grasp: Depth image type is wrong.");
     return;
   }
   
@@ -330,7 +330,7 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
     hasGraspPlan_ = true;
   }
   else
-    ROS_INFO_THROTTLE(11, "Get grasp point failed!");
+    ROS_INFO_THROTTLE(11, "Grasp: Get grasp point failed!");
 }
 #else
 void getCloudByInliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,

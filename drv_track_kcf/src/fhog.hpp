@@ -63,12 +63,11 @@
 
 // DataType: STRUCT featureMap
 // FEATURE MAP DESCRIPTION
-//   Rectangular map (sizeX x sizeY), 
-//   every cell stores feature vector (dimension = numFeatures)
-// map             - matrix of feature vectors
-//                   to set and get feature vectors (i,j) 
-//                   used formula map[(j * sizeX + i) * p + k], where
-//                   k - component of feature vector in cell (i, j)
+// Rectangular map (sizeX x sizeY), 
+// every cell stores feature vector (dimension = numFeatures)
+// map - matrix of feature vectors to set and get feature vectors (i,j) 
+//       used formula map[(j * sizeX + i) * p + k], where
+//       k - component of feature vector in cell (i, j)
 typedef struct{
     int sizeX;
     int sizeY;

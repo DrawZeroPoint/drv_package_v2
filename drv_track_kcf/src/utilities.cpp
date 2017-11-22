@@ -4,7 +4,7 @@ using namespace std;
 using namespace cv;
 
 Scalar stroke_color(0, 128, 255);
-float thickness = 1.8;
+int thickness = 2;
 
 Utilities::Utilities()
 {
@@ -53,7 +53,7 @@ void Utilities::markImage(Mat img_in, Rect roi, Mat &img_out,
   vector<vector<Point> > contours;
   findContours(closed, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 
-  drawContours(img_out, contours, 0, Scalar(196,0,225), 2);
+  drawContours(img_out, contours, 0, Scalar(196, 0, 225), 2);
   rectangle(img_out, roi, Scalar(0, 255, 0));
   drawCross(roi_center.x, roi_center.y, img_out);
 }
@@ -67,22 +67,22 @@ void Utilities::markImage(Rect roi, Mat &img_out)
 
 void Utilities::drawCross(int x, int y, Mat &frame)
 {
-  circle(frame, Point(x,y), 12, stroke_color, thickness);
+  circle(frame, Point(x, y), 10, stroke_color, thickness);
   if(y - 25 > 0)
-    line(frame, Point(x,y), Point(x, y-25), stroke_color, thickness);
-  else line(frame,Point(x,y),Point(x,0), stroke_color, thickness);
-  if(y+25<FRAME_HEIGHT)
-    line(frame,Point(x,y),Point(x,y+25), stroke_color, thickness);
-  else line(frame,Point(x,y),Point(x,FRAME_HEIGHT), stroke_color, thickness);
-  if(x-25>0)
-    line(frame,Point(x,y),Point(x-25,y), stroke_color, thickness);
-  else line(frame,Point(x,y),Point(0,y), stroke_color, thickness);
-  if(x+25<FRAME_WIDTH)
-    line(frame,Point(x,y), Point(x+25, y),stroke_color, thickness);
-  else line(frame,Point(x,y), Point(FRAME_WIDTH, y), stroke_color, thickness);
+    line(frame, Point(x, y), Point(x, y - 25), stroke_color, thickness);
+  else line(frame,Point(x, y),Point(x,0), stroke_color, thickness);
+  if(y + 25 < FRAME_HEIGHT)
+    line(frame,Point(x, y),Point(x, y + 25), stroke_color, thickness);
+  else line(frame,Point(x, y),Point(x,FRAME_HEIGHT), stroke_color, thickness);
+  if(x - 25 > 0)
+    line(frame,Point(x, y),Point(x - 25, y), stroke_color, thickness);
+  else line(frame,Point(x, y),Point(0, y), stroke_color, thickness);
+  if(x + 25 < FRAME_WIDTH)
+    line(frame,Point(x, y), Point(x + 25, y),stroke_color, thickness);
+  else line(frame,Point(x, y), Point(FRAME_WIDTH, y), stroke_color, thickness);
 
   putText(frame, intToString(x) + "," + intToString(y),
-          Point(x, y+30), 1, 1, stroke_color, thickness);
+          Point(x, y + 30), 1, 1, stroke_color, thickness);
 }
 
 void Utilities::expandGt(Rect &gt, int margin)

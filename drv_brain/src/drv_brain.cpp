@@ -176,18 +176,19 @@ void searchCallback(const Int8ConstPtr &msg)
 {
   if (modeType_ == m_search) {
     if (msg->data == -1) {
-      pubInfo("Search around didn't get target, continue searching...");
+      pubInfo("Search report: Search around didn't find target.");
       foundTarget_ = false;
       ros::param::set(param_vision_feedback_search, -2);
       ros::param::set(param_vision_feedback, 2);
     }
     else if (msg->data == 0) {
-      pubInfo("Currently didn't find target, continue searching...");
+      pubInfo("Search report: In searching...");
       ros::param::set(param_vision_feedback_search, -1);
       ros::param::set(param_vision_feedback, 1);
       foundTarget_ = false;
     }
     else {
+      pubInfo("Search report: Found target.");
       foundTarget_ = true;
       ros::param::set(param_vision_feedback_search, 1);
       ros::param::set(param_vision_feedback, 1);
@@ -291,12 +292,12 @@ int main(int argc, char **argv)
       bool temp = true;
       ros::param::get(param_vision_shared_switch, temp);
       if (temp)
-        ROS_WARN_COND(!centralSwitch_, "Central switch is ON.");
+        ROS_WARN_COND(!centralSwitch_, "Brain: Central switch is ON.");
       centralSwitch_ = temp;
     }
 
     if (!centralSwitch_) {
-      ROS_WARN_THROTTLE(9, "Central switch is OFF.");
+      ROS_WARN_THROTTLE(9, "Brain: Central switch is OFF.");
       resetStatus();
       continue;
     }
@@ -305,7 +306,7 @@ int main(int argc, char **argv)
     if (!servo_initialized_) {
       pubServo(90, 90, 1);
       servo_initialized_ = true;
-      ROS_INFO("Servo reset.");
+      ROS_INFO("Brain: Servo reset.");
     }
 
     // Get feedback to determine whether target were found
@@ -317,9 +318,9 @@ int main(int argc, char **argv)
     
     if (isTargetSet_ != targetSetTemp_) {
       if (isTargetSet_)
-        pubInfo("Target set to be '" + targetLabel_ + "'.");
+        pubInfo("Brain: Target set to be '" + targetLabel_ + "'.");
       else {
-        pubInfo("Target cancelled.");
+        pubInfo("Brain: Target cancelled.");
         resetStatus();
       }
       targetSetTemp_ = isTargetSet_;
@@ -339,7 +340,7 @@ int main(int argc, char **argv)
         if (targetLabel_ == "user selected object") {
           // If the target is selected by user but no more been found,
           // which means tracking has lost it, reset.
-          pubInfo("Tracking did not follow.");
+          pubInfo("Brain: Tracking did not follow.");
           resetStatus();
         }
         else
@@ -358,7 +359,7 @@ int main(int argc, char **argv)
       String mode_msg;
       mode_msg.data = modeName[modeType_];
       drvPubMode_.publish(mode_msg);
-      ROS_INFO("Current mode: %s.", modeName[modeType_].c_str());
+      ROS_INFO("Brain: Current mode: %s.", modeName[modeType_].c_str());
       modeTypeTemp_ = modeType_;
       if (modeType_ == m_wander) {
         // Reset head pose
