@@ -521,9 +521,11 @@ int main(int argc, char **argv)
   pnh.getParam("left_arm_x_max", x_max_);
   pnh.getParam("left_arm_y_max", y_max_);
   
+  // Public control value
+  graspPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/grasp/pose", 1);
+  graspPubLocation_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/grasp/location", 1);
+  
   graspPubStatus_ = nh.advertise<std_msgs::Int8>("status/grasp/feedback", 1);
-  graspPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/pose", 1);
-  graspPubLocation_ = nh.advertise<geometry_msgs::PoseStamped>("grasp/location", 1);
   graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("grasp/marker", 1);
   
   ros::Subscriber sub_track = nh.subscribe<drv_msgs::recognized_target>("track/recognized_target",
