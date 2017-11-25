@@ -72,14 +72,11 @@ string map_frame_ = "map";
 string base_frame_ = "base_link"; // Base frame that NVG link to
 string camera_optical_frame_ = "vision_depth_optical_frame";
 
-// Object to perform transform
-Transform m_tf_;
-
-// Object to perform obstacle detect
+// Obstacle avoidence params
 bool use_od_ = true;
 float table_height_ = 0.9; // error: +-0.15m
 float table_area_ = 0.1; // m^2
-ObstacleDetect m_od_(map_frame_, table_height_, table_area_);
+
 
 // Whether publish pose for once
 bool pub_pose_once_ = false;
@@ -112,9 +109,16 @@ float cy_ = 237.86;
 double min_depth_ = 0.2;
 double max_depth_ = 5.0;
 
+// Depth image temp
+cv_bridge::CvImageConstPtr imageDepthPtr_;
+
 #else
 pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
 ros::Publisher graspPubCloud_;
+
+PointCloudMono::Ptr cloud_in(new PointCloudMono);
+PointCloudMono::Ptr cloud_filted(new PointCloudMono);
+PointCloudMono::Ptr cloud_trans(new PointCloudMono);
 #endif
 
 void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
@@ -218,28 +222,28 @@ bool isInGraspRange(float x, float y, float z,
 {
   if (!offsetNeedPub_)
     return true;
-
+  
   // Upper value
   float x_off_u = x - x_max_;
   float y_off_u = y - y_max_;
   // Lower value
   float x_off_l = x - x_min_;
   float y_off_l = y - y_min_;
-
+  
   if (x_off_u > 0)
     offset.pose.position.x = x_off_u; // Robot move foreward
   else if (x_off_l < 0)
     offset.pose.position.x = x_off_l; // Robot move backward
   else
     offset.pose.position.x = 0;
-
+  
   if (y_off_u > 0)
     offset.pose.position.y = y_off_u; // To left
   else if (y_off_l < 0)
     offset.pose.position.y = y_off_l; // To right
   else
     offset.pose.position.y = 0;
-
+  
   if (fabs(offset.pose.position.x) < tolerance_ &&
       fabs(offset.pose.position.y) < tolerance_) {
     offsetNeedPub_ = false;
@@ -258,82 +262,14 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
   
   if(!(imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_16UC1) == 0 ||
        imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) == 0 ||
-       imageDepth->encoding.compare(sensor_msgs::image_encodings::MONO16) == 0))
-  {
+       imageDepth->encoding.compare(sensor_msgs::image_encodings::MONO16) == 0)) {
     ROS_ERROR("Grasp: Depth image type is wrong.");
     return;
   }
   
-  cv_bridge::CvImageConstPtr imageDepthPtr = cv_bridge::toCvShare(imageDepth);
-  
-  MakePlan MP;
-  
-  pcl::PointXYZ graspPt; // target xyz center in robot's referance frame
-  pcl::PointXYZ opticalPt; // target xyz center in camera optical frame
-  
-  // Get opticalPt and transfer to graspPt
-  if (GetSourceCloud::getPoint(imageDepthPtr->image, row_, col_,
-                               fx_, fy_, cx_, cy_, 
-                               max_depth_, min_depth_, opticalPt))
-  {
-    m_tf_.getTransform(base_frame_, camera_optical_frame_);
-    m_tf_.doTransform(opticalPt, graspPt);
-    MP.smartOffset(graspPt, 0.02); //TODO: make this smart
-    
-    publishMarker(graspPt.x, graspPt.y, graspPt.z, imageDepth->header);
-    
-    /* Judge if the graspPt is within the graspable area, if so,
-     * publish the pose via graspPubPose_, otherwise, 
-     * publish the adjustment value via graspPubLocation_ */
-    geometry_msgs::PoseStamped offset;
-    bool in_range = isInGraspRange(graspPt.x, graspPt.y, graspPt.z, offset);
-    if (in_range) {
-      if (use_od_) {
-        // Detect obstacle before publish target pose
-        m_od_.detectTableInCloud();
-      }
-      geometry_msgs::PoseStamped grasp_pose;
-      grasp_pose.header.frame_id = base_frame_;
-      grasp_pose.header.stamp = imageDepth->header.stamp;
-      grasp_pose.pose.position.x = graspPt.x;
-      grasp_pose.pose.position.y = graspPt.y;
-      grasp_pose.pose.position.z = graspPt.z;
-      
-      grasp_pose.pose.orientation.w = 1;
-      grasp_pose.pose.orientation.x = 0;
-      grasp_pose.pose.orientation.y = 0;
-      grasp_pose.pose.orientation.z = 0;
-      graspPubPose_.publish(grasp_pose);
-
-      posePublished_ = true;
-    }
-    else {
-      offset.header.frame_id = base_frame_;
-      offset.header.stamp = imageDepth->header.stamp;
-      offset.pose.position.z = 0;
-      offset.pose.orientation.w = 1;
-      offset.pose.orientation.x = 0;
-      offset.pose.orientation.y = 0;
-      offset.pose.orientation.z = 0;
-      graspPubLocation_.publish(offset);
-    }
-    hasGraspPlan_ = true;
-  }
-  else
-    ROS_INFO_THROTTLE(11, "Grasp: Get grasp point failed!");
+  imageDepthPtr_ = cv_bridge::toCvShare(imageDepth);
 }
 #else
-void getCloudByInliers(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out,
-                       pcl::PointIndices::Ptr inliers, bool negative, bool organized)
-{
-  pcl::ExtractIndices<pcl::PointXYZ> extract;
-  extract.setNegative (negative);
-  extract.setInputCloud (cloud_in);
-  extract.setIndices (inliers);
-  extract.setKeepOrganized(organized);
-  extract.filter (*cloud_out);
-}
-
 void getOrientation(gpd::GraspConfig g, geometry_msgs::Quaternion &q)
 {
   float r11 = g.approach.x;
@@ -374,26 +310,10 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
     ROS_ERROR("Grasp: Target ROI contains no point.");
     return;
   }
-  
-  PointCloudMono::Ptr cloud_in(new PointCloudMono);
-  PointCloudMono::Ptr cloud_filted(new PointCloudMono);
-  PointCloudMono::Ptr cloud_trans(new PointCloudMono);
-  
+
   // Filt the cloud using inliers
   pcl::fromROSMsg(*msg, *cloud_in);
-  getCloudByInliers(cloud_in, cloud_filted, inliers_, false, false);
-  
-  // Convert point cloud inliers into base frame
-  m_tf_.getTransform(base_frame_, camera_optical_frame_);
-  m_tf_.doTransform(cloud_filted, cloud_trans);
-  
-  // Publish filted cloud for gpd
-  sensor_msgs::PointCloud2 rosCloud;
-  pcl::toROSMsg(*cloud_trans, rosCloud);
-  rosCloud.header.frame_id = base_frame_;
-  rosCloud.header.stamp = msg->header.stamp;
-  
-  graspPubCloud_.publish(rosCloud);
+  Utilities::getCloudByInliers(cloud_in, cloud_filted, inliers_, false, false);
 }
 
 void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
@@ -425,7 +345,7 @@ void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
   grasp_pose.pose.position.x = grasp_max_score.bottom.x;
   grasp_pose.pose.position.y = grasp_max_score.bottom.y;
   grasp_pose.pose.position.z = grasp_max_score.bottom.z;
-
+  
   geometry_msgs::PoseStamped offset;
   bool in_range = isInGraspRange(grasp_pose.pose.position.x,
                                  grasp_pose.pose.position.y,
@@ -434,24 +354,24 @@ void graspPlanCallback(const gpd::GraspConfigListConstPtr &msg)
   if (in_range) {
     grasp_pose.header.frame_id = base_frame_;
     grasp_pose.header.stamp = msg->header.stamp;
-
+    
     /* Use default orientation, which indicates that the
      * hand's coord is identical to the base */
     //grasp_ps.pose.orientation.w = 1;
     //grasp_ps.pose.orientation.x = 0;
     //grasp_ps.pose.orientation.y = 0;
     //grasp_ps.pose.orientation.z = 0;
-
+    
     // Get orientation from message calculated by gpd
     getOrientation(grasp_max_score, grasp_pose.pose.orientation);
-
+    
     graspPubPose_.publish(grasp_pose);
     posePublished_ = true;
   }
   else {
     offset.header.frame_id = base_frame_;
     offset.header.stamp = msg->header.stamp;
-
+    
     // Set the rest values in offset
     offset.pose.position.z = 0;
     offset.pose.orientation.w = 1;
@@ -496,13 +416,18 @@ int main(int argc, char **argv)
   ros::Subscriber sub_track = nh.subscribe<drv_msgs::recognized_target>("track/recognized_target",
                                                                         1, trackResultCallback);
   
+  // Object to perform transform
+  Transform m_tf_;
+  // Object to perform obstacle detect
+  ObstacleDetect m_od_(map_frame_, table_height_, table_area_);
+  
 #ifdef USE_CENTER
   ros::NodeHandle cnh;
   ros::NodeHandle depth_nh(nh, "depth");
   ros::NodeHandle depth_pnh(cnh, "depth");
   image_transport::ImageTransport depth_it(depth_nh);
   image_transport::TransportHints hintsDepth("compressedDepth", ros::TransportHints(), depth_pnh);
-
+  
   image_transport::Subscriber sub_depth = depth_it.subscribe("image_rect", 1, depthCallback, hintsDepth);
 #else
   graspPubCloud_ = nh.advertise<sensor_msgs::PointCloud2>("grasp/points", 1);
@@ -510,7 +435,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub_grasp_plan = nh.subscribe<gpd::GraspConfigList>("/detect_grasps/clustered_grasps",
                                                                       1, graspPlanCallback);
 #endif
-
+  
   ROS_INFO("Grasp planning function initialized.");
   
   while (ros::ok()) {
@@ -527,10 +452,84 @@ int main(int argc, char **argv)
     }
     
     ros::spinOnce();
-
+    
+#ifdef USE_CENTER
+    if (modeType_ != m_track || (pub_pose_once_ && posePublished_))
+      continue;
+    if (imageDepthPtr_->image.empty())
+      continue;
+    
+    MakePlan MP;
+    pcl::PointXYZ graspPt; // target xyz center in robot's referance frame
+    pcl::PointXYZ opticalPt; // target xyz center in camera optical frame
+    
+    // Get opticalPt and transfer to graspPt
+    if (GetSourceCloud::getPoint(imageDepthPtr_->image, row_, col_,
+                                 fx_, fy_, cx_, cy_, 
+                                 max_depth_, min_depth_, opticalPt))
+    {
+      m_tf_.getTransform(base_frame_, camera_optical_frame_);
+      m_tf_.doTransform(opticalPt, graspPt);
+      MP.smartOffset(graspPt, 0.02); //TODO: make this smart
+      
+      publishMarker(graspPt.x, graspPt.y, graspPt.z, imageDepthPtr_->header);
+      
+      /* Judge if the graspPt is within the graspable area, if so,
+       * publish the pose via graspPubPose_, otherwise, 
+       * publish the adjustment value via graspPubLocation_ */
+      geometry_msgs::PoseStamped offset;
+      bool in_range = isInGraspRange(graspPt.x, graspPt.y, graspPt.z, offset);
+      if (in_range) {
+        if (use_od_) {
+          // Detect obstacle before publish target pose
+          m_od_.detectTableInCloud();
+        }
+        geometry_msgs::PoseStamped grasp_pose;
+        grasp_pose.header.frame_id = base_frame_;
+        grasp_pose.header.stamp = imageDepthPtr_->header.stamp;
+        grasp_pose.pose.position.x = graspPt.x;
+        grasp_pose.pose.position.y = graspPt.y;
+        grasp_pose.pose.position.z = graspPt.z;
+        
+        grasp_pose.pose.orientation.w = 1;
+        grasp_pose.pose.orientation.x = 0;
+        grasp_pose.pose.orientation.y = 0;
+        grasp_pose.pose.orientation.z = 0;
+        graspPubPose_.publish(grasp_pose);
+        
+        posePublished_ = true;
+      }
+      else {
+        offset.header.frame_id = base_frame_;
+        offset.header.stamp = imageDepthPtr_->header.stamp;
+        offset.pose.position.z = 0;
+        offset.pose.orientation.w = 1;
+        offset.pose.orientation.x = 0;
+        offset.pose.orientation.y = 0;
+        offset.pose.orientation.z = 0;
+        graspPubLocation_.publish(offset);
+      }
+      hasGraspPlan_ = true;
+    }
+    else
+      ROS_INFO_THROTTLE(11, "Grasp: Get grasp point failed!");
+#else
+    // Convert point cloud inliers into base frame
+    m_tf_.getTransform(base_frame_, camera_optical_frame_);
+    m_tf_.doTransform(cloud_filted, cloud_trans);
+    
+    // Publish filted cloud for gpd
+    sensor_msgs::PointCloud2 rosCloud;
+    pcl::toROSMsg(*cloud_trans, rosCloud);
+    rosCloud.header.frame_id = base_frame_;
+    rosCloud.header.stamp = msg->header.stamp;
+    
+    graspPubCloud_.publish(rosCloud);
+#endif
+    
     std_msgs::Int8 flag;
     flag.data = 0;
-
+    
     if (hasGraspPlan_ && !posePublished_)
       flag.data = 1;
     if (hasGraspPlan_ && posePublished_) {
