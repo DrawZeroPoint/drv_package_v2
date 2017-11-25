@@ -4,14 +4,8 @@
 #include <ros/ros.h>
 #include <nodelet/nodelet.h>
 
-#include <std_msgs/String.h>
-#include <std_msgs/Float32.h>
-#include <std_msgs/Bool.h>
-#include <std_msgs/Int8.h>
-
 #include <sensor_msgs/PointCloud2.h>
 
-#include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 
 #include <pcl_conversions/pcl_conversions.h>
@@ -58,6 +52,7 @@
 #include <vector>
 #include <string>
 
+#include "transform.h"
 #include "utilities.h"
 
 using namespace std;
@@ -65,20 +60,39 @@ using namespace std;
 class ObstacleDetect
 {
 public:
-  ObstacleDetect(float table_height, float table_area);
+  ObstacleDetect(string map_frame, float table_height, float table_area);
   
+  /**
+   * @brief ObstacleDetect::detectTableInCloud
+   * Find out whether the source cloud contains table,
+   * if ture, publish table geometry for obstacle avoiding.
+   * The msg type is geometry_msgs/PoseStamped, which
+   * contains pose of the table centroid, assuming the table is a box,
+   * the size of table can be pre-defined
+   */
   void detectTableInCloud();
   
   PointCloudMono::Ptr src_cloud_;
   
+  size_t max_hull_id_;
   vector<pcl::ModelCoefficients::Ptr> plane_coeff_;
   vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> plane_hull_;
   
 private:
   ros::NodeHandle nh;
-  // ALSubROI_ sub roi from Android App and process it with roiCallback
+  
+  string param_running_mode_;
+  
+  // The transform object can't be shared between Classes
+  Transform *m_tf_;
+  // Frame for pointcloud to trasfer
+  string map_frame_;
+  
   ros::Subscriber sub_pointcloud_;
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
+  
+  ros::Publisher pub_table_pose_;
+  ros::Publisher pub_table_points_;
   
   float th_height_;
   // Tabel area threshold
@@ -87,21 +101,13 @@ private:
   vector<float> planeZVector_;
   vector<float> planeCollectVector_;
   
-  void getAverage(PointCloudMono::Ptr cloud_in, float &avr, float &deltaz);
   void projectCloud(pcl::ModelCoefficients::Ptr coeff_in, PointCloudMono::Ptr cloud_in, 
                     PointCloudMono::Ptr &cloud_out);
-  
-  void getCloudByInliers(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out, 
-                         pcl::PointIndices::Ptr inliers, bool negative, bool organized);
-  void getCloudByInliers(PointCloudRGBN::Ptr cloud_in, 
-                         PointCloudRGBN::Ptr &cloud_out,
-                         pcl::PointIndices::Ptr inliers, bool negative, bool organized);
   
   float getCloudByZ(PointCloudMono::Ptr cloud_in);
   void getMeanZofEachCluster(std::vector<pcl::PointIndices> indices_in, 
                           PointCloudRGBN::Ptr cloud_in);
-  void getCloudByConditions(PointCloudRGBN::Ptr cloud_source, 
-                            pcl::PointIndices::Ptr &inliers_plane, float thn);
+
   void calRegionGrowing(PointCloudRGBN::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr normals);
   
   /**
@@ -117,6 +123,7 @@ private:
    * @param cloud_in source point cloud
    */
   void extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in);
+  void analyseHull();
 };
 
 #endif // OBSTACLEDETECT_H

@@ -1,9 +1,5 @@
 #include <ros/ros.h>
 
-#include <tf2/transform_datatypes.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
-#include <tf2_ros/transform_listener.h>
-
 #include <geometry_msgs/TransformStamped.h>
 
 #include <math.h>
@@ -32,16 +28,6 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/subscriber.h>
 
-// Custom message
-#include <drv_msgs/recognized_target.h>
-#include "makeplan.h"
-#include "getsourcecloud.h"
-
-// 3rd party package
-#ifndef USE_CENTER
-#include <gpd/GraspConfigList.h>
-#endif
-
 // PCL-ROS
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
@@ -51,6 +37,18 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/point_types.h>
 
+// Custom message
+#include <drv_msgs/recognized_target.h>
+#include "makeplan.h"
+#include "getsourcecloud.h"
+#include "obstacledetect.h"
+#include "transform.h"
+#include "utilities.h"
+
+// 3rd party package, should below makeplan.h
+#ifndef USE_CENTER
+#include <gpd/GraspConfigList.h>
+#endif
 
 using namespace std;
 
@@ -70,11 +68,20 @@ bool posePublished_ = false; // only works in simple mode
 uint32_t shape = visualization_msgs::Marker::ARROW;
 
 // Transform frame
+string map_frame_ = "map";
 string base_frame_ = "base_link"; // Base frame that NVG link to
 string camera_optical_frame_ = "vision_depth_optical_frame";
 
-geometry_msgs::TransformStamped trans_c_;
+// Object to perform transform
+Transform m_tf_;
 
+// Object to perform obstacle detect
+bool use_od_ = true;
+float table_height_ = 0.9; // error: +-0.15m
+float table_area_ = 0.1; // m^2
+ObstacleDetect m_od_(map_frame_, table_height_, table_area_);
+
+// Whether publish pose for once
 bool pub_pose_once_ = false;
 
 /* The graspable area of robot left arm,
@@ -106,8 +113,6 @@ double min_depth_ = 0.2;
 double max_depth_ = 5.0;
 
 #else
-typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-
 pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
 ros::Publisher graspPubCloud_;
 #endif
@@ -245,26 +250,6 @@ bool isInGraspRange(float x, float y, float z,
 }
 
 #ifdef USE_CENTER
-void doTransform(pcl::PointXYZ p_in, pcl::PointXYZ &p_out, 
-                 const geometry_msgs::TransformStamped& t_in)
-{
-  Eigen::Transform<float,3,Eigen::Affine> t = 
-      Eigen::Translation3f(t_in.transform.translation.x,   
-                           t_in.transform.translation.y,
-                           t_in.transform.translation.z) * 
-      Eigen::Quaternion<float>(t_in.transform.rotation.w, 
-                               t_in.transform.rotation.x,
-                               t_in.transform.rotation.y, 
-                               t_in.transform.rotation.z);
-  
-  Eigen::Vector3f point;
-  
-  point = t * Eigen::Vector3f(p_in.x, p_in.y, p_in.z);
-  p_out.x = point.x();
-  p_out.y = point.y();
-  p_out.z = point.z();
-}
-
 void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
 {
   // In simple mode, pose only publish once after one detection
@@ -291,7 +276,8 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
                                fx_, fy_, cx_, cy_, 
                                max_depth_, min_depth_, opticalPt))
   {
-    doTransform(opticalPt, graspPt, trans_c_);
+    m_tf_.getTransform(base_frame_, camera_optical_frame_);
+    m_tf_.doTransform(opticalPt, graspPt);
     MP.smartOffset(graspPt, 0.02); //TODO: make this smart
     
     publishMarker(graspPt.x, graspPt.y, graspPt.z, imageDepth->header);
@@ -302,6 +288,10 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
     geometry_msgs::PoseStamped offset;
     bool in_range = isInGraspRange(graspPt.x, graspPt.y, graspPt.z, offset);
     if (in_range) {
+      if (use_od_) {
+        // Detect obstacle before publish target pose
+        m_od_.detectTableInCloud();
+      }
       geometry_msgs::PoseStamped grasp_pose;
       grasp_pose.header.frame_id = base_frame_;
       grasp_pose.header.stamp = imageDepth->header.stamp;
@@ -333,7 +323,7 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
     ROS_INFO_THROTTLE(11, "Grasp: Get grasp point failed!");
 }
 #else
-void getCloudByInliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
+void getCloudByInliers(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out,
                        pcl::PointIndices::Ptr inliers, bool negative, bool organized)
 {
   pcl::ExtractIndices<pcl::PointXYZ> extract;
@@ -342,32 +332,6 @@ void getCloudByInliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
   extract.setIndices (inliers);
   extract.setKeepOrganized(organized);
   extract.filter (*cloud_out);
-}
-
-void doTransform(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out,
-                 const geometry_msgs::TransformStamped& t_in)
-{
-  Eigen::Transform<float,3,Eigen::Affine> t = Eigen::Translation3f(t_in.transform.translation.x,
-                                                                   t_in.transform.translation.y,
-                                                                   t_in.transform.translation.z)
-      * Eigen::Quaternion<float>(t_in.transform.rotation.w, t_in.transform.rotation.x,
-                                 t_in.transform.rotation.y, t_in.transform.rotation.z);
-  
-  Eigen::Vector3f point;
-  
-  cloud_out->height = cloud_in->height;
-  cloud_out->width  = cloud_in->width;
-  cloud_out->is_dense = false;
-  cloud_out->resize(cloud_out->height * cloud_out->width);
-  
-  for (size_t i = 0; i < cloud_in->size(); ++i) {
-    point = t * Eigen::Vector3f(cloud_in->points[i].x, 
-                                cloud_in->points[i].y, 
-                                cloud_in->points[i].z);
-    cloud_out->points[i].x = point.x();
-    cloud_out->points[i].y = point.y();
-    cloud_out->points[i].z = point.z();
-  }
 }
 
 void getOrientation(gpd::GraspConfig g, geometry_msgs::Quaternion &q)
@@ -411,16 +375,17 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
     return;
   }
   
-  PointCloud::Ptr cloud_in(new PointCloud);
-  PointCloud::Ptr cloud_filted(new PointCloud);
-  PointCloud::Ptr cloud_trans(new PointCloud);
+  PointCloudMono::Ptr cloud_in(new PointCloudMono);
+  PointCloudMono::Ptr cloud_filted(new PointCloudMono);
+  PointCloudMono::Ptr cloud_trans(new PointCloudMono);
   
   // Filt the cloud using inliers
   pcl::fromROSMsg(*msg, *cloud_in);
   getCloudByInliers(cloud_in, cloud_filted, inliers_, false, false);
   
   // Convert point cloud inliers into base frame
-  doTransform(cloud_filted, cloud_trans, trans_c_);
+  m_tf_.getTransform(base_frame_, camera_optical_frame_);
+  m_tf_.doTransform(cloud_filted, cloud_trans);
   
   // Publish filted cloud for gpd
   sensor_msgs::PointCloud2 rosCloud;
@@ -545,12 +510,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub_grasp_plan = nh.subscribe<gpd::GraspConfigList>("/detect_grasps/clustered_grasps",
                                                                       1, graspPlanCallback);
 #endif
-  
-  // These declaration must be after the node initialization
-  tf2_ros::Buffer tfBufferCameraToBase_;
-  // This is mandatory and should be declared before while loop
-  tf2_ros::TransformListener tfListener(tfBufferCameraToBase_);
-  
+
   ROS_INFO("Grasp planning function initialized.");
   
   while (ros::ok()) {
@@ -563,17 +523,6 @@ int main(int argc, char **argv)
       posePublished_ = false;
       offsetNeedPub_ = true;
       pub_pose_once_ = false;
-      continue;
-    }
-    
-    try {
-      // The 1st frame is the base frame for transform
-      trans_c_ = tfBufferCameraToBase_.lookupTransform(base_frame_, camera_optical_frame_,
-                                                       ros::Time(0));
-    }
-    catch (tf2::TransformException &ex) {
-      ROS_WARN("%s",ex.what());
-      ros::Duration(1.0).sleep();
       continue;
     }
     

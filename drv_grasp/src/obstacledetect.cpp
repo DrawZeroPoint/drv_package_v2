@@ -1,11 +1,6 @@
+#include <tf2/LinearMath/Quaternion.h>
 #include "obstacledetect.h"
 
-//globe parameter
-
-float axisLength_ = 0.1;
-float br_ = 0.2;
-float bg_ = 0.4;
-float bb_ = 0.4;
 
 // Normal threshold
 float th_norm_ = 0.7;
@@ -13,46 +8,48 @@ float th_smooth_ = 8;
 
 // Length threshold
 float th_leaf_ = 0.01;
-float th_noise_ = th_leaf_; // the measure error of sensor
-float th_ec_ = 3 * th_leaf_;
 // th_deltaz_ must 2 times bigger than th_leaf_
 float th_deltaz_ = 2 * th_leaf_;
 float th_ratio_ = 5 * th_leaf_; // flatness ratio max value of plane
 
-float globalMaxZ, globalMinZ;
-float globeMid;
-
-ObstacleDetect::ObstacleDetect(float table_height, float table_area) :
-  src_cloud_(new PointCloudMono)
+ObstacleDetect::ObstacleDetect(string map_frame, float table_height, float table_area) :
+  src_cloud_(new PointCloudMono),
+  m_tf_(new Transform),
+  map_frame_(map_frame)
 {
+  param_running_mode_ = "/status/running_mode";
+  
   th_height_ = table_height;
   th_area_ = table_area;
   
   sub_pointcloud_ = nh.subscribe<sensor_msgs::PointCloud2>("depth_registered/points", 1, 
                                                            &ObstacleDetect::cloudCallback, this);
   
-  pub_table_ = nh.advertise<geometry_msgs::TwistStamped>("/ctrl/vision/detect/table")
+  pub_table_pose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
+  pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("table/points", 1);
 }
 
 void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
-  if (msg->data.empty()) {
-    ROS_WARN_THROTTLE(31, "ObstacleDetect: PointCloud is empty.");
-    return;
+  if (ros::param::has(param_running_mode_)) {
+    int mode_type;
+    ros::param::get(param_running_mode_, mode_type);
+    // 2 for tracking
+    if (mode_type == 2) {
+      if (msg->data.empty()) {
+        ROS_WARN_THROTTLE(31, "ObstacleDetect: PointCloud is empty.");
+        return;
+      }
+      pcl::PCLPointCloud2 pcl_pc2;
+      pcl_conversions::toPCL(*msg, pcl_pc2);
+      PointCloudMono::Ptr temp(new PointCloudMono);
+      pcl::fromPCLPointCloud2(pcl_pc2, *temp);
+      m_tf_->getTransform(map_frame_, msg->header.frame_id);
+      m_tf_->doTransform(temp, src_cloud_);
+    }
   }
-  pcl::PCLPointCloud2 pcl_pc2;
-  pcl_conversions::toPCL(*msg, pcl_pc2);
-  pcl::fromPCLPointCloud2(pcl_pc2, *src_cloud_);
 }
 
-/**
- * @brief ObstacleDetect::detectTableInCloud
- * Find out whether the source cloud contains table,
- * if ture, publish table geometry for obstacle avoiding.
- * The msg type is geometry_msgs/PolygonStamped, which
- * contains 2 Point32, the first is the centroid of the table,
- * the second is the size of the table (assuming a box)
- */
 void ObstacleDetect::detectTableInCloud()
 {
   // Calculate the normal of source cloud
@@ -61,7 +58,7 @@ void ObstacleDetect::detectTableInCloud()
   
   // Extact all points whose norm indicates that the point belongs to plane
   pcl::PointIndices::Ptr idx_near_plane(new pcl::PointIndices);
-  getCloudByConditions(src_norm, idx_near_plane, th_norm_);
+  Utilities::getCloudByNormZ(src_norm, idx_near_plane, th_norm_);
   
   if (idx_near_plane->indices.empty()) {
     ROS_INFO("ObstacleDetect: No point near plane.");
@@ -69,7 +66,7 @@ void ObstacleDetect::detectTableInCloud()
   }
   
   PointCloudRGBN::Ptr cloud_near_plane(new PointCloudRGBN);
-  getCloudByInliers(src_norm, cloud_near_plane, idx_near_plane, false, false);
+  Utilities::getCloudByInliers(src_norm, cloud_near_plane, idx_near_plane, false, false);
   
   ROS_DEBUG("Points may from plane: %d", cloud_near_plane->points.size());
   
@@ -87,65 +84,85 @@ void ObstacleDetect::detectTableInCloud()
   }
   // Perform clustering, cause the scene may contain multiple planes
   calRegionGrowing(cloud_near_plane, norm_plane_curv);
-
+  
   // Extact each plane from the points having similiar z value,
   // the planes are stored in vector plane_hull_
   extractPlaneForEachZ(cloud_near_plane);
   
   // Get table geometry from hull and publish the plane with max area
   analyseHull();
-  //  Utilities::estimateNormCurv(cloud_msg, source_n);
-  //  Utilities::rotateCloudXY(source_n, cloud_t, roll_, pitch_, transform_inv_);
-  //  // std::cout << "trans_inv: "<< transform_inv_ << std::endl;
-  
-  //  PointCloudMono::Ptr plane_max (new PointCloudMono());
-  //  PointCloudMono::Ptr ground_max (new PointCloudMono());
-  //  pcl::ModelCoefficients::Ptr mcp (new pcl::ModelCoefficients);
-  //  pcl::ModelCoefficients::Ptr mcg (new pcl::ModelCoefficients);
-  
-  //  processHullVector(FP.plane_hull, FP.plane_coeff, plane_max, mcp);
-  
-  //  if (!plane_max->empty() && (cloudPubPlaneMax_.getNumSubscribers() || posePubPlaneMax_.getNumSubscribers()))
-  //  {
-  //    sensor_msgs::PointCloud2 plane_max_msg;
-  //    pcl::toROSMsg(*plane_max, plane_max_msg);
-  //    plane_max_msg.header.frame_id = source_msg->header.frame_id;
-  //    plane_max_msg.header.stamp = pcl_conversions::fromPCL(source_msg->header.stamp);
-  
-  //    geometry_msgs::PoseStamped pose_plane_max_msg;
-  //    pose_plane_max_msg.header = plane_max_msg.header;
-  //    pose_plane_max_msg.pose.orientation.x = mcp->values[0];
-  //    pose_plane_max_msg.pose.orientation.y = mcp->values[1];
-  //    pose_plane_max_msg.pose.orientation.z = mcp->values[2];
-  //    pose_plane_max_msg.pose.orientation.w = mcp->values[3];
-  
-  //    cloudPubPlaneMax_.publish(plane_max_msg);
-  //    posePubPlaneMax_.publish(pose_plane_max_msg);
-  //  }
 }
 
 void ObstacleDetect::analyseHull()
 {
-  
-}
+  if (max_hull_id_ >= 0 && max_hull_id_ < plane_hull_.size()) {
+    PointCloudMono::Ptr cloud = plane_hull_[max_hull_id_];
+    
+    // For now, we only publish the largest plane
+    pcl::PointXYZ minPt, maxPt;
+    pcl::getMinMax3D(*cloud, minPt, maxPt);
+    
+    geometry_msgs::PoseStamped table_pose;
+    table_pose.header.frame_id = map_frame_;
+    table_pose.header.stamp = ros::Time(0);
+    table_pose.pose.position.x = (maxPt.x - minPt.x)/2;
+    table_pose.pose.position.y = (maxPt.y - minPt.y)/2;
+    table_pose.pose.position.z = maxPt.z/2;
 
-void ObstacleDetect::getAverage(PointCloudMono::Ptr cloud_in, 
-                                float &avr, float &deltaz)
-{
-  avr = 0.0;
-  deltaz = 0.0;
-  size_t sz = cloud_in->points.size();
-  for (PointCloudMono::const_iterator pit = cloud_in->begin();
-       pit != cloud_in->end(); ++pit)
-    avr += pit->z;
-  
-  avr = avr / sz;
-  
-  pcl::PointXYZ minPt, maxPt;
-  pcl::getMinMax3D(*cloud_in, minPt, maxPt);
-  deltaz = maxPt.z - minPt.z;
-}
+    vector<pcl::PointXYZ> vertex_points;
+    for (size_t i = 0; i < cloud->points.size(); ++i) {
+      if (cloud->points[i].x == maxPt.x) {
+        vertex_points.push_back(cloud->points[i]);
+      }
+      else if (cloud->points[i].y == maxPt.y) {
+        vertex_points.push_back(cloud->points[i]);
+      }
+      else if (cloud->points[i].x == minPt.x) {
+        vertex_points.push_back(cloud->points[i]);
+      }
+      else if (cloud->points[i].y == minPt.y) {
+        vertex_points.push_back(cloud->points[i]);
+      }
+    }
+    // Try find right angle to calculate yaw of table
+    float yaw = 0.0;
+    for (size_t i = 0; i < vertex_points.size() - 2; ++i) {
+      size_t id_s = i;
+      size_t id_m = i + 1;
+      size_t id_e = i + 2 < vertex_points.size()?(i+2):0;
+      tf2::Vector3 ms(vertex_points[id_m].x - vertex_points[id_s].x,
+                      vertex_points[id_m].y - vertex_points[id_s].y, 0);
+      tf2::Vector3 em(vertex_points[id_e].x - vertex_points[id_m].x,
+                      vertex_points[id_e].y - vertex_points[id_m].y, 0);
+      float angle = tf2::tf2Angle(ms, em);
+      if (fabs(angle - M_PI/2 < 0.1) || fabs(angle - 3*M_PI/2) < 0.1) {
+        ROS_INFO("ObstacleDetect: Found right angle.");
+        
+        if (ms.length() > em.length()) {
+          yaw = atan(ms.x()/ms.y());
+        }
+        else {
+          yaw = atan(em.x()/em.y());
+        }
+        break;
+      }
+    }
+    
+    tf2::Quaternion q;
+    q.setEuler(yaw, 0, 0);
+    table_pose.pose.orientation.x = q.x();
+    table_pose.pose.orientation.y = q.y();
+    table_pose.pose.orientation.z = q.z();
+    table_pose.pose.orientation.w = q.w();
 
+    pub_table_pose_.publish(table_pose);
+    
+    sensor_msgs::PointCloud2 table_points;
+    pcl::toROSMsg(*cloud, table_points);
+    table_points.header = table_pose.header;
+    pub_table_points_.publish(table_points);
+  }
+}
 
 void ObstacleDetect::projectCloud(pcl::ModelCoefficients::Ptr coeff_in, 
                                   PointCloudMono::Ptr cloud_in, 
@@ -179,11 +196,14 @@ void ObstacleDetect::extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in)
   PointCloudMono::Ptr cloud_projected_surface(new PointCloudMono);
   Utilities::cutCloud(coeff, th_deltaz_, cloud_in, cloud_projected_surface);
   
+  // Since there may be multipe plane around z, we need do clustering
   vector<pcl::PointIndices> cluster_indices;
   Utilities::clusterExtract(cloud_projected_surface, cluster_indices, th_ratio_, 2500, 307200);
   
-  //cout << "plane cluster number:" << cluster_indices.size() << endl;
+  ROS_DEBUG("Plane cluster number: %d", cluster_indices.size());
   
+  size_t hull_id = 0;
+  float area_temp = 0.0;
   for (vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); 
        it != cluster_indices.end (); ++it) {
     PointCloudMono::Ptr cloud_near_z(new PointCloudMono);
@@ -201,30 +221,19 @@ void ObstacleDetect::extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in)
     hull.setComputeAreaVolume(true);
     hull.reconstruct(*cloud_hull);
     float area_hull = hull.getTotalArea();
-    /*pcl::ConcaveHull< pcl::PointXYZ > chull;
-                                chull.setAlpha(0.5);
-                                chull.setInputCloud(cloud_2d_divided);
-                                chull.reconstruct(*cloud_hull);*/
-    
+
     if (cloud_hull->points.size() > 3 && area_hull > th_area_) {
+      // Select the nearest and largest plane to be the output
+      if (area_hull > area_temp && fabs(z_in - th_height_) < 0.15) {
+        max_hull_id_ = hull_id;
+        area_temp = area_hull;
+      }
       ROS_INFO("Found plane with area %f", area_hull);
       plane_coeff_.push_back(coeff);
       plane_hull_.push_back(cloud_hull);
     }
+    ++hull_id;
   }
-}
-
-void ObstacleDetect::getCloudByInliers(PointCloudMono::Ptr cloud_in, 
-                                       PointCloudMono::Ptr &cloud_out,
-                                       pcl::PointIndices::Ptr inliers, 
-                                       bool negative, bool organized)
-{
-  pcl::ExtractIndices<pcl::PointXYZ> extract;
-  extract.setNegative(negative);
-  extract.setInputCloud(cloud_in);
-  extract.setIndices(inliers);
-  extract.setKeepOrganized(organized);
-  extract.filter(*cloud_out);
 }
 
 float ObstacleDetect::getCloudByZ(PointCloudMono::Ptr cloud_in)
@@ -241,7 +250,7 @@ float ObstacleDetect::getCloudByZ(PointCloudMono::Ptr cloud_in)
     int max_high = -1;
     int max_low = -1;
     pcl::PointIndices::Ptr pointToRemove(new pcl::PointIndices);
-    getAverage(cloud_temp, mid, zrange);
+    Utilities::getAverage(cloud_temp, mid, zrange);
     if (zrange <= th_deltaz_)
       break;
     
@@ -267,41 +276,12 @@ float ObstacleDetect::getCloudByZ(PointCloudMono::Ptr cloud_in)
     if (max_low >= 0)
       pointToRemove->indices.push_back(max_low);
     
-    getCloudByInliers(cloud_temp,cloud_local_temp, pointToRemove, true, false);
+    Utilities::getCloudByInliers(cloud_temp, cloud_local_temp, 
+                                 pointToRemove, true, false);
     cloud_temp = cloud_local_temp;
   }
   return mid;
 }
-
-void ObstacleDetect::getCloudByConditions(PointCloudRGBN::Ptr cloud_source, 
-                                          pcl::PointIndices::Ptr &inliers_plane, float thn)
-{
-  for (int i = 0; i < cloud_source->points.size(); ++i)
-  {
-    float nz = cloud_source->points[i].normal_z;
-    
-    /// THRESHOLD
-    //if point normal fulfill this criterion, consider it from plane
-    if (nz > thn)
-    {
-      inliers_plane->indices.push_back(i);
-    }
-  }
-}
-
-void ObstacleDetect::getCloudByInliers(PointCloudRGBN::Ptr cloud_in, 
-                                       PointCloudRGBN::Ptr &cloud_out,
-                                       pcl::PointIndices::Ptr inliers, 
-                                       bool negative, bool organized)
-{
-  pcl::ExtractIndices<pcl::PointXYZRGBNormal> extract;
-  extract.setNegative(negative);
-  extract.setInputCloud(cloud_in);
-  extract.setIndices(inliers);
-  extract.setKeepOrganized(organized);
-  extract.filter (*cloud_out);
-}
-
 
 void ObstacleDetect::calRegionGrowing(PointCloudRGBN::Ptr cloud, 
                                       pcl::PointCloud<pcl::Normal>::Ptr normals)

@@ -67,12 +67,14 @@ public:
   
   static void generateName(int count, string pref, string surf, string &name);
   
+  static void getAverage(PointCloudMono::Ptr cloud_in, float &avr, float &deltaz);
+  
   static void pointTypeTransfer(PointCloudRGBN::Ptr cloud_in, 
                                 PointCloudMono::Ptr &cloud_out);
   
   static void clusterExtract(PointCloudMono::Ptr cloud_in, 
-                           vector<pcl::PointIndices> &cluster_indices,
-                           double th_cluster, int minsize, int maxsize);
+                             vector<pcl::PointIndices> &cluster_indices,
+                             double th_cluster, int minsize, int maxsize);
   
   static void cutCloud(pcl::ModelCoefficients::Ptr coeff_in, double th_distance, 
                        PointCloudRGBN::Ptr cloud_in,
@@ -88,6 +90,15 @@ public:
   
   static void preProcess(PointCloudMono::Ptr cloud_in, 
                          PointCloudMono::Ptr cloud_out, float gird_sz);
+  
+  static void getCloudByNormZ(PointCloudRGBN::Ptr cloud_in, pcl::PointIndices::Ptr &inliers, 
+                              float th_norm);
+  
+  static void getCloudByInliers(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out, 
+                                pcl::PointIndices::Ptr inliers, bool negative, bool organized);
+  static void getCloudByInliers(PointCloudRGBN::Ptr cloud_in, 
+                                PointCloudRGBN::Ptr &cloud_out,
+                                pcl::PointIndices::Ptr inliers, bool negative, bool organized);
 };
 
 #endif // UTILITIES_H

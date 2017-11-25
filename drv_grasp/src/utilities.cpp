@@ -161,3 +161,61 @@ void Utilities::rotateBack(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cl
   // Executing the transformation
   pcl::transformPointCloud(*cloud_in, *cloud_out, transform_inv);
 }
+
+void Utilities::getAverage(PointCloudMono::Ptr cloud_in, 
+                           float &avr, float &deltaz)
+{
+  avr = 0.0;
+  deltaz = 0.0;
+  size_t sz = cloud_in->points.size();
+  for (PointCloudMono::const_iterator pit = cloud_in->begin();
+       pit != cloud_in->end(); ++pit)
+    avr += pit->z;
+  
+  avr = avr / sz;
+  
+  pcl::PointXYZ minPt, maxPt;
+  pcl::getMinMax3D(*cloud_in, minPt, maxPt);
+  deltaz = maxPt.z - minPt.z;
+}
+
+void Utilities::getCloudByNormZ(PointCloudRGBN::Ptr cloud_in, 
+                                pcl::PointIndices::Ptr &inliers, 
+                                float th_norm)
+{
+  size_t i = 0;
+  for (PointCloudRGBN::const_iterator pit = cloud_in->begin();
+       pit != cloud_in->end();++pit) {
+    float n_z = pit->normal_z;
+    // If point normal fulfill this criterion, consider it from plane
+    if (n_z > th_norm)
+      inliers->indices.push_back(i);
+    ++i;
+  }
+}
+
+void Utilities::getCloudByInliers(PointCloudMono::Ptr cloud_in, 
+                                  PointCloudMono::Ptr &cloud_out,
+                                  pcl::PointIndices::Ptr inliers, 
+                                  bool negative, bool organized)
+{
+  pcl::ExtractIndices<pcl::PointXYZ> extract;
+  extract.setNegative(negative);
+  extract.setInputCloud(cloud_in);
+  extract.setIndices(inliers);
+  extract.setKeepOrganized(organized);
+  extract.filter(*cloud_out);
+}
+
+void Utilities::getCloudByInliers(PointCloudRGBN::Ptr cloud_in, 
+                                  PointCloudRGBN::Ptr &cloud_out,
+                                  pcl::PointIndices::Ptr inliers, 
+                                  bool negative, bool organized)
+{
+  pcl::ExtractIndices<pcl::PointXYZRGBNormal> extract;
+  extract.setNegative(negative);
+  extract.setInputCloud(cloud_in);
+  extract.setIndices(inliers);
+  extract.setKeepOrganized(organized);
+  extract.filter (*cloud_out);
+}
