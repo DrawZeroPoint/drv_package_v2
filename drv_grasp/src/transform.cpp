@@ -1,7 +1,7 @@
 #include "transform.h"
 
 Transform::Transform() :
-  nh_(),
+  tf_buffer_(),
   tf_listener_(tf_buffer_)
 {
   // First initialize nodehandler is important
@@ -10,14 +10,28 @@ Transform::Transform() :
 bool Transform::getTransform(string base_frame, string header_frame)
 {
   try {
-    // Convert header_frame value to base_frame value
-    tf_handle_ = tf_buffer_.lookupTransform(base_frame, header_frame, ros::Time(0));
-    return true;
+    // While we aren't supposed to be shutting down
+    while (ros::ok()) {
+      // Check if the transform from map to quad can be made right now
+      if (tf_buffer_.canTransform(base_frame, header_frame, ros::Time(0))) {
+        // Get the transform
+        tf_handle_ = tf_buffer_.lookupTransform(base_frame, header_frame, ros::Time(0));
+        return true;
+      }
+      
+      // Handle callbacks and sleep for a small amount of time
+      // before looping again
+      ros::spinOnce();
+      ros::Duration(0.005).sleep();
+    }
   }
-  catch(tf2::TransformException &ex) {
-    ROS_WARN("%s",ex.what());
-    ros::Duration(1.0).sleep();
-    return false;
+  // Catch any exceptions that might happen while transforming
+  catch (tf2::TransformException& ex)
+  {
+    ROS_ERROR("Exception transforming %s to %s: %s",
+              base_frame.c_str(),
+              header_frame.c_str(),
+              ex.what());
   }
 }
 
