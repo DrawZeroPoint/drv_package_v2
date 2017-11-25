@@ -57,12 +57,20 @@ class Utilities
 {
 public:
   Utilities();
+  
+  static void msgToCloud(const PointCloud::ConstPtr msg, 
+                         PointCloudMono::Ptr cloud);
+  
+  static void estimateNormCurv(PointCloudMono::Ptr cloud_in, 
+                               PointCloudRGBN::Ptr cloud_out,
+                               float norm_r, float grid_sz, bool down_sp);
+  
   static void generateName(int count, string pref, string surf, string &name);
   
   static void pointTypeTransfer(PointCloudRGBN::Ptr cloud_in, 
                                 PointCloudMono::Ptr &cloud_out);
   
-  static void ecExtraction(PointCloudMono::Ptr cloud_in, 
+  static void clusterExtract(PointCloudMono::Ptr cloud_in, 
                            vector<pcl::PointIndices> &cluster_indices,
                            double th_cluster, int minsize, int maxsize);
   
@@ -78,11 +86,8 @@ public:
                          PointCloudMono::Ptr &cloud_out,
                          Eigen::Matrix4f transform_inv);
   
-  static void estimateNorCurv(const PointCloud::ConstPtr cloud_in, 
-                              PointCloudRGBN::Ptr &cloud_out);
-  
   static void preProcess(PointCloudMono::Ptr cloud_in, 
-                         PointCloudMono::Ptr cloud_out);
+                         PointCloudMono::Ptr cloud_out, float gird_sz);
 };
 
 #endif // UTILITIES_H

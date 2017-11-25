@@ -42,19 +42,17 @@
 #include <gpd/GraspConfigList.h>
 #endif
 
-//PCL-ROS
+// PCL-ROS
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-//PCL
+// PCL
 #include <pcl/filters/extract_indices.h>
 #include <pcl/point_types.h>
 
 
 using namespace std;
-
-typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 ros::Publisher graspPubStatus_;
 ros::Publisher graspPubPose_;
@@ -68,10 +66,10 @@ string param_running_mode = "/status/running_mode";
 bool hasGraspPlan_ = false; // for output grasp info 
 bool posePublished_ = false; // only works in simple mode
 
-// marker type
+// Marker type
 uint32_t shape = visualization_msgs::Marker::ARROW;
 
-// transform frame
+// Transform frame
 string base_frame_ = "base_link"; // Base frame that NVG link to
 string camera_optical_frame_ = "vision_depth_optical_frame";
 
@@ -108,6 +106,8 @@ double min_depth_ = 0.2;
 double max_depth_ = 5.0;
 
 #else
+typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+
 pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
 ros::Publisher graspPubCloud_;
 #endif

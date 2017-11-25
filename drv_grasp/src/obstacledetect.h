@@ -8,6 +8,7 @@
 #include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Int8.h>
+
 #include <sensor_msgs/PointCloud2.h>
 
 #include <geometry_msgs/PolygonStamped.h>
@@ -64,25 +65,31 @@ using namespace std;
 class ObstacleDetect
 {
 public:
-  ObstacleDetect(float table_height);
+  ObstacleDetect(float table_height, float table_area);
   
-  void detectTableInCloud(PointCloudRGBN::Ptr &cloud_in);
+  void detectTableInCloud();
   
-  vector < pcl::ModelCoefficients::Ptr > plane_coeff;
-  vector < pcl::PointCloud< pcl::PointXYZ >::Ptr> plane_hull;
+  PointCloudMono::Ptr src_cloud_;
+  
+  vector<pcl::ModelCoefficients::Ptr> plane_coeff_;
+  vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> plane_hull_;
   
 private:
-  float table_high_;
-  vector <double> planeZVector_;
-  vector <double> planeCollectVector_;
+  ros::NodeHandle nh;
+  // ALSubROI_ sub roi from Android App and process it with roiCallback
+  ros::Subscriber sub_pointcloud_;
+  void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
   
+  float th_height_;
+  // Tabel area threshold
+  float th_area_;
   
-  void preProcess(PointCloudRGBN::Ptr cloud_in, PointCloudRGBN::Ptr cloud_out);
-  void getAverage(PointCloudMono::Ptr cloud_in, double &avr, double &deltaz);
+  vector<float> planeZVector_;
+  vector<float> planeCollectVector_;
+  
+  void getAverage(PointCloudMono::Ptr cloud_in, float &avr, float &deltaz);
   void projectCloud(pcl::ModelCoefficients::Ptr coeff_in, PointCloudMono::Ptr cloud_in, 
                     PointCloudMono::Ptr &cloud_out);
-  void extractPlane(double z_in, PointCloudRGBN::Ptr cloud_fit_plane, 
-                    PointCloudMono::Ptr cloud_out_mono);
   
   void getCloudByInliers(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out, 
                          pcl::PointIndices::Ptr inliers, bool negative, bool organized);
@@ -90,13 +97,26 @@ private:
                          PointCloudRGBN::Ptr &cloud_out,
                          pcl::PointIndices::Ptr inliers, bool negative, bool organized);
   
-  double filtCloudByZ(PointCloudMono::Ptr cloud_in);
-  void processEachInliers(std::vector<pcl::PointIndices> indices_in, 
+  float getCloudByZ(PointCloudMono::Ptr cloud_in);
+  void getMeanZofEachCluster(std::vector<pcl::PointIndices> indices_in, 
                           PointCloudRGBN::Ptr cloud_in);
   void getCloudByConditions(PointCloudRGBN::Ptr cloud_source, 
-                            pcl::PointIndices::Ptr &inliers_plane, double thn);
+                            pcl::PointIndices::Ptr &inliers_plane, float thn);
   void calRegionGrowing(PointCloudRGBN::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr normals);
-  void mergeCloud(PointCloudRGBN::Ptr cloud_fit_plane, PointCloudMono::Ptr cloud_out_mono);
+  
+  /**
+   * @brief extractPlaneForEachZ
+   * Merge clouds which from the same plane with equal z value
+   * @param cloud_in source cloud
+   */
+  void extractPlaneForEachZ(PointCloudRGBN::Ptr cloud_in);
+  
+  /**
+   * @brief extractPlane extract points which have similiar z value
+   * @param z_in target z value
+   * @param cloud_in source point cloud
+   */
+  void extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in);
 };
 
 #endif // OBSTACLEDETECT_H
