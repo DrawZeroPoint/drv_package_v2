@@ -2,7 +2,7 @@
 
 Transform::Transform() :
   tf_buffer_(),
-  tf_listener_(tf_buffer_)
+  tf_listener_(tf_buffer_, nh_)
 {
   // First initialize nodehandler is important
 }
