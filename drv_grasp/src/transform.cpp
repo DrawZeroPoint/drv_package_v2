@@ -1,8 +1,10 @@
 #include "transform.h"
 
 Transform::Transform() :
+  nh_(),
   tf_listener_(tf_buffer_)
 {
+  // First initialize nodehandler is important
 }
 
 bool Transform::getTransform(string base_frame, string header_frame)
