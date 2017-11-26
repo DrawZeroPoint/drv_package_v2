@@ -110,7 +110,7 @@ double min_depth_ = 0.2;
 double max_depth_ = 5.0;
 
 // Depth image temp
-cv_bridge::CvImageConstPtr imageDepthPtr_;
+cv_bridge::CvImagePtr imageDepthPtr_;
 
 #else
 pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
@@ -145,7 +145,7 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
   row_ = y;
 #else
   inliers_->indices.clear();
-  // use roi to extact point cloud
+  // use roi to extract point cloud
   for (size_t x = msg->tgt_bbox_array.data[0]; x < msg->tgt_bbox_array.data[2]; x++) {
     for (size_t y = msg->tgt_bbox_array.data[1]; y < msg->tgt_bbox_array.data[3]; y++) {
       int id = y * 640 + x;
@@ -208,7 +208,7 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
 
 /**
  * @brief isInGraspRange
- * Estimate whether need offseting the robot to 
+ * Estimate whether need offsetting the robot to
  * get in graspable region of the target given
  * @param x
  * @param y
@@ -231,7 +231,7 @@ bool isInGraspRange(float x, float y, float z,
   float y_off_l = y - y_min_;
   
   if (x_off_u > 0)
-    offset.pose.position.x = x_off_u; // Robot move foreward
+    offset.pose.position.x = x_off_u; // Robot move forward
   else if (x_off_l < 0)
     offset.pose.position.x = x_off_l; // Robot move backward
   else
@@ -267,7 +267,7 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
     return;
   }
   
-  imageDepthPtr_ = cv_bridge::toCvShare(imageDepth);
+  imageDepthPtr_ = cv_bridge::toCvCopy(imageDepth);
 }
 #else
 void getOrientation(gpd::GraspConfig g, geometry_msgs::Quaternion &q)
@@ -428,7 +428,7 @@ int main(int argc, char **argv)
   image_transport::ImageTransport depth_it(depth_nh);
   image_transport::TransportHints hintsDepth("compressedDepth", ros::TransportHints(), depth_pnh);
   
-  image_transport::Subscriber sub_depth = depth_it.subscribe("image_rect", 1, depthCallback, hintsDepth);
+  image_transport::Subscriber sub_depth = depth_it.subscribe("/vision/depth/image_rect", 1, depthCallback, hintsDepth);
 #else
   graspPubCloud_ = nh.advertise<sensor_msgs::PointCloud2>("grasp/points", 1);
   ros::Subscriber sub_cloud = nh.subscribe("depth_registered/points", 1, sourceCloudCallback);
@@ -456,11 +456,11 @@ int main(int argc, char **argv)
 #ifdef USE_CENTER
     if (modeType_ != m_track || (pub_pose_once_ && posePublished_))
       continue;
-    if (imageDepthPtr_->image.empty())
+    if (imageDepthPtr_ == NULL)
       continue;
     
     MakePlan MP;
-    pcl::PointXYZ graspPt; // target xyz center in robot's referance frame
+    pcl::PointXYZ graspPt; // target xyz center in robot's reference frame
     pcl::PointXYZ opticalPt; // target xyz center in camera optical frame
     
     // Get opticalPt and transfer to graspPt
