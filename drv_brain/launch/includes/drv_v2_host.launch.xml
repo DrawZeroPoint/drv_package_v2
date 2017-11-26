@@ -1,7 +1,8 @@
+<?xml version="1.0"?>
 <launch>
   <arg name="vision_namespace" default="vision"/>
 
-  <!-- Vision system referance frame on the robot -->
+  <!-- Vision system reference frame on the robot -->
   <arg name="base_link_frame" default="base_link"/>
 
   <arg name="recog_method" default="1"/>
@@ -94,7 +95,7 @@
   </node>
 
   <!-- Initialize grasp planning function -->
-  <node ns="$(arg vision_namespace)" name="drv_grasp" pkg="drv_grasp" type="drv_grasp" respawn="true">
+  <node ns="$(arg vision_namespace)" name="drv_grasp" pkg="drv_grasp" type="drv_grasp" respawn="false">
     <!-- No slash on the front -->
     <param name="base_frame_id" value="$(arg base_link_frame)" />
     <param name="camera_optical_frame_id" value="$(arg vision_namespace)_depth_optical_frame" />
