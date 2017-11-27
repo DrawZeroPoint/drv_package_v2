@@ -31,7 +31,7 @@ float yaw_ = 0.0;
 
 const float to_rad = 0.01745; // PI / 180.0
 
-// distance between frame orign, in meter
+// Distance between frame origin, in meter
 float dx_camera_to_pitch = 0;
 float dy_camera_to_pitch = 0.00375;
 float dz_camera_to_pitch = 0.027;
@@ -54,7 +54,7 @@ std::string cameraPitchFrame_ = "/camera_pitch_frame";
 std::string cameraYawFrame_ = "/camera_yaw_frame"; // Base of NEU Vision Gear
 std::string rootFrame_ = "/base_link"; // Root frame that NVG link to
 
-MoveMean mm(10); // the value represent the strengh to stablize the camera.
+MoveMean mm(10); // the value represent the strength to stabilise the camera.
 
 void configCallback(drv_tf::tfConfig &config, uint32_t level)
 {
@@ -185,4 +185,4 @@ int main(int argc, char** argv){
     ros::spinOnce();
   }
   return 0;
-};
+}
