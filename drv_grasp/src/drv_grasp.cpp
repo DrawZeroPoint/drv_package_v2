@@ -72,10 +72,11 @@ string map_frame_ = "map";
 string base_frame_ = "base_link"; // Base frame that NVG link to
 string camera_optical_frame_ = "vision_depth_optical_frame";
 
-// Obstacle avoidence params
+// Obstacle avoidance params
 bool use_od_ = true;
+float base_to_ground_ = 0.465;
 float table_height_ = 0.9; // error: +-0.15m
-float table_area_ = 0.1; // m^2
+float table_area_ = 0.01; // m^2
 
 
 // Whether publish pose for once
@@ -107,7 +108,7 @@ float cx_ = 333.77;
 float cy_ = 237.86;
 
 double min_depth_ = 0.2;
-double max_depth_ = 5.0;
+double max_depth_ = 3.0;
 
 // Depth image temp
 cv_bridge::CvImagePtr imageDepthPtr_;
@@ -198,9 +199,10 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
   marker.scale.z = 0.04;
   
   // Set the color -- be sure to set alpha as non-zero value!
+  // Since the marker is always up, we set it blue
   marker.color.r = 0.0f;
-  marker.color.g = 1.0f;
-  marker.color.b = 0.0f;
+  marker.color.g = 0.0f;
+  marker.color.b = 1.0f;
   marker.color.a = 1.0;
   
   graspPubMarker_.publish(marker);
@@ -311,7 +313,7 @@ void sourceCloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
     return;
   }
 
-  // Filt the cloud using inliers
+  // Filter the cloud using inliers
   pcl::fromROSMsg(*msg, *cloud_in);
   Utilities::getCloudByInliers(cloud_in, cloud_filted, inliers_, false, false);
 }
@@ -411,15 +413,16 @@ int main(int argc, char **argv)
   graspPubLocation_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/grasp/location", 1);
   
   graspPubStatus_ = nh.advertise<std_msgs::Int8>("status/grasp/feedback", 1);
-  graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("grasp/marker", 1);
+  graspPubMarker_ = nh.advertise<visualization_msgs::Marker>("/vision/grasp/marker", 1);
   
-  ros::Subscriber sub_track = nh.subscribe<drv_msgs::recognized_target>("track/recognized_target",
+  ros::Subscriber sub_track = nh.subscribe<drv_msgs::recognized_target>("/vision/track/recognized_target",
                                                                         1, trackResultCallback);
   
   // Object to perform transform
   Transform m_tf_;
   // Object to perform obstacle detect
-  ObstacleDetect m_od_(map_frame_, table_height_, table_area_);
+  ObstacleDetect m_od_(use_od_, base_frame_, base_to_ground_,
+                       table_height_, table_area_);
   
 #ifdef USE_CENTER
   ros::NodeHandle cnh;
@@ -470,7 +473,7 @@ int main(int argc, char **argv)
     {
       m_tf_.getTransform(base_frame_, camera_optical_frame_);
       m_tf_.doTransform(opticalPt, graspPt);
-      MP.smartOffset(graspPt, 0.02); //TODO: make this smart
+      MP.smartOffset(graspPt, 0.01); //TODO: make this smart
       
       publishMarker(graspPt.x, graspPt.y, graspPt.z, imageDepthPtr_->header);
       
@@ -518,7 +521,7 @@ int main(int argc, char **argv)
     m_tf_.getTransform(base_frame_, camera_optical_frame_);
     m_tf_.doTransform(cloud_filted, cloud_trans);
     
-    // Publish filted cloud for gpd
+    // Publish filter cloud for gpd
     sensor_msgs::PointCloud2 rosCloud;
     pcl::toROSMsg(*cloud_trans, rosCloud);
     rosCloud.header.frame_id = base_frame_;

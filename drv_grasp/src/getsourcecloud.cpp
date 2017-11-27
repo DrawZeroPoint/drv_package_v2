@@ -14,15 +14,15 @@ inline bool uIsFinite(const T & value)
 #endif
 }
 
-
 float getDepth(const Mat &depthImage, int x, int y,
-               bool smoothing, float maxZError, bool estWithNeighborsIfNull)
+               bool smoothing, float maxZError, 
+               bool estWithNeighborsIfNull)
 {
   int u = x;
   int v = y;
   
   bool isInMM = depthImage.type() == CV_16UC1; // is in mm?
-
+  
   // Inspired from RGBDFrame::getGaussianMixtureDistribution() method from
   // https://github.com/ccny-ros-pkg/rgbdtools/blob/master/src/rgbd_frame.cpp
   // Window weights:
@@ -33,7 +33,7 @@ float getDepth(const Mat &depthImage, int x, int y,
   int v_start = max(v - 1, 0);
   int u_end = min(u + 1, depthImage.cols - 1);
   int v_end = min(v + 1, depthImage.rows - 1);
-
+  
   float depth = 0.0f;
   if(isInMM) {
     if(depthImage.at<unsigned short>(v, u) > 0 &&
@@ -43,7 +43,7 @@ float getDepth(const Mat &depthImage, int x, int y,
   }
   else
     depth = depthImage.at<float>(v, u);
-
+  
   if((depth == 0.0f || !uIsFinite(depth)) && estWithNeighborsIfNull) {
     // all cells no2 must be under the zError to be accepted
     float tmp = 0.0f;
@@ -79,7 +79,7 @@ float getDepth(const Mat &depthImage, int x, int y,
       depth = tmp / float(count);
     }
   }
-
+  
   if(depth != 0.0f && uIsFinite(depth)) {
     if(smoothing) {
       float sumWeights = 0.0f;
@@ -97,7 +97,7 @@ float getDepth(const Mat &depthImage, int x, int y,
             else {
               d = depthImage.at<float>(vv,uu);
             }
-
+            
             // ignore if not valid or depth difference is too high
             if(d != 0.0f && uIsFinite(d) && fabs(d - depth) < maxZError)
             {
@@ -117,7 +117,7 @@ float getDepth(const Mat &depthImage, int x, int y,
       // set window weight to center point
       depth *= 4.0f;
       sumWeights += 4.0f;
-
+      
       // mean
       depth = (depth+sumDepths)/sumWeights;
     }
@@ -129,49 +129,56 @@ float getDepth(const Mat &depthImage, int x, int y,
 }
 
 
-pcl::PointXYZ projectDepthTo3D(const Mat &depthImage, int x, int y,
-                               float cx, float cy, float fx, float fy, 
-                               bool smoothing, float maxZError)
+bool projectDepthTo3D(const Mat &depthImage, pcl::PointXYZ &pt,
+                      float max_depth, float min_depth,
+                      int x, int y,
+                      float cx, float cy, float fx, float fy, 
+                      bool smoothing, float maxZError)
 {
-  pcl::PointXYZ pt;
-
   float depth = getDepth(depthImage, x, y, smoothing, maxZError, true);
-  if(depth > 0.0f) {
+  if(depth > 0.0f && depth < max_depth && depth > min_depth) {
     // Use correct principal point from calibration
     cx = cx > 0.0f ? cx : float(depthImage.cols/2) - 0.5f; //cameraInfo.K.at(2)
     cy = cy > 0.0f ? cy : float(depthImage.rows/2) - 0.5f; //cameraInfo.K.at(5)
-
+    
     // Fill in XYZ
     pt.x = (x - cx) * depth / fx;
     pt.y = (y - cy) * depth / fy;
     pt.z = depth;
+    return true;
   }
   else {
     pt.x = pt.y = pt.z = std::numeric_limits<float>::quiet_NaN();
+    return false;
   }
-  return pt;
 }
 
-
-pcl::PointXYZ pointFromDepth(const cv::Mat & imageDepth, int h, int w,
-                             float cx, float cy, float fx, float fy)
+bool GetSourceCloud::getCloud(Mat depth, float fx, float fy, float cx, float cy, 
+                              float max_depth, float min_depth, PointCloudMono::Ptr &cloud)
 {
-  pcl::PointXYZ ptXYZ = projectDepthTo3D(imageDepth, w, h,
-                                         cx, cy, fx, fy, false, 3.0);
-  return ptXYZ;
+  cloud->height = depth.rows;
+  cloud->width  = depth.cols;
+  cloud->is_dense = false;
+  cloud->resize(cloud->height * cloud->width);
+  
+  size_t i = 0;
+  for (PointCloudMono::iterator pit = cloud->begin(); 
+       pit != cloud->end(); ++pit) {
+    pcl::PointXYZ pt;
+    projectDepthTo3D(depth, pt, max_depth, min_depth, 
+                     i%640, i/640, cx, cy, fx, fy, false, 3.0);
+    pit->x = pt.x;
+    pit->y = pt.y;
+    pit->z = pt.z;
+    ++i;
+  }
 }
-
 
 bool GetSourceCloud::getPoint(cv::Mat depth, int row, int col, 
                               float fx, float fy, float cx, float cy,
-                              float maxDepth, float minDepth, pcl::PointXYZ &point)
+                              float max_depth, float min_depth, pcl::PointXYZ &pt)
 {
-  point = pointFromDepth(depth, row, col, cx, cy, fx, fy);
-  
-  if (isnan(point.x) || isnan(point.y) || isnan(point.z))
-    return false;
-  else if(point.z < minDepth || point.z > maxDepth)
-    return false;
-  else
-    return true;
+  bool success = projectDepthTo3D(depth, pt, max_depth, min_depth,
+                                  col, row, cx, cy, fx, fy, false, 3.0);
+  return success;
 }

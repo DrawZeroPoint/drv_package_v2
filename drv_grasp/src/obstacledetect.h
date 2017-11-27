@@ -60,23 +60,23 @@ using namespace std;
 class ObstacleDetect
 {
 public:
-  ObstacleDetect(string map_frame, float table_height, float table_area);
+  ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
+                 float table_height, float table_area);
   
   /**
    * @brief ObstacleDetect::detectTableInCloud
    * Find out whether the source cloud contains table,
-   * if ture, publish table geometry for obstacle avoiding.
+   * if true, publish table geometry for obstacle avoiding.
    * The msg type is geometry_msgs/PoseStamped, which
    * contains pose of the table centroid, assuming the table is a box,
    * the size of table can be pre-defined
    */
   void detectTableInCloud();
   
-  PointCloudMono::Ptr src_cloud_;
+  // Whether perform obstacle detection
+  bool use_od_;
   
-  size_t max_hull_id_;
-  vector<pcl::ModelCoefficients::Ptr> plane_coeff_;
-  vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> plane_hull_;
+  PointCloudMono::Ptr src_cloud_;
   
 private:
   ros::NodeHandle nh;
@@ -85,8 +85,8 @@ private:
   
   // The transform object can't be shared between Classes
   Transform *m_tf_;
-  // Frame for pointcloud to trasfer
-  string map_frame_;
+  // Frame for point cloud to transfer
+  string base_frame_;
   
   ros::Subscriber sub_pointcloud_;
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
@@ -94,9 +94,25 @@ private:
   ros::Publisher pub_table_pose_;
   ros::Publisher pub_table_points_;
   
+  // Target table approximate height
+  float table_height_;
+  
+  // height max error 
   float th_height_;
-  // Tabel area threshold
+  // Table area threshold
   float th_area_;
+  
+  // Distance between base_frame and ground
+  float base_link_above_ground_;
+
+  float global_area_temp_;
+  float global_height_temp_;
+  
+  vector<pcl::ModelCoefficients::Ptr> plane_coeff_;
+  vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> plane_hull_;
+  
+  pcl::ModelCoefficients::Ptr plane_max_coeff_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr plane_max_hull_;
   
   vector<float> planeZVector_;
   vector<float> planeCollectVector_;
@@ -104,7 +120,7 @@ private:
   void projectCloud(pcl::ModelCoefficients::Ptr coeff_in, PointCloudMono::Ptr cloud_in, 
                     PointCloudMono::Ptr &cloud_out);
   
-  float getCloudByZ(PointCloudMono::Ptr cloud_in);
+  float getCloudZMean(PointCloudMono::Ptr cloud_in);
   void getMeanZofEachCluster(std::vector<pcl::PointIndices> indices_in, 
                           PointCloudRGBN::Ptr cloud_in);
 
@@ -118,12 +134,15 @@ private:
   void extractPlaneForEachZ(PointCloudRGBN::Ptr cloud_in);
   
   /**
-   * @brief extractPlane extract points which have similiar z value
+   * @brief extractPlane extract points which have similar z value
    * @param z_in target z value
    * @param cloud_in source point cloud
    */
   void extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in);
   void analyseHull();
+  
+  template <typename PointTPtr>
+  void publishCloud(PointTPtr cloud);
 };
 
 #endif // OBSTACLEDETECT_H

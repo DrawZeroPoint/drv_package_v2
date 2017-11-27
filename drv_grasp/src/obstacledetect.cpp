@@ -1,36 +1,50 @@
-#include <tf2/LinearMath/Quaternion.h>
+﻿#include <tf2/LinearMath/Quaternion.h>
 #include "obstacledetect.h"
 
 
-// Normal threshold
-float th_norm_ = 0.7;
+// Normal threshold, |z_norm_| > th_z_norm_ means the point is from plane
+float th_z_norm_ = 0.7;
+
+// Region growing threshold
 float th_smooth_ = 8;
 
-// Length threshold
+// Voxel grid threshold
 float th_leaf_ = 0.01;
 // th_deltaz_ must 2 times bigger than th_leaf_
 float th_deltaz_ = 2 * th_leaf_;
 float th_ratio_ = 5 * th_leaf_; // flatness ratio max value of plane
 
-ObstacleDetect::ObstacleDetect(string map_frame, float table_height, float table_area) :
+// Depth threshold
+float th_max_depth_ = 1.5;
+
+ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
+                               float table_height, float table_area) :
+  use_od_(use_od),
   src_cloud_(new PointCloudMono),
   m_tf_(new Transform),
-  map_frame_(map_frame)
+  base_frame_(base_frame),
+  base_link_above_ground_(base_to_ground),
+  table_height_(table_height),
+  th_height_(0.2),
+  th_area_(table_area)
 {
   param_running_mode_ = "/status/running_mode";
+
+  // For store max hull id and area
+  global_area_temp_ = 0;
   
-  th_height_ = table_height;
-  th_area_ = table_area;
-  
-  sub_pointcloud_ = nh.subscribe<sensor_msgs::PointCloud2>("depth_registered/points", 1, 
+  sub_pointcloud_ = nh.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
                                                            &ObstacleDetect::cloudCallback, this);
   
   pub_table_pose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
-  pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("table/points", 1);
+  pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
 }
 
 void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
+  if (!use_od_)
+    return;
+  
   if (ros::param::has(param_running_mode_)) {
     int mode_type;
     ros::param::get(param_running_mode_, mode_type);
@@ -44,124 +58,149 @@ void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
       pcl_conversions::toPCL(*msg, pcl_pc2);
       PointCloudMono::Ptr temp(new PointCloudMono);
       pcl::fromPCLPointCloud2(pcl_pc2, *temp);
-      m_tf_->getTransform(map_frame_, msg->header.frame_id);
-      m_tf_->doTransform(temp, src_cloud_);
+      
+      PointCloudMono::Ptr temp_filtered(new PointCloudMono);
+      Utilities::getCloudByZ(temp, temp_filtered, 0.0, th_max_depth_);
+      
+      m_tf_->getTransform(base_frame_, msg->header.frame_id);
+      m_tf_->doTransform(temp_filtered, src_cloud_);
     }
   }
 }
 
 void ObstacleDetect::detectTableInCloud()
 {
+  if (src_cloud_->points.empty())
+    return;
+  
+  // Clear temp
+  planeZVector_.clear();
+  plane_coeff_.clear();
+  plane_hull_.clear();
+  global_area_temp_ = 0.0;
+  global_height_temp_ = 0.0;
+  
   // Calculate the normal of source cloud
   PointCloudRGBN::Ptr src_norm(new PointCloudRGBN);
-  Utilities::estimateNormCurv(src_cloud_, src_norm, 0.02, 0.001, true);
+  Utilities::estimateNormCurv(src_cloud_, src_norm, 2*th_leaf_, th_leaf_, true);
   
-  // Extact all points whose norm indicates that the point belongs to plane
-  pcl::PointIndices::Ptr idx_near_plane(new pcl::PointIndices);
-  Utilities::getCloudByNormZ(src_norm, idx_near_plane, th_norm_);
+  // Extract all points whose norm indicates that the point belongs to plane
+  pcl::PointIndices::Ptr idx_norm_ok(new pcl::PointIndices);
+  Utilities::getCloudByNormZ(src_norm, idx_norm_ok, th_z_norm_);
   
-  if (idx_near_plane->indices.empty()) {
-    ROS_INFO("ObstacleDetect: No point near plane.");
+  if (idx_norm_ok->indices.empty()) {
+    ROS_DEBUG("ObstacleDetect: No point have the right normal of plane.");
     return;
   }
   
-  PointCloudRGBN::Ptr cloud_near_plane(new PointCloudRGBN);
-  Utilities::getCloudByInliers(src_norm, cloud_near_plane, idx_near_plane, false, false);
+  PointCloudRGBN::Ptr cloud_norm_ok(new PointCloudRGBN);
+  Utilities::getCloudByInliers(src_norm, cloud_norm_ok, idx_norm_ok, false, false);
   
-  ROS_DEBUG("Points may from plane: %d", cloud_near_plane->points.size());
+  ROS_DEBUG("Points may from plane: %d", cloud_norm_ok->points.size());
   
   // Prepare curv data for clustering
   pcl::PointCloud<pcl::Normal>::Ptr norm_plane_curv(new pcl::PointCloud<pcl::Normal>);
-  norm_plane_curv->resize(cloud_near_plane->size());
+  norm_plane_curv->resize(cloud_norm_ok->size());
   
   size_t i = 0;
-  for (PointCloudRGBN::const_iterator pit = cloud_near_plane->begin();
-       pit != cloud_near_plane->end(); ++pit) {
+  for (PointCloudRGBN::const_iterator pit = cloud_norm_ok->begin();
+       pit != cloud_norm_ok->end(); ++pit) {
     norm_plane_curv->points[i].normal_x = pit->normal_x;
     norm_plane_curv->points[i].normal_y = pit->normal_y;
     norm_plane_curv->points[i].normal_z = pit->normal_z;
     ++i;
   }
   // Perform clustering, cause the scene may contain multiple planes
-  calRegionGrowing(cloud_near_plane, norm_plane_curv);
+  calRegionGrowing(cloud_norm_ok, norm_plane_curv);
   
-  // Extact each plane from the points having similiar z value,
+  // Extract each plane from the points having similar z value,
   // the planes are stored in vector plane_hull_
-  extractPlaneForEachZ(cloud_near_plane);
+  extractPlaneForEachZ(cloud_norm_ok);
   
   // Get table geometry from hull and publish the plane with max area
   analyseHull();
 }
 
+template <typename PointTPtr>
+void ObstacleDetect::publishCloud(PointTPtr cloud)
+{
+  sensor_msgs::PointCloud2 ros_cloud;
+  pcl::toROSMsg(*cloud, ros_cloud);
+  ros_cloud.header.frame_id = base_frame_;
+  ros_cloud.header.stamp = ros::Time(0);
+  pub_table_points_.publish(ros_cloud);
+}
+
 void ObstacleDetect::analyseHull()
 {
-  if (max_hull_id_ >= 0 && max_hull_id_ < plane_hull_.size()) {
-    PointCloudMono::Ptr cloud = plane_hull_[max_hull_id_];
-    
-    // For now, we only publish the largest plane
-    pcl::PointXYZ minPt, maxPt;
-    pcl::getMinMax3D(*cloud, minPt, maxPt);
-    
-    geometry_msgs::PoseStamped table_pose;
-    table_pose.header.frame_id = map_frame_;
-    table_pose.header.stamp = ros::Time(0);
-    table_pose.pose.position.x = (maxPt.x - minPt.x)/2;
-    table_pose.pose.position.y = (maxPt.y - minPt.y)/2;
-    table_pose.pose.position.z = maxPt.z/2;
-
-    vector<pcl::PointXYZ> vertex_points;
-    for (size_t i = 0; i < cloud->points.size(); ++i) {
-      if (cloud->points[i].x == maxPt.x) {
-        vertex_points.push_back(cloud->points[i]);
-      }
-      else if (cloud->points[i].y == maxPt.y) {
-        vertex_points.push_back(cloud->points[i]);
-      }
-      else if (cloud->points[i].x == minPt.x) {
-        vertex_points.push_back(cloud->points[i]);
-      }
-      else if (cloud->points[i].y == minPt.y) {
-        vertex_points.push_back(cloud->points[i]);
-      }
-    }
-    // Try find right angle to calculate yaw of table
-    float yaw = 0.0;
-    for (size_t i = 0; i < vertex_points.size() - 2; ++i) {
-      size_t id_s = i;
-      size_t id_m = i + 1;
-      size_t id_e = i + 2 < vertex_points.size()?(i+2):0;
-      tf2::Vector3 ms(vertex_points[id_m].x - vertex_points[id_s].x,
-                      vertex_points[id_m].y - vertex_points[id_s].y, 0);
-      tf2::Vector3 em(vertex_points[id_e].x - vertex_points[id_m].x,
-                      vertex_points[id_e].y - vertex_points[id_m].y, 0);
-      float angle = tf2::tf2Angle(ms, em);
-      if (fabs(angle - M_PI/2 < 0.1) || fabs(angle - 3*M_PI/2) < 0.1) {
-        ROS_INFO("ObstacleDetect: Found right angle.");
-        
-        if (ms.length() > em.length()) {
-          yaw = atan(ms.x()/ms.y());
-        }
-        else {
-          yaw = atan(em.x()/em.y());
-        }
-        break;
-      }
-    }
-    
-    tf2::Quaternion q;
-    q.setEuler(yaw, 0, 0);
-    table_pose.pose.orientation.x = q.x();
-    table_pose.pose.orientation.y = q.y();
-    table_pose.pose.orientation.z = q.z();
-    table_pose.pose.orientation.w = q.w();
-
-    pub_table_pose_.publish(table_pose);
-    
-    sensor_msgs::PointCloud2 table_points;
-    pcl::toROSMsg(*cloud, table_points);
-    table_points.header = table_pose.header;
-    pub_table_points_.publish(table_points);
+  PointCloudMono::Ptr cloud = plane_max_hull_;
+  if (cloud == NULL) {
+    ROS_INFO_THROTTLE(11, "ObstacleDetect: No table detected.");
+    return;
   }
+  
+  // For now, we only publish the largest plane
+  pcl::PointXYZ minPt, maxPt;
+  pcl::getMinMax3D(*cloud, minPt, maxPt);
+  
+  // Calculate table centroid position
+  geometry_msgs::PoseStamped table_pose;
+  table_pose.header.frame_id = base_frame_;
+  table_pose.header.stamp = ros::Time(0);
+  table_pose.pose.position.x = (maxPt.x + minPt.x)/2;
+  table_pose.pose.position.y = (maxPt.y + minPt.y)/2;
+  table_pose.pose.position.z = (maxPt.z - base_link_above_ground_)/2;
+  
+  vector<pcl::PointXYZ> vertex_points;
+  for (size_t i = 0; i < cloud->points.size(); ++i) {
+    if (cloud->points[i].x == maxPt.x) {
+      vertex_points.push_back(cloud->points[i]);
+    }
+    else if (cloud->points[i].y == maxPt.y) {
+      vertex_points.push_back(cloud->points[i]);
+    }
+    else if (cloud->points[i].x == minPt.x) {
+      vertex_points.push_back(cloud->points[i]);
+    }
+    else if (cloud->points[i].y == minPt.y) {
+      vertex_points.push_back(cloud->points[i]);
+    }
+  }
+  // Try to find right angle to calculate yaw of table
+  float yaw = 0.0;
+  for (size_t i = 0; i < vertex_points.size() - 2; ++i) {
+    size_t id_s = i;
+    size_t id_m = i + 1;
+    size_t id_e = i + 2 < vertex_points.size()?(i+2):0;
+    tf2::Vector3 ms(vertex_points[id_m].x - vertex_points[id_s].x,
+                    vertex_points[id_m].y - vertex_points[id_s].y, 0);
+    tf2::Vector3 em(vertex_points[id_e].x - vertex_points[id_m].x,
+                    vertex_points[id_e].y - vertex_points[id_m].y, 0);
+    float angle = tf2::tf2Angle(ms, em);
+    if (fabs(angle - M_PI/2 < 0.1) || fabs(angle - 3*M_PI/2) < 0.1) {
+      ROS_DEBUG("ObstacleDetect: Found right angle.");
+      
+      if (ms.length() > em.length()) {
+        yaw = atan(ms.x()/ms.y());
+      }
+      else {
+        yaw = atan(em.x()/em.y());
+      }
+      break;
+    }
+  }
+  
+  tf2::Quaternion q;
+  q.setEuler(0, 0, yaw);
+  table_pose.pose.orientation.x = q.x();
+  table_pose.pose.orientation.y = q.y();
+  table_pose.pose.orientation.z = q.z();
+  table_pose.pose.orientation.w = q.w();
+  
+  pub_table_pose_.publish(table_pose);
+
+  publishCloud(cloud);
+  ROS_INFO_THROTTLE(11, "ObstacleDetect: Table detected.");
 }
 
 void ObstacleDetect::projectCloud(pcl::ModelCoefficients::Ptr coeff_in, 
@@ -198,12 +237,10 @@ void ObstacleDetect::extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in)
   
   // Since there may be multipe plane around z, we need do clustering
   vector<pcl::PointIndices> cluster_indices;
-  Utilities::clusterExtract(cloud_projected_surface, cluster_indices, th_ratio_, 2500, 307200);
+  Utilities::clusterExtract(cloud_projected_surface, cluster_indices, th_ratio_, 0, 307200);
   
   ROS_DEBUG("Plane cluster number: %d", cluster_indices.size());
   
-  size_t hull_id = 0;
-  float area_temp = 0.0;
   for (vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); 
        it != cluster_indices.end (); ++it) {
     PointCloudMono::Ptr cloud_near_z(new PointCloudMono);
@@ -215,28 +252,36 @@ void ObstacleDetect::extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in)
     cloud_near_z->height = 1;
     cloud_near_z->is_dense = true;
     
+    if (cloud_near_z->points.size() < 3)
+      continue;
+    
     PointCloudMono::Ptr cloud_hull(new PointCloudMono);
     pcl::ConvexHull<pcl::PointXYZ> hull;
     hull.setInputCloud(cloud_near_z);
     hull.setComputeAreaVolume(true);
     hull.reconstruct(*cloud_hull);
     float area_hull = hull.getTotalArea();
-
+    
     if (cloud_hull->points.size() > 3 && area_hull > th_area_) {
-      // Select the nearest and largest plane to be the output
-      if (area_hull > area_temp && fabs(z_in - th_height_) < 0.15) {
-        max_hull_id_ = hull_id;
-        area_temp = area_hull;
+      /* Select the plane which has similar th_height and
+       * largest plane to be the output, notice that z_in is in base_link frame
+       * th_height_ is the height of table, base_link is 0.4m above the ground */
+      if (area_hull > global_area_temp_ && z_in > global_height_temp_ &&
+          fabs(z_in + base_link_above_ground_ - table_height_) < th_height_) {
+        plane_max_hull_ = cloud_hull;
+        plane_max_coeff_ = coeff;
+        // Update temp
+        global_height_temp_ = z_in;
+        global_area_temp_ = area_hull;
       }
-      ROS_INFO("Found plane with area %f", area_hull);
+      ROS_DEBUG("Found plane with area %f.", area_hull);
       plane_coeff_.push_back(coeff);
       plane_hull_.push_back(cloud_hull);
     }
-    ++hull_id;
   }
 }
 
-float ObstacleDetect::getCloudByZ(PointCloudMono::Ptr cloud_in)
+float ObstacleDetect::getCloudZMean(PointCloudMono::Ptr cloud_in)
 {
   // Remove the fariest point in each loop
   PointCloudMono::Ptr cloud_local_temp (new PointCloudMono);
@@ -286,11 +331,16 @@ float ObstacleDetect::getCloudByZ(PointCloudMono::Ptr cloud_in)
 void ObstacleDetect::calRegionGrowing(PointCloudRGBN::Ptr cloud, 
                                       pcl::PointCloud<pcl::Normal>::Ptr normals)
 {
+  if (cloud->points.empty()) {
+    ROS_DEBUG("ObstacleDetect: Norm cloud contains nothing.");
+    return;
+  }
+
   pcl::RegionGrowing<pcl::PointXYZRGBNormal, pcl::Normal> reg;
   pcl::search::Search<pcl::PointXYZRGBNormal>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZRGBNormal> > 
       (new pcl::search::KdTree<pcl::PointXYZRGBNormal>);
   
-  reg.setMinClusterSize(1000);
+  reg.setMinClusterSize(30);
   reg.setMaxClusterSize(307200);
   reg.setSearchMethod(tree);
   reg.setNumberOfNeighbours(20);
@@ -312,7 +362,8 @@ void ObstacleDetect::getMeanZofEachCluster(vector<pcl::PointIndices> indices_in,
                                            PointCloudRGBN::Ptr cloud_in)
 {
   if (indices_in.empty())
-    ROS_INFO("ObstacleDetect: Region growing get nothing.");
+    ROS_DEBUG("ObstacleDetect: Region growing get nothing.");
+  
   else {
     size_t k = 0;
     for (vector<pcl::PointIndices>::const_iterator it = indices_in.begin(); 
@@ -328,23 +379,22 @@ void ObstacleDetect::getMeanZofEachCluster(vector<pcl::PointIndices> indices_in,
       cloud_fit_part->width = cloud_fit_part->points.size ();
       cloud_fit_part->height = 1;
       cloud_fit_part->is_dense = true;
-      
-      cerr << "processEachInliers: Number of points in cluster " << k << " :" << count << endl;
-      
+            
       // Search those part which may come from the same plane
       PointCloudMono::Ptr cloud_fit_part_t(new PointCloudMono);
       Utilities::pointTypeTransfer(cloud_fit_part, cloud_fit_part_t);
       
-      float z_value_of_plane_part = getCloudByZ(cloud_fit_part_t);
+      float z_value_of_plane_part = getCloudZMean(cloud_fit_part_t);
       planeZVector_.push_back(z_value_of_plane_part);
       k++;
     }
     
     if (planeZVector_.empty()) {
-      cerr << "processEachInliers: No cloud part pass the z judgment." << endl;
+      ROS_DEBUG("processEachInliers: No cloud part pass the z judgment.");
     }
     else {
-      cerr << "Probability plane number: " << planeZVector_.size() << endl;
+      ROS_DEBUG("Probability plane number: %d", planeZVector_.size());
+      // Small to large
       sort(planeZVector_.begin(), planeZVector_.end());
     }
   }

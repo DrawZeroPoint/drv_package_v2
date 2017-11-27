@@ -33,7 +33,7 @@ void Utilities::msgToCloud(const PointCloud::ConstPtr msg,
 }
 
 void Utilities::estimateNormCurv(PointCloudMono::Ptr cloud_in, 
-                                 PointCloudRGBN::Ptr cloud_out,
+                                 PointCloudRGBN::Ptr &cloud_out,
                                  float norm_r, float grid_sz, bool down_sp)
 {
   PointCloudMono::Ptr cloud_fit(new PointCloudMono);
@@ -41,7 +41,7 @@ void Utilities::estimateNormCurv(PointCloudMono::Ptr cloud_in,
     preProcess(cloud_in, cloud_fit, grid_sz);
   else
     cloud_fit = cloud_in;
-  
+
   cloud_out->height = cloud_fit->height;
   cloud_out->width  = cloud_fit->width;
   cloud_out->is_dense = false;
@@ -59,8 +59,8 @@ void Utilities::estimateNormCurv(PointCloudMono::Ptr cloud_in,
   ne.setRadiusSearch(norm_r); // mm
   
   // Compute the features
-  pcl::PointCloud<pcl::Normal>::Ptr cloud_nor(new pcl::PointCloud<pcl::Normal>);
-  ne.compute(*cloud_nor);
+  pcl::PointCloud<pcl::Normal>::Ptr cloud_norm(new pcl::PointCloud<pcl::Normal>);
+  ne.compute(*cloud_norm);
   
   for (size_t i = 0; i < cloud_out->size(); ++i) {
     cloud_out->points[i].x = cloud_fit->points[i].x;
@@ -69,14 +69,14 @@ void Utilities::estimateNormCurv(PointCloudMono::Ptr cloud_in,
     cloud_out->points[i].r = 1;
     cloud_out->points[i].g = 1;
     cloud_out->points[i].b = 1;
-    cloud_out->points[i].normal_x = cloud_nor->points[i].normal_x;
-    cloud_out->points[i].normal_y = cloud_nor->points[i].normal_y;
-    cloud_out->points[i].normal_z = cloud_nor->points[i].normal_z;
+    cloud_out->points[i].normal_x = cloud_norm->points[i].normal_x;
+    cloud_out->points[i].normal_y = cloud_norm->points[i].normal_y;
+    cloud_out->points[i].normal_z = cloud_norm->points[i].normal_z;
   }
 }
 
 void Utilities::preProcess(PointCloudMono::Ptr cloud_in, 
-                           PointCloudMono::Ptr cloud_out,
+                           PointCloudMono::Ptr &cloud_out,
                            float gird_sz)
 {
   // Create the filtering object
@@ -90,6 +90,7 @@ void Utilities::pointTypeTransfer(PointCloudRGBN::Ptr cloud_in,
                                   PointCloudMono::Ptr &cloud_out)
 {
   cloud_out->resize(cloud_in->size());
+  
   for (size_t i = 0; i < cloud_in->points.size(); i++) {
     cloud_out->points[i].x = cloud_in->points[i].x;
     cloud_out->points[i].y = cloud_in->points[i].y;
@@ -114,7 +115,7 @@ void Utilities::cutCloud(pcl::ModelCoefficients::Ptr coeff_in, double th_distanc
 
 void Utilities::clusterExtract(PointCloudMono::Ptr cloud_in, 
                                vector<pcl::PointIndices> &cluster_indices,
-                               double th_cluster, int minsize, int maxsize)
+                               float th_cluster, int minsize, int maxsize)
 {
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
   pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
@@ -188,10 +189,25 @@ void Utilities::getCloudByNormZ(PointCloudRGBN::Ptr cloud_in,
        pit != cloud_in->end();++pit) {
     float n_z = pit->normal_z;
     // If point normal fulfill this criterion, consider it from plane
-    if (n_z > th_norm)
+    // Here we use absolute value cause
+    if (fabs(n_z) > th_norm)
       inliers->indices.push_back(i);
     ++i;
   }
+}
+
+void Utilities::getCloudByZ(PointCloudMono::Ptr cloud_in, 
+                            PointCloudMono::Ptr &cloud_out, 
+                            float z_min, float z_max)
+{
+  // Create the filtering object
+  pcl::PassThrough<pcl::PointXYZ> pass;
+  pass.setInputCloud(cloud_in);
+  pass.setFilterFieldName("z");
+  pass.setFilterLimits(z_min, z_max);
+  //pass.setFilterLimitsNegative (true);
+  pass.filter(*cloud_out);
+  
 }
 
 void Utilities::getCloudByInliers(PointCloudMono::Ptr cloud_in, 

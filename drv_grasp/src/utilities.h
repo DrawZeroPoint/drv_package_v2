@@ -1,6 +1,8 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
+#include <ros/ros.h>
+
 //STL
 #include <string>
 #include <vector>
@@ -62,7 +64,7 @@ public:
                          PointCloudMono::Ptr cloud);
   
   static void estimateNormCurv(PointCloudMono::Ptr cloud_in, 
-                               PointCloudRGBN::Ptr cloud_out,
+                               PointCloudRGBN::Ptr &cloud_out,
                                float norm_r, float grid_sz, bool down_sp);
   
   static void generateName(int count, string pref, string surf, string &name);
@@ -74,7 +76,7 @@ public:
   
   static void clusterExtract(PointCloudMono::Ptr cloud_in, 
                              vector<pcl::PointIndices> &cluster_indices,
-                             double th_cluster, int minsize, int maxsize);
+                             float th_cluster, int minsize, int maxsize);
   
   static void cutCloud(pcl::ModelCoefficients::Ptr coeff_in, double th_distance, 
                        PointCloudRGBN::Ptr cloud_in,
@@ -89,10 +91,13 @@ public:
                          Eigen::Matrix4f transform_inv);
   
   static void preProcess(PointCloudMono::Ptr cloud_in, 
-                         PointCloudMono::Ptr cloud_out, float gird_sz);
+                         PointCloudMono::Ptr &cloud_out, float gird_sz);
   
   static void getCloudByNormZ(PointCloudRGBN::Ptr cloud_in, pcl::PointIndices::Ptr &inliers, 
                               float th_norm);
+  
+  static void getCloudByZ(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out,
+                          float z_min, float z_max);
   
   static void getCloudByInliers(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out, 
                                 pcl::PointIndices::Ptr inliers, bool negative, bool organized);

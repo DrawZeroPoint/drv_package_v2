@@ -4,7 +4,7 @@ Transform::Transform() :
   tf_buffer_(),
   tf_listener_(tf_buffer_, nh_)
 {
-  // First initialize nodehandler is important
+  // Initialize node handler before tf_buffer is important
 }
 
 bool Transform::getTransform(string base_frame, string header_frame)
@@ -17,6 +17,9 @@ bool Transform::getTransform(string base_frame, string header_frame)
         // Get the transform
         tf_handle_ = tf_buffer_.lookupTransform(base_frame, header_frame, ros::Time(0));
         return true;
+      }
+      else {
+        ROS_WARN("Transform: Frame %s does not exist.", base_frame.c_str());
       }
       
       // Handle callbacks and sleep for a small amount of time
@@ -46,13 +49,20 @@ void Transform::doTransform(PointCloudMono::Ptr cloud_in,
                                                                    trans.z)
       * Eigen::Quaternion<float>(rotate.w, rotate.x, rotate.y, rotate.z);
   
-  Eigen::Vector3f point;
-  
   cloud_out->height = cloud_in->height;
   cloud_out->width  = cloud_in->width;
   cloud_out->is_dense = false;
   cloud_out->resize(cloud_out->height * cloud_out->width);
   
+  Eigen::Vector3f point;
+//  for (size_t i = 0; i < cloud_in->points.size(); ++i) {
+//    point = t * Eigen::Vector3f(cloud_in->points[i].x, 
+//                                cloud_in->points[i].y, 
+//                                cloud_in->points[i].z);
+//    cloud_out->points[i].x = point.x();
+//    cloud_out->points[i].y = point.y();
+//    cloud_out->points[i].z = point.z();
+//  }
   size_t i = 0;
   for (PointCloudMono::const_iterator pit = cloud_in->begin();
        pit != cloud_in->end(); ++pit) {
@@ -60,6 +70,7 @@ void Transform::doTransform(PointCloudMono::Ptr cloud_in,
     cloud_out->points[i].x = point.x();
     cloud_out->points[i].y = point.y();
     cloud_out->points[i].z = point.z();
+    ++i;
   }
 }
 
