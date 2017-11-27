@@ -101,7 +101,7 @@
   <!-- Limit the image quality to speed up -->
   <node pkg="dynamic_reconfigure" type="dynparam" name="resetter"
         args="set /$(arg vision_namespace)/rgb/image_rect_color/compressed jpeg_quality 40" />
-  <node pkg="dynamic_reconfigure" type="dynparam" name="resetter"
+  <node pkg="dynamic_reconfigure" type="dynparam" name="resetter_1"
         args="set /$(arg vision_namespace)/search/labeled_image/compressed jpeg_quality 20" />
 
   <!-- Reduce image topics' publish frequency to speed up -->
