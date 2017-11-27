@@ -62,7 +62,7 @@ public:
 
   bool process(PointCloud::Ptr cloud_in, float a, float b, float c, float d, pcl::PointXYZ &avrPt);
   void removeNans(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out);
-  void smartOffset(pcl::PointXYZ &p_in, float off_val);
+  void smartOffset(pcl::PointXYZ &p_in, float off_xy, float off_z);
 
 private:
   void removeOutliers(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out);

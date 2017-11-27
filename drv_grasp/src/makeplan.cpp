@@ -34,18 +34,18 @@ bool MakePlan::getAveragePoint(PointCloud::Ptr cloud_in, pcl::PointXYZ &avrPt)
     }
   }
 
-  smartOffset(min_dis_point, 0.02);
+  smartOffset(min_dis_point, 0.02, 0.05);
   avrPt = min_dis_point;
   return true;
 }
 
-void MakePlan::smartOffset(pcl::PointXYZ &p_in, float off_val)
+void MakePlan::smartOffset(pcl::PointXYZ &p_in, float off_xy, float off_z)
 {
-  float y_off = off_val / sqrt(1 + pow(p_in.x / p_in.y, 2)) * p_in.y / fabs(p_in.y);
+  float y_off = off_xy / sqrt(1 + pow(p_in.x / p_in.y, 2)) * p_in.y / fabs(p_in.y);
   float x_off = p_in.x / p_in.y * y_off;
   p_in.x += x_off;
   p_in.y += y_off;
-  float off_z = 0.05; // To solve the detected point is higher than optimal
+  // To solve the detected point is higher than optimal
   p_in.z -= off_z;
 }
 
