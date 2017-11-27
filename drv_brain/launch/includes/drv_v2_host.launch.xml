@@ -22,16 +22,6 @@
     <arg name="color_depth_synchronization" value="true" />
   </include>
 
-  <!-- Limit the image quality to speed up -->
-  <node pkg="dynamic_reconfigure" type="dynparam" name="resetter" 
-        args="set /$(arg vision_namespace)/rgb/image_rect_color/compressed jpeg_quality 40" />
-
-  <node pkg="dynamic_reconfigure" type="dynparam" name="dynparam" 
-        args="set_from_parameters /$(arg vision_namespace)/driver">
-    <!-- Skip 1 msg so let the image be published in 15 Hz to speed up -->
-    <param name="data_skip" value="1" />
-  </node>
-
   <!-- Initialize motor message publisher -->
   <node ns="$(arg vision_namespace)" name="drv_motor" pkg="drv_motor" type="drv_motor" output="screen">
   </node>
@@ -106,5 +96,18 @@
     <param name="left_arm_x_max" value="0.52" />
     <param name="left_arm_y_min" value="0.23" />
     <param name="left_arm_y_max" value="0.3" />
+  </node>
+
+  <!-- Limit the image quality to speed up -->
+  <node pkg="dynamic_reconfigure" type="dynparam" name="resetter"
+        args="set /$(arg vision_namespace)/rgb/image_rect_color/compressed jpeg_quality 40" />
+  <node pkg="dynamic_reconfigure" type="dynparam" name="resetter"
+        args="set /$(arg vision_namespace)/search/labeled_image/compressed jpeg_quality 20" />
+
+  <!-- Reduce image topics' publish frequency to speed up -->
+  <node pkg="dynamic_reconfigure" type="dynparam" name="dynparam"
+        args="set_from_parameters /$(arg vision_namespace)/driver">
+    <!-- Skip 1 msg so let the image be published in 15 Hz to speed up -->
+    <param name="data_skip" value="1" />
   </node>
 </launch>
