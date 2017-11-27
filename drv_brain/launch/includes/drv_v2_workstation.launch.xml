@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
 
   <arg name="vision_namespace" default="vision"/>
@@ -40,10 +41,6 @@
     <param name="image_num" value="100"/>
     <param name="need_authentication_id" value="$(arg need_authentication)"/>
   </node>
-
-  <!-- Limit the image quality to speed up the process -->
-  <node pkg="dynamic_reconfigure" type="dynparam" name="resetter" 
-        args="set /$(arg vision_namespace)/search/labeled_image/compressed jpeg_quality 20" />
 
   <!-- Initialize grasp planner -->
   <include file="$(find drv_brain)/launch/drv_gpd_port.launch">
