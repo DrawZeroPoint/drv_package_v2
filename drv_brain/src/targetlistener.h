@@ -10,7 +10,7 @@ class TargetListener
 {
 public:
   TargetListener();
-  void getTargetStatus(bool &is_tgt_set, string &tgt_label);
+  void getTargetStatus(bool &is_tgt_set, string &tgt_label, bool &is_pub);
   
 private:
   bool isTargetSet_;
@@ -27,6 +27,9 @@ private:
   // Target info from action
   string param_action_target_set;
   string param_action_target_label;
+  
+  // Is put down the object in hand
+  string param_comm_is_put;
   
   /**
    * @brief TargetListener::checkLabel

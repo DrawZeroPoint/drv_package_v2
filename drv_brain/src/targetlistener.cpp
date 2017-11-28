@@ -14,6 +14,8 @@ TargetListener::TargetListener()
 
   param_action_target_set =   "/vision/param/action/target/is_set";
   param_action_target_label = "/vision/param/action/target/label";
+  
+  param_comm_is_put = "/comm/param/ctrl/is_put";
 }
 
 bool TargetListener::checkLabel(string label)
@@ -41,10 +43,11 @@ bool TargetListener::checkLabel(string label)
   return false;
 }
 
-void TargetListener::getTargetStatus(bool &is_tgt_set, string &tgt_label)
+void TargetListener::getTargetStatus(bool &is_tgt_set, 
+                                     string &tgt_label,
+                                     bool &is_put)
 {
   // First get target from action, then from Android device
-
   if (ros::param::has(param_action_target_set)) {
     ros::param::get(param_action_target_set, is_tgt_set);
     if (is_tgt_set) {
@@ -112,5 +115,13 @@ void TargetListener::getTargetStatus(bool &is_tgt_set, string &tgt_label)
     }
     else
       is_tgt_set = false;
+  }
+  if (is_tgt_set) {
+    is_put = false;
+  }
+  else {
+    if (ros::param::has(param_comm_is_put)) {
+      ros::param::get(param_comm_is_put, is_put);
+    }
   }
 }

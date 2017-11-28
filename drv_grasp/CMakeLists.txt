@@ -9,8 +9,6 @@ if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "No build type selected, default to ${CMAKE_BUILD_TYPE}")
 endif()
 
-aux_source_directory(./src SRC_LIST)
-
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   drv_msgs
@@ -40,6 +38,24 @@ add_definitions(${PCL_DEFINITIONS})
 
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
-add_executable(drv_grasp ${SRC_LIST})
+add_library (drv_lib
+src/getsourcecloud.cpp
+src/makeplan.cpp
+src/obstacledetect.cpp
+src/transform.cpp
+src/utilities.cpp
 
-target_link_libraries(drv_grasp ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+src/getsourcecloud.h
+src/makeplan.h
+src/obstacledetect.h
+src/transform.h
+src/utilities.h
+)
+
+add_executable(drv_grasp src/drv_grasp.cpp)
+target_link_libraries(drv_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+target_link_libraries (drv_grasp drv_lib)
+
+add_executable(drv_put src/drv_put.cpp)
+target_link_libraries(drv_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+target_link_libraries (drv_put drv_lib)

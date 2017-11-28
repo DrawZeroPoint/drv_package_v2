@@ -80,7 +80,7 @@ float table_area_ = 0.01; // m^2
 
 
 // Whether publish pose for once
-bool pub_pose_once_ = false;
+bool pubPoseOnce_ = false;
 
 /* The graspable area of robot left arm,
  * relative to base_link, in meter */
@@ -259,7 +259,7 @@ bool isInGraspRange(float x, float y, float z,
 void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
 {
   // In simple mode, pose only publish once after one detection
-  if (modeType_ != m_track || (pub_pose_once_ && posePublished_))
+  if (modeType_ != m_track || (pubPoseOnce_ && posePublished_))
     return;
   
   if(!(imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_16UC1) == 0 ||
@@ -400,7 +400,7 @@ int main(int argc, char **argv)
   
   pnh.getParam("base_frame_id", base_frame_);
   pnh.getParam("camera_optical_frame_id", camera_optical_frame_);
-  pnh.getParam("pub_pose_once_id", pub_pose_once_);
+  pnh.getParam("pub_pose_once_id", pubPoseOnce_);
   
   // Get left arm movable area params
   pnh.getParam("left_arm_x_min", x_min_);
@@ -450,14 +450,14 @@ int main(int argc, char **argv)
       hasGraspPlan_ = false;
       posePublished_ = false;
       offsetNeedPub_ = true;
-      pub_pose_once_ = false;
+      pubPoseOnce_ = false;
       continue;
     }
     
     ros::spinOnce();
     
 #ifdef USE_CENTER
-    if (modeType_ != m_track || (pub_pose_once_ && posePublished_))
+    if (modeType_ != m_track || (pubPoseOnce_ && posePublished_))
       continue;
     if (imageDepthPtr_ == NULL)
       continue;
@@ -537,7 +537,7 @@ int main(int argc, char **argv)
       flag.data = 1;
     if (hasGraspPlan_ && posePublished_) {
       // Force pub_pose_once_ = true to prevent the pose being published twice
-      pub_pose_once_ = true;
+      pubPoseOnce_ = true;
       flag.data = 2;
     }
     

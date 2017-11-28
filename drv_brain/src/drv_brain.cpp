@@ -45,7 +45,10 @@ bool centralSwitch_ = true; // main switch
 
 // Target properties
 bool targetSetTemp_ = false;
+// Param inside vision system
 string param_target_label = "/vision/target/label";
+string param_is_put = "/vision/is_put";
+
 enum TargetType{t_null, t_onTable, t_onGround, t_onHead, t_onHand};
 string targetTypeName[5] = {"in air", "on the table", "on the ground", 
                             "on the face", "in the hand"};
@@ -54,13 +57,16 @@ string param_target_type = "/status/target/type";
 
 string param_comm_target_set =   "/comm/param/control/target/is_set";
 string param_comm_target_label = "/comm/param/control/target/label";
+string param_comm_is_put = "/comm/param/ctrl/is_put";  // Is put down object in hand
 
 // Target status control
-string targetLabel_ = "";
 bool isTargetSet_ = false;
+string targetLabel_ = "";
+bool isPut_ = false;
 
 // Target status feedback
 bool foundTarget_ = false;
+int putSuccess_ = 0;
 
 // Publish servo initial position
 ros::Publisher servoPub_;
@@ -79,15 +85,18 @@ string param_servo_pitch = "/status/servo/pitch";
 string param_servo_yaw = "/status/servo/yaw";
 
 // Mode control params
-enum ModeType{m_wander, m_search, m_track};
+enum ModeType{m_wander, m_search, m_track, m_put};
 int modeType_ = m_wander;
 int modeTypeTemp_ = -1;
-string modeName[3] = {"wandering", "searching", "tracking"};
+string modeName[4] = {"wandering", "searching", "tracking", "putting"};
 string param_running_mode = "/status/running_mode";
 ros::Publisher drvPubMode_; // vision system mode publisher
 
 // General infomation publisher
 ros::Publisher drvPubInfo_;
+
+// Result publisher
+ros::Publisher drvPubPutResult_;
 
 void resetStatus()
 {
@@ -103,11 +112,13 @@ void resetStatus()
 
   isTargetSet_ = false;
   foundTarget_ = false;
+  putSuccess_ = 0;
 
   modeType_ = m_wander;
   
   ros::param::set(param_comm_target_set, false);
   ros::param::set(param_comm_target_label, "");
+  ros::param::set(param_comm_is_put, false);
 }
 
 /**
@@ -122,10 +133,15 @@ void pubServo(int pitch_angle, int yaw_angle, int power)
   std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch_angle);
   array.data.push_back(yaw_angle);
+  // The basic speed is 10 (0~255)
   array.data.push_back(10 * power);
   servoPub_.publish(array);
 }
 
+/**
+ * @brief pubInfo Publish info for Android display
+ * @param info
+ */
 void pubInfo(string info)
 {
   ROS_INFO(info.c_str());
@@ -236,6 +252,24 @@ void graspCallback(const Int8ConstPtr &msg)
   }
 }
 
+void putCallback(const Int8ConstPtr &msg)
+{
+  if (modeType_ == m_put) {
+    if (msg->data < 0) {
+      ROS_INFO_THROTTLE(3, "Put report: Failed.");
+      drvPubPutResult_.publish(msg);
+    }
+    else if (msg->data == 1) {
+      ROS_INFO_THROTTLE(3, "Put report: Successed.");
+      drvPubPutResult_.publish(msg);
+    }
+    else {
+      ROS_INFO_THROTTLE(11, "Put report: Putting the target...");
+    }
+    putSuccess_ = msg->data;
+  }
+}
+
 void faceRecognizeCallback(const BoolConstPtr &msg)
 {
   if (modeType_ == m_wander) {
@@ -259,6 +293,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ros::NodeHandle pnh("~");
 
+  // Servo's max angle to rotate
   pnh.getParam("pitch_min", pitch_min_);
   pnh.getParam("pitch_max", pitch_max_);
   pnh.getParam("yaw_min", yaw_min_);
@@ -268,6 +303,9 @@ int main(int argc, char **argv)
   // For publishing mode info
   drvPubMode_ = nh.advertise<String>("/comm/msg/vision/mode", 1);
   drvPubInfo_ = nh.advertise<String>("/comm/msg/vision/info", 1);
+  
+  // Function feedback publishers
+  drvPubPutResult_ = nh.advertise<Int8>("/feed/vision/put/result", 1);
 
   // Don't change the order without reason
   ros::Subscriber sub_servo_ctrl = nh.subscribe<Int32MultiArray>("/joy_teleop/servo", 1, teleOpCallback);
@@ -313,8 +351,9 @@ int main(int argc, char **argv)
     ros::spinOnce();
 
     // Get target label if the params were set
-    tl.getTargetStatus(isTargetSet_, targetLabel_);
+    tl.getTargetStatus(isTargetSet_, targetLabel_, isPut_);
     ros::param::set(param_target_label, targetLabel_);
+    ros::param::set(param_is_put, isPut_);
     
     if (isTargetSet_ != targetSetTemp_) {
       if (isTargetSet_)
@@ -348,11 +387,16 @@ int main(int argc, char **argv)
       }
     }
     else {
+      if (isPut_) {
+        if (putSuccess_ == 0) {
+          modeType_ = m_put;
+        }
+      }
       modeType_ = m_wander;
       fl.isNeedRecognizeFace(); // Only recognize face in wander mode
     }
 
-    // Set running mode
+    // Set private running mode
     ros::param::set(param_running_mode, modeType_);
 
     if (modeType_ != modeTypeTemp_) {
