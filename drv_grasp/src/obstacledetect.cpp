@@ -42,7 +42,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
 
 ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, 
                                float base_to_ground, float table_height, float table_area,
-                               float grasp_area_x, float grasp_area_y) :
+                               float grasp_area_x, float grasp_area_y, float tolerance) :
   use_od_(use_od),
   src_cloud_(new PointCloudMono),
   m_tf_(new Transform),
@@ -52,7 +52,8 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
   th_height_(0.2),
   th_area_(table_area),
   grasp_area_x_(grasp_area_x),
-  grasp_area_y_(grasp_area_y)
+  grasp_area_y_(grasp_area_y), 
+  tolerance_(tolerance)
 {
   param_running_mode_ = "/status/running_mode";
 
@@ -178,7 +179,7 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
   PointCloudMono::Ptr cloud = plane_max_hull_;
 
   pcl::PointXY p;
-  p.x = grasp_area_x_;
+  p.x = grasp_area_x_ + tolerance_;
   p.y = grasp_area_y_;
 
   put_pose.header.frame_id = base_frame_;

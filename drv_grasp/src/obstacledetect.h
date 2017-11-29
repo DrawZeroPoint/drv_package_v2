@@ -62,8 +62,8 @@ class ObstacleDetect
 public:
   ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
                  float table_height, float table_area);
-  ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
-                 float table_height, float table_area, float grasp_area_x, float grasp_area_y);
+  ObstacleDetect(bool use_od, string base_frame, float base_to_ground, float table_height,
+                 float table_area, float grasp_area_x, float grasp_area_y, float tolerance);
   /**
    * @brief ObstacleDetect::detectTableInCloud
    * Find out whether the source cloud contains table,
@@ -112,6 +112,7 @@ private:
   // Graspable area center xy in base_link frame
   float grasp_area_x_;
   float grasp_area_y_;
+  float tolerance_;
   // Distance between object center and base
   float z_offset_;
   

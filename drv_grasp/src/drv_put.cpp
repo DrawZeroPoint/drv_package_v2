@@ -171,12 +171,12 @@ int main(int argc, char **argv)
   
   // Subscribe info for putting object
   ros::Subscriber sub_obj = nh.subscribe<drv_msgs::target_info>("/vision/target_info", 1, objInfoCallback);
-  
-  // Object to perform transform
-  Transform m_tf_;
+
   // Object to perform obstacle detect
-  ObstacleDetect m_od_(use_od_, base_frame_, base_to_ground_,
-                       table_height_, table_area_);
+  float grasp_area_x = (x_min_ + x_max_)/2;
+  float grasp_area_y = (y_min_ + y_max_)/2;
+  ObstacleDetect m_od_(use_od_, base_frame_, base_to_ground_, table_height_, 
+                       table_area_, grasp_area_x, grasp_area_y, tolerance_);
 
   ROS_INFO("Put planning function initialized.");
   
