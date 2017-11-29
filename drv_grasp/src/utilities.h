@@ -121,7 +121,8 @@ public:
    * @param p_dis Distance between p_in and its nearest point on hull
    * @return 
    */
-  static bool isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, pcl::PointXY &p_dis);
+  static bool isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, 
+                       pcl::PointXY &p_dis, pcl::PointXY &p_closest);
   
 };
 

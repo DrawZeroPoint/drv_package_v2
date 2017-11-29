@@ -61,6 +61,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
   
   sub_pointcloud_ = nh.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
                                                            &ObstacleDetect::cloudCallback, this);
+  pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
 }
 
 void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -92,6 +93,7 @@ void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
 }
 
 void ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
+                                    geometry_msgs::PoseStamped &ref_pose,
                                     bool &need_move)
 {
   findMaxPlane();
@@ -99,7 +101,7 @@ void ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
     ROS_INFO_THROTTLE(11, "ObstacleDetect: No put place detected.");
     return;
   }
-  need_move = analysePutPose(put_pose);
+  need_move = analysePutPose(put_pose, ref_pose);
 }
 
 void ObstacleDetect::detectObstacleTable()
@@ -170,7 +172,8 @@ void ObstacleDetect::publishCloud(PointTPtr cloud)
   pub_table_points_.publish(ros_cloud);
 }
 
-bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose)
+bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
+                                    geometry_msgs::PoseStamped &ref_pose)
 {
   PointCloudMono::Ptr cloud = plane_max_hull_;
 
@@ -183,9 +186,11 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose)
   
   PointCloudMono::Ptr cloud_sk(new PointCloudMono);
   Utilities::shrinkHull(cloud, cloud_sk, 0.06);
+  publishCloud(cloud_sk); // For reference
   
   pcl::PointXY p_dis;
-  if (Utilities::isInHull(cloud_sk, p, p_dis)) {
+  pcl::PointXY p_closest;
+  if (Utilities::isInHull(cloud_sk, p, p_dis, p_closest)) {
     put_pose.pose.position.x = p.x;
     put_pose.pose.position.y = p.y;
     // All points in cloud have same z
@@ -207,6 +212,14 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose)
     put_pose.pose.orientation.y = 0;
     put_pose.pose.orientation.z = 0;
     put_pose.pose.orientation.w = 1;
+    
+    ref_pose.pose.position.x = p_closest.x;
+    ref_pose.pose.position.y = p_closest.y;
+    ref_pose.pose.position.z = cloud->points[0].z + z_offset_;
+    ref_pose.pose.orientation.x = 0;
+    ref_pose.pose.orientation.y = 0;
+    ref_pose.pose.orientation.z = 0;
+    ref_pose.pose.orientation.w = 1;
     ROS_INFO_THROTTLE(11, "ObstacleDetect: Need move to put object.");
     return false;
   }

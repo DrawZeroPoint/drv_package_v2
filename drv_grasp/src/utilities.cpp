@@ -288,12 +288,12 @@ void Utilities::shrinkHull(PointCloudMono::Ptr cloud,
   }
 }
 
-bool Utilities::isInHull(PointCloudMono::Ptr hull, 
-                         pcl::PointXY p_in, pcl::PointXY &p_dis)
+bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, 
+                         pcl::PointXY &p_dis, pcl::PointXY &p_closest)
 {
   float x_temp = 1.0;
   float y_temp = 1.0;
-  float dis_temp = 10.0;
+  float dis_temp = 30.0;
   
   size_t i = 0;
   for (PointCloudMono::const_iterator pit = hull->begin(); 
@@ -308,6 +308,8 @@ bool Utilities::isInHull(PointCloudMono::Ptr hull,
     if (dis < dis_temp) {
       p_dis.x = delta_x;
       p_dis.y = delta_y;
+      p_closest.x = pit->x;
+      p_closest.y = pit->y;
       dis_temp = dis;
     }
     ++i;

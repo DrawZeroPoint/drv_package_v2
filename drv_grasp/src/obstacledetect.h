@@ -74,7 +74,9 @@ public:
    */
   void detectObstacleTable();
   
-  void detectPutTable(geometry_msgs::PoseStamped &put_pose, bool &need_move);
+  void detectPutTable(geometry_msgs::PoseStamped &put_pose, 
+                      geometry_msgs::PoseStamped &ref_pose, bool &need_move);
+  
   inline void setZOffset(float z_offset) {z_offset_ = z_offset;}
   
 private:
@@ -127,7 +129,8 @@ private:
   
   void findMaxPlane();
   void analyseObstacle();
-  bool analysePutPose(geometry_msgs::PoseStamped &put_pose);
+  bool analysePutPose(geometry_msgs::PoseStamped &put_pose, 
+                      geometry_msgs::PoseStamped &ref_pose);
   
   void projectCloud(pcl::ModelCoefficients::Ptr coeff_in, PointCloudMono::Ptr cloud_in, 
                     PointCloudMono::Ptr &cloud_out);

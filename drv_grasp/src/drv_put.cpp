@@ -196,11 +196,13 @@ int main(int argc, char **argv)
     ros::spinOnce();
     
     geometry_msgs::PoseStamped put_pose;
+    geometry_msgs::PoseStamped ref_pose;
     m_od_.setZOffset(center_to_bottom_);
-    m_od_.detectPutTable(put_pose, offsetNeedPub_);
+    m_od_.detectPutTable(put_pose, ref_pose, offsetNeedPub_);
     
     if (offsetNeedPub_) {
       putPubLocation_.publish(put_pose);
+      publishMarker(ref_pose);
       hasPutPlan_ = true;
       posePublished_ = false;
     }
