@@ -105,14 +105,14 @@ void resetStatus()
   ros::param::set(param_vision_feedback_track, 0);
   ros::param::set(param_vision_feedback_grasp, 0);
   ros::param::set(param_vision_feedback_face, 0);
-
+  
   tgtType_ = t_null;
   targetLabel_ = "";
-
+  
   isTargetSet_ = false;
   foundTarget_ = false;
   putSuccess_ = 0;
-
+  
   modeType_ = m_wander;
   
   ros::param::set(param_comm_target_set, false);
@@ -160,19 +160,19 @@ void teleOpCallback(const Int32MultiArrayConstPtr &msg)
 {
   if (msg->data.empty() || (msg->data[0] == 0 && msg->data[1] == 0))
     return;
-
+  
   int pitch_temp = pitchAngle_ + msg->data[0];
   if (pitch_temp < pitch_min_ || pitch_temp > pitch_max_)
     return;
   else
     pitchAngle_ = pitch_temp;
-
+  
   int yaw_temp = yawAngle_ - msg->data[1];
   if (yaw_temp < yaw_min_ || yaw_temp > yaw_max_)
     return;
   else
     yawAngle_ = yaw_temp;
-
+  
   int power = 4;
   pubServo(pitchAngle_, yawAngle_, power);
 }
@@ -182,7 +182,7 @@ void servoCallback(const UInt16MultiArrayConstPtr &msg)
   // This callback should always active
   pitchAngle_ = msg->data[0];
   yawAngle_ = msg->data[1];
-
+  
   ros::param::set(param_servo_pitch, pitchAngle_);
   ros::param::set(param_servo_yaw, yawAngle_);
 }
@@ -288,16 +288,16 @@ void faceRecognizeCallback(const BoolConstPtr &msg)
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "drv_brain");
-
+  
   ros::NodeHandle nh;
   ros::NodeHandle pnh("~");
-
+  
   // Servo's max angle to rotate
   pnh.getParam("pitch_min", pitch_min_);
   pnh.getParam("pitch_max", pitch_max_);
   pnh.getParam("yaw_min", yaw_min_);
   pnh.getParam("yaw_max", yaw_max_);
-
+  
   servoPub_ = nh.advertise<UInt16MultiArray>("servo", 1, true);
   // For publishing mode info
   drvPubMode_ = nh.advertise<String>("/comm/msg/vision/mode", 1);
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
   
   // Function feedback publishers
   drvPubPutResult_ = nh.advertise<Int8>("/feed/vision/put/result", 1);
-
+  
   // Don't change the order without reason
   ros::Subscriber sub_servo_ctrl = nh.subscribe<Int32MultiArray>("/joy_teleop/servo", 1, teleOpCallback);
   ros::Subscriber sub_servo = nh.subscribe<UInt16MultiArray>("servo", 1, servoCallback);
@@ -315,15 +315,15 @@ int main(int argc, char **argv)
   ros::Subscriber sub_gp = nh.subscribe<Int8>("status/grasp/feedback", 1, graspCallback);
   ros::Subscriber sub_pt = nh.subscribe<Int8>("status/put/feedback", 1, putCallback);
   ros::Subscriber sub_fr = nh.subscribe<Bool>("status/face/feedback", 1, faceRecognizeCallback);
-
+  
   FaceListener fl;
   TargetListener tl;
   TargetSelecter ts;
   
   resetStatus();
-
+  
   pubInfo("Deep Robot Vision system initialized!");
-
+  
   while (ros::ok()) {
     // Main on/off control
     if (ros::param::has(param_vision_shared_switch)) {
@@ -333,23 +333,23 @@ int main(int argc, char **argv)
         ROS_WARN_COND(!centralSwitch_, "Brain: Central switch is ON.");
       centralSwitch_ = temp;
     }
-
+    
     if (!centralSwitch_) {
       ROS_WARN_THROTTLE(9, "Brain: Central switch is OFF.");
       resetStatus();
       continue;
     }
-
+    
     // Initialize servo position
     if (!servo_initialized_) {
       pubServo(90, 90, 1);
       servo_initialized_ = true;
       ROS_INFO("Brain: Servo reset.");
     }
-
+    
     // Get feedback to determine whether target were found
     ros::spinOnce();
-
+    
     // Get target label if the params were set
     tl.getTargetStatus(isTargetSet_, targetLabel_, isPut_);
     ros::param::set(param_target_label, targetLabel_);
@@ -363,10 +363,10 @@ int main(int argc, char **argv)
       }
       targetSetTemp_ = isTargetSet_;
     }
-
+    
     // If user selects target on cellphone, publish the target
     ts.publishOnceIfTargetSelected(isTargetSet_, foundTarget_);
-
+    
     // Mode selection, notice that modeType_ should only be set by central control
     if (isTargetSet_) {
       if (foundTarget_) {
@@ -390,14 +390,18 @@ int main(int argc, char **argv)
         if (putSuccess_ == 0) {
           modeType_ = m_put;
         }
+        else
+          modeType_ = m_wander;
       }
-      modeType_ = m_wander;
-      fl.isNeedRecognizeFace(); // Only recognize face in wander mode
+      else {
+        modeType_ = m_wander;
+        fl.isNeedRecognizeFace(); // Only recognize face in wander mode
+      }
     }
-
+    
     // Set private running mode
     ros::param::set(param_running_mode, modeType_);
-
+    
     if (modeType_ != modeTypeTemp_) {
       String mode_msg;
       mode_msg.data = modeName[modeType_];
@@ -410,7 +414,7 @@ int main(int argc, char **argv)
       }
     }
   }
-
+  
   return 0;
 }
 
