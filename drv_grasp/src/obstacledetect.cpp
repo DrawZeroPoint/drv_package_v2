@@ -93,16 +93,18 @@ void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
   }
 }
 
-void ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
-                                    geometry_msgs::PoseStamped &ref_pose,
-                                    bool &need_move)
+bool ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
+                                    geometry_msgs::PoseStamped &ref_pose, bool &need_move)
 {
   findMaxPlane();
   if (plane_max_hull_ == NULL) {
     ROS_INFO_THROTTLE(11, "ObstacleDetect: No put place detected.");
-    return;
+    return false;
   }
-  need_move = analysePutPose(put_pose, ref_pose);
+  else {
+    need_move = analysePutPose(put_pose, ref_pose);
+    return true;
+  }
 }
 
 void ObstacleDetect::detectObstacleTable()

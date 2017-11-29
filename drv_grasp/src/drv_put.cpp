@@ -65,6 +65,9 @@ string param_running_mode = "/status/running_mode";
 
 bool hasPutPlan_ = false; // for output grasp info 
 bool posePublished_ = false; // only works in simple mode
+// Whether publish pose for once
+bool pubPoseOnce_ = false;
+bool offsetNeedPub_ = true;
 
 // Marker type
 uint32_t shape = visualization_msgs::Marker::ARROW;
@@ -90,10 +93,9 @@ float y_min_ = 0.2;
 float y_max_ = 0.35;
 float tolerance_ = 0.03;
 
-// Whether publish pose for once
-bool pubPoseOnce_ = false;
-
-bool offsetNeedPub_ = true;
+// Publish servo initial position
+ros::Publisher servoPub_;
+bool servo_init_ = false;
 
 void publishMarker(geometry_msgs::PoseStamped pose)
 {
@@ -138,6 +140,16 @@ void publishMarker(geometry_msgs::PoseStamped pose)
   marker.color.a = 1.0;
   
   putPubMarker_.publish(marker);
+}
+
+void pubServo(int pitch_angle, int yaw_angle, int power)
+{
+  std_msgs::UInt16MultiArray array;
+  array.data.push_back(pitch_angle);
+  array.data.push_back(yaw_angle);
+  // The basic speed is 10 (0~255)
+  array.data.push_back(10 * power);
+  servoPub_.publish(array);
 }
 
 void objInfoCallback(const drv_msgs::target_infoConstPtr &info)
@@ -190,32 +202,43 @@ int main(int argc, char **argv)
       posePublished_ = false;
       offsetNeedPub_ = true;
       pubPoseOnce_ = false;
+      servo_init_ = false;
       continue;
     }
     
     ros::spinOnce();
     
+    if (!servo_init_) {
+      pubServo(60, 90, 2);
+      servo_init_ = true;
+    }
+    
     geometry_msgs::PoseStamped put_pose;
     geometry_msgs::PoseStamped ref_pose;
     m_od_.setZOffset(center_to_bottom_);
-    m_od_.detectPutTable(put_pose, ref_pose, offsetNeedPub_);
-    
-    if (offsetNeedPub_) {
-      putPubLocation_.publish(put_pose);
-      publishMarker(ref_pose);
-      hasPutPlan_ = true;
-      posePublished_ = false;
-    }
-    else {
-      putPubPose_.publish(put_pose);
-      publishMarker(put_pose);
-      hasPutPlan_ = true;
-      posePublished_ = true;
+    if (m_od_.detectPutTable(put_pose, ref_pose, offsetNeedPub_)) {
+      // Table found
+      if (offsetNeedPub_) {
+        putPubLocation_.publish(put_pose);
+        publishMarker(ref_pose);
+        hasPutPlan_ = true;
+        posePublished_ = false;
+      }
+      else {
+        putPubPose_.publish(put_pose);
+        publishMarker(put_pose);
+        hasPutPlan_ = true;
+        posePublished_ = true;
+      }
+      // Table not found, turn head to the next direction and search
+      
     }
     
     std_msgs::Int8 flag;
     flag.data = -1; // Default return failed
     
+    if (!hasPutPlan_)
+      flag.data = -1;
     if (hasPutPlan_ && !posePublished_)
       flag.data = 0;
     if (hasPutPlan_ && posePublished_) {

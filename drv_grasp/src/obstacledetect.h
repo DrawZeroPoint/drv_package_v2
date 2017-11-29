@@ -74,8 +74,16 @@ public:
    */
   void detectObstacleTable();
   
-  void detectPutTable(geometry_msgs::PoseStamped &put_pose, 
-                      geometry_msgs::PoseStamped &ref_pose, bool &need_move);
+  /**
+   * @brief detectPutTable
+   * @param put_pose
+   * @param ref_pose
+   * @param need_move Whether need to move the robot to put down object
+   * @return True if current scene contains table
+   */
+  bool detectPutTable(geometry_msgs::PoseStamped &put_pose, 
+                      geometry_msgs::PoseStamped &ref_pose, 
+                      bool &need_move);
   
   inline void setZOffset(float z_offset) {z_offset_ = z_offset;}
   
@@ -130,6 +138,13 @@ private:
   
   void findMaxPlane();
   void analyseObstacle();
+  
+  /**
+   * @brief analysePutPose
+   * @param put_pose If grasp area center already in hull, use it as put_pose
+   * @param ref_pose The nearest point on hull from grasp area center
+   * @return true if need move the robot
+   */
   bool analysePutPose(geometry_msgs::PoseStamped &put_pose, 
                       geometry_msgs::PoseStamped &ref_pose);
   

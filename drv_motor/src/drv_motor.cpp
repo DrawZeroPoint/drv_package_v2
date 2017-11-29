@@ -22,6 +22,10 @@ using namespace std;
 // Publish motor control params
 ros::Publisher motorPub_;
 
+// The rosparam that store pitch and yaw values
+string param_servo_pitch = "/status/servo/pitch";
+string param_servo_yaw = "/status/servo/yaw";
+
 const float pi = 3.14159265359;
 
 // Signal-safe flag for whether shutdown is requested
@@ -65,6 +69,9 @@ void motorPublish(int pitch_angle, int yaw_angle,
   array.data.push_back(pitch_speed);
   array.data.push_back(yaw_speed);
   motorPub_.publish(array);
+  
+  ros::param::set(param_servo_pitch, pitch_angle);
+  ros::param::set(param_servo_yaw, yaw_angle);
 }
 
 void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
@@ -74,6 +81,7 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
   int yawAngle = 90;
   int pitchSpeed = 50;
   int yawSpeed = 50;
+  
   if (msg->data.size() == 2) {
     pitchAngle = msg->data[0];
     yawAngle = msg->data[1];
@@ -131,7 +139,7 @@ int main(int argc, char **argv)
 
   ros::NodeHandle nh;
 
-  motorPub_ = nh.advertise<std_msgs::UInt16MultiArray>("motor", 1, true);
+  motorPub_ = nh.advertise<std_msgs::UInt16MultiArray>("motor", 5, true);
 
   // This node should be launched in namespace /vision
   ros::Subscriber sub_servo_cmd = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
@@ -141,6 +149,7 @@ int main(int argc, char **argv)
     ros::spinOnce();
   }
 
+  // Reset head pose before each shut down
   motorPublish(90, 90, 40, 30);
   ros::Duration(1).sleep();
 

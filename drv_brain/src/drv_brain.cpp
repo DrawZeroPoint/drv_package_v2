@@ -79,9 +79,6 @@ int pitch_min_ = 60;
 int pitch_max_ = 140;
 int yaw_min_ = 0;
 int yaw_max_ = 180;
-// The rosparam that store pitch and yaw values
-string param_servo_pitch = "/status/servo/pitch";
-string param_servo_yaw = "/status/servo/yaw";
 
 // Mode control params
 enum ModeType{m_wander, m_search, m_track, m_put};
@@ -175,16 +172,6 @@ void teleOpCallback(const Int32MultiArrayConstPtr &msg)
   
   int power = 4;
   pubServo(pitchAngle_, yawAngle_, power);
-}
-
-void servoCallback(const UInt16MultiArrayConstPtr &msg)
-{
-  // This callback should always active
-  pitchAngle_ = msg->data[0];
-  yawAngle_ = msg->data[1];
-  
-  ros::param::set(param_servo_pitch, pitchAngle_);
-  ros::param::set(param_servo_yaw, yawAngle_);
 }
 
 void searchCallback(const Int8ConstPtr &msg)
@@ -298,7 +285,7 @@ int main(int argc, char **argv)
   pnh.getParam("yaw_min", yaw_min_);
   pnh.getParam("yaw_max", yaw_max_);
   
-  servoPub_ = nh.advertise<UInt16MultiArray>("servo", 1, true);
+  servoPub_ = nh.advertise<UInt16MultiArray>("servo", 1);
   // For publishing mode info
   drvPubMode_ = nh.advertise<String>("/comm/msg/vision/mode", 1);
   drvPubInfo_ = nh.advertise<String>("/comm/msg/vision/info", 1);
@@ -308,7 +295,6 @@ int main(int argc, char **argv)
   
   // Don't change the order without reason
   ros::Subscriber sub_servo_ctrl = nh.subscribe<Int32MultiArray>("/joy_teleop/servo", 1, teleOpCallback);
-  ros::Subscriber sub_servo = nh.subscribe<UInt16MultiArray>("servo", 1, servoCallback);
   //ros::Subscriber sub_tgt = nh.subscribe<drv_msgs::target_info>("recognize/target", 1, targetCallback);
   ros::Subscriber sub_sh = nh.subscribe<Int8>("status/search/feedback", 1, searchCallback);
   ros::Subscriber sub_tk = nh.subscribe<Bool>("status/track/feedback", 1, trackCallback);
