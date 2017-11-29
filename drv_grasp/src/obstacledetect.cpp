@@ -72,8 +72,8 @@ void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
   if (ros::param::has(param_running_mode_)) {
     int mode_type;
     ros::param::get(param_running_mode_, mode_type);
-    // 2 for tracking
-    if (mode_type == 2) {
+    // 2 for tracking, 3 for putting
+    if (mode_type == 2 || mode_type == 3) {
       if (msg->data.empty()) {
         ROS_WARN_THROTTLE(31, "ObstacleDetect: PointCloud is empty.");
         return;
@@ -183,10 +183,12 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
 
   put_pose.header.frame_id = base_frame_;
   put_pose.header.stamp = ros::Time(0);
+  ref_pose.header.frame_id = base_frame_;
+  ref_pose.header.stamp = ros::Time(0);
   
   PointCloudMono::Ptr cloud_sk(new PointCloudMono);
   Utilities::shrinkHull(cloud, cloud_sk, 0.06);
-  publishCloud(cloud_sk); // For reference
+  publishCloud(cloud); // For reference
   
   pcl::PointXY p_dis;
   pcl::PointXY p_closest;
