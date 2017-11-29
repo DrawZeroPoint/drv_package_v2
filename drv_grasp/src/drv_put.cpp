@@ -131,7 +131,7 @@ void publishMarker(geometry_msgs::PoseStamped pose)
   marker.scale.z = 0.04;
   
   // Set the color -- be sure to set alpha as non-zero value!
-  // Use yellow to seprate from grasp marker
+  // Use yellow to separate from grasp marker
   marker.color.r = 1.0f;
   marker.color.g = 0.0f;
   marker.color.b = 1.0f;
