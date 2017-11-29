@@ -166,7 +166,7 @@ int main(int argc, char **argv)
   putPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/put/pose", 1);
   putPubLocation_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/put/location", 1);
   
-  putPubStatus_ = nh.advertise<std_msgs::Int8>("status/put/feedback", 1);
+  putPubStatus_ = nh.advertise<std_msgs::Int8>("/vision/status/put/feedback", 1);
   putPubMarker_ = nh.advertise<visualization_msgs::Marker>("/vision/put/marker", 1);
   
   // Subscribe info for putting object

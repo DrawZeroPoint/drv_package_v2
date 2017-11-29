@@ -187,12 +187,12 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
   ref_pose.header.stamp = ros::Time(0);
   
   PointCloudMono::Ptr cloud_sk(new PointCloudMono);
-  Utilities::shrinkHull(cloud, cloud_sk, 0.06);
+//  Utilities::shrinkHull(cloud, cloud_sk, 0.06);
   publishCloud(cloud); // For reference
   
   pcl::PointXY p_dis;
   pcl::PointXY p_closest;
-  if (Utilities::isInHull(cloud_sk, p, p_dis, p_closest)) {
+  if (Utilities::isInHull(cloud, p, p_dis, p_closest)) {
     put_pose.pose.position.x = p.x;
     put_pose.pose.position.y = p.y;
     // All points in cloud have same z

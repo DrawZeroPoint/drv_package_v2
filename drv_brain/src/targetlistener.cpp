@@ -116,12 +116,18 @@ void TargetListener::getTargetStatus(bool &is_tgt_set,
     else
       is_tgt_set = false;
   }
+  
+  // Check if put the target
   if (is_tgt_set) {
     is_put = false;
+    if (ros::param::has(param_comm_is_put)) {
+      ros::param::del(param_comm_is_put);
+    }
   }
   else {
     if (ros::param::has(param_comm_is_put)) {
       ros::param::get(param_comm_is_put, is_put);
+      ros::param::del(param_comm_is_put);
     }
   }
 }
