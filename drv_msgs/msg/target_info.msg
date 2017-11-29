@@ -1,6 +1,6 @@
 Header header
 
-# readable labels (with default rcnn)
+## Readable labels of object (defined by PASCAL-VOC)
 # 'aeroplane', 'bicycle', 'bird', 'boat',
 # 'bottle', 'bus', 'car', 'cat', 'chair',
 # 'cow', 'diningtable', 'dog', 'horse',
@@ -8,13 +8,23 @@ Header header
 # 'sheep', 'sofa', 'train', 'tvmonitor'
 std_msgs/String label
 
-# name for person
+## Name for person
 std_msgs/String name
 
-# what to do to the target, includes find follow approach grasp drop
+## what to do to the target, 
+## includes 'find' 'follow' 'approach' 'grasp' 'put'
 std_msgs/String action
 
-# hsv
+## hsv
 std_msgs/UInt16MultiArray hsv_color
-std_msgs/String location
 
+## The target's current location
+std_msgs/String location_curr
+
+## The target's target location
+std_msgs/String location_tgt
+
+## Object's geometry
+geometry_msgs/Point size
+## Distance between object's centroid to its base (for putting)
+std_msgs/Float32 center_to_base

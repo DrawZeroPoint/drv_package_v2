@@ -56,7 +56,7 @@ ros::Publisher graspPubStatus_;
 ros::Publisher graspPubPose_;
 ros::Publisher graspPubMarker_;
 
-enum ModeType{m_wander, m_search, m_track};
+enum ModeType{m_wander, m_search, m_track, m_put};
 int modeType_ = m_wander;
 
 string param_running_mode = "/status/running_mode";
@@ -132,11 +132,11 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
   int x = msg->tgt_bbox_center.data[0];
   int y = msg->tgt_bbox_center.data[1];
   if (x <= 0 || x >= 640) {
-    ROS_WARN_ONCE("Grasp: Target x value is unnormal.");
+    ROS_WARN_ONCE("Grasp: Target x value is abnormal.");
     return;
   }
   if (y <= 0 || y >= 480) {
-    ROS_WARN_ONCE("Grasp: Target y value is unnormal.");
+    ROS_WARN_ONCE("Grasp: Target y value is abnormal.");
     return;
   }
   
@@ -485,7 +485,7 @@ int main(int argc, char **argv)
       if (in_range) {
         if (use_od_) {
           // Detect obstacle before publish target pose
-          m_od_.detectTableInCloud();
+          m_od_.detectObstacleTable();
         }
         geometry_msgs::PoseStamped grasp_pose;
         grasp_pose.header.frame_id = base_frame_;

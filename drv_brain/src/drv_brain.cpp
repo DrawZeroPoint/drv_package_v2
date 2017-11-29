@@ -47,7 +47,6 @@ bool centralSwitch_ = true; // main switch
 bool targetSetTemp_ = false;
 // Param inside vision system
 string param_target_label = "/vision/target/label";
-string param_is_put = "/vision/is_put";
 
 enum TargetType{t_null, t_onTable, t_onGround, t_onHead, t_onHand};
 string targetTypeName[5] = {"in air", "on the table", "on the ground", 
@@ -92,7 +91,7 @@ string modeName[4] = {"wandering", "searching", "tracking", "putting"};
 string param_running_mode = "/status/running_mode";
 ros::Publisher drvPubMode_; // vision system mode publisher
 
-// General infomation publisher
+// General information publisher
 ros::Publisher drvPubInfo_;
 
 // Result publisher
@@ -152,7 +151,7 @@ void pubInfo(string info)
 
 /**
  * @brief teleOpCallback
- * Recieve servo value from JARVIS the Android App
+ * Receive servo value from JARVIS the Android App
  * @param msg
  * Contains 2 int representing increment in x and y direction
  * with range in [-1, 1]
@@ -260,7 +259,7 @@ void putCallback(const Int8ConstPtr &msg)
       drvPubPutResult_.publish(msg);
     }
     else if (msg->data == 1) {
-      ROS_INFO_THROTTLE(3, "Put report: Successed.");
+      ROS_INFO_THROTTLE(3, "Put report: Succeeded.");
       drvPubPutResult_.publish(msg);
     }
     else {
@@ -279,7 +278,7 @@ void faceRecognizeCallback(const BoolConstPtr &msg)
       ros::param::set(param_vision_feedback, 2);
     }
     else {
-      pubInfo("Face report: Successed.");
+      pubInfo("Face report: Succeeded.");
       ros::param::set(param_vision_feedback_face, 1);
       ros::param::set(param_vision_feedback, 3);
     }
@@ -314,6 +313,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub_sh = nh.subscribe<Int8>("status/search/feedback", 1, searchCallback);
   ros::Subscriber sub_tk = nh.subscribe<Bool>("status/track/feedback", 1, trackCallback);
   ros::Subscriber sub_gp = nh.subscribe<Int8>("status/grasp/feedback", 1, graspCallback);
+  ros::Subscriber sub_pt = nh.subscribe<Int8>("status/put/feedback", 1, putCallback);
   ros::Subscriber sub_fr = nh.subscribe<Bool>("status/face/feedback", 1, faceRecognizeCallback);
 
   FaceListener fl;
@@ -353,7 +353,6 @@ int main(int argc, char **argv)
     // Get target label if the params were set
     tl.getTargetStatus(isTargetSet_, targetLabel_, isPut_);
     ros::param::set(param_target_label, targetLabel_);
-    ros::param::set(param_is_put, isPut_);
     
     if (isTargetSet_ != targetSetTemp_) {
       if (isTargetSet_)

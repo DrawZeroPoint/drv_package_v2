@@ -5,8 +5,10 @@ TargetListener::TargetListener()
   isTargetSet_ = false;
   targetLabel_ = "";
 
+  // Param come from outside of vision system
   param_target_set =   "/comm/param/control/target/is_set";
   param_target_label = "/comm/param/control/target/label";
+  param_comm_is_put = "/comm/param/ctrl/is_put";
   
   param_train_face_name = "/vision/face/train/name";
   // If this set to be true, perform training on face data
@@ -14,8 +16,6 @@ TargetListener::TargetListener()
 
   param_action_target_set =   "/vision/param/action/target/is_set";
   param_action_target_label = "/vision/param/action/target/label";
-  
-  param_comm_is_put = "/comm/param/ctrl/is_put";
 }
 
 bool TargetListener::checkLabel(string label)

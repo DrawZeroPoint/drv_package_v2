@@ -62,7 +62,8 @@ class ObstacleDetect
 public:
   ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
                  float table_height, float table_area);
-  
+  ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
+                 float table_height, float table_area, float grasp_area_x, float grasp_area_y);
   /**
    * @brief ObstacleDetect::detectTableInCloud
    * Find out whether the source cloud contains table,
@@ -71,18 +72,19 @@ public:
    * contains pose of the table centroid, assuming the table is a box,
    * the size of table can be pre-defined
    */
-  void detectTableInCloud();
+  void detectObstacleTable();
+  
+  void detectPutTable(geometry_msgs::PoseStamped &put_pose, bool &need_move);
+  inline void setZOffset(float z_offset) {z_offset_ = z_offset;}
+  
+private:
+  ros::NodeHandle nh;
+  string param_running_mode_;
   
   // Whether perform obstacle detection
   bool use_od_;
   
   PointCloudMono::Ptr src_cloud_;
-  
-private:
-  ros::NodeHandle nh;
-  
-  string param_running_mode_;
-  
   // The transform object can't be shared between Classes
   Transform *m_tf_;
   // Frame for point cloud to transfer
@@ -104,7 +106,13 @@ private:
   
   // Distance between base_frame and ground
   float base_link_above_ground_;
-
+  
+  // Graspable area center xy in base_link frame
+  float grasp_area_x_;
+  float grasp_area_y_;
+  // Distance between object center and base
+  float z_offset_;
+  
   float global_area_temp_;
   float global_height_temp_;
   
@@ -116,6 +124,10 @@ private:
   
   vector<float> planeZVector_;
   vector<float> planeCollectVector_;
+  
+  void findMaxPlane();
+  void analyseObstacle();
+  bool analysePutPose(geometry_msgs::PoseStamped &put_pose);
   
   void projectCloud(pcl::ModelCoefficients::Ptr coeff_in, PointCloudMono::Ptr cloud_in, 
                     PointCloudMono::Ptr &cloud_out);
@@ -139,7 +151,7 @@ private:
    * @param cloud_in source point cloud
    */
   void extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in);
-  void analyseHull();
+  
   
   template <typename PointTPtr>
   void publishCloud(PointTPtr cloud);

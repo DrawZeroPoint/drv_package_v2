@@ -41,7 +41,7 @@ void Utilities::estimateNormCurv(PointCloudMono::Ptr cloud_in,
     preProcess(cloud_in, cloud_fit, grid_sz);
   else
     cloud_fit = cloud_in;
-
+  
   cloud_out->height = cloud_fit->height;
   cloud_out->width  = cloud_fit->width;
   cloud_out->is_dense = false;
@@ -234,4 +234,91 @@ void Utilities::getCloudByInliers(PointCloudRGBN::Ptr cloud_in,
   extract.setIndices(inliers);
   extract.setKeepOrganized(organized);
   extract.filter (*cloud_out);
+}
+
+void Utilities::shrinkHull(PointCloudMono::Ptr cloud, 
+                           PointCloudMono::Ptr &cloud_sk, float dis)
+{
+  pcl::PointXYZ minPt, maxPt;
+  pcl::getMinMax3D(*cloud, minPt, maxPt);
+  
+  size_t i = 0;
+  float center_x = (maxPt.x + minPt.x) / 2;
+  float center_y = (maxPt.y + minPt.y) / 2;
+  for (PointCloudMono::const_iterator pit = cloud->begin(); 
+       pit != cloud->end(); ++pit) {
+    if (pit->x == center_x) {
+      if (pit->y > center_y) {
+        cloud_sk->points[i].y = (pit->y - dis)>center_y?(pit->y - dis):pit->y;
+      }
+      else {
+        cloud_sk->points[i].y = (pit->y + dis)<center_y?(pit->y + dis):pit->y;
+      }
+      cloud_sk->points[i].x = pit->x;
+    }
+    else {
+      float d_x = pit->x - center_x;
+      float d_y = pit->y - center_y;
+      float theta = atan(d_y/d_x);
+      if (d_x > 0 && d_y >= 0) {
+        cloud_sk->points[i].x = (pit->x - fabs(dis*sin(theta)))>center_x?
+                                (pit->x - fabs(dis*sin(theta))):pit->x;
+        cloud_sk->points[i].y = (pit->y - fabs(dis*cos(theta)))>center_y?
+                                (pit->y - fabs(dis*cos(theta))):pit->y;
+      }
+      else if (d_x < 0 && d_y >= 0) {
+        cloud_sk->points[i].x = (pit->x + fabs(dis*sin(theta)))<center_x?
+                                (pit->x + fabs(dis*sin(theta))):pit->x;
+        cloud_sk->points[i].y = (pit->y - fabs(dis*cos(theta)))>center_y?
+                                (pit->y - fabs(dis*cos(theta))):pit->y;
+      }
+      else if (d_x < 0 && d_y < 0) {
+        cloud_sk->points[i].x = (pit->x + fabs(dis*sin(theta)))<center_x?
+                                (pit->x + fabs(dis*sin(theta))):pit->x;
+        cloud_sk->points[i].y = (pit->y + fabs(dis*cos(theta)))<center_y?
+                                (pit->y + fabs(dis*cos(theta))):pit->y;
+      }
+      else {
+        cloud_sk->points[i].x = (pit->x - fabs(dis*sin(theta)))>center_x?
+                                (pit->x - fabs(dis*sin(theta))):pit->x;
+        cloud_sk->points[i].y = (pit->y + fabs(dis*cos(theta)))<center_y?
+                                (pit->y + fabs(dis*cos(theta))):pit->y;
+      }
+    }
+  }
+}
+
+bool Utilities::isInHull(PointCloudMono::Ptr hull, 
+                         pcl::PointXY p_in, pcl::PointXY &p_dis)
+{
+  float x_temp = 1.0;
+  float y_temp = 1.0;
+  float dis_temp = 10.0;
+  
+  size_t i = 0;
+  for (PointCloudMono::const_iterator pit = hull->begin(); 
+       pit != hull->end(); ++pit) {
+    float delta_x = pit->x - p_in.x;
+    x_temp *= delta_x;
+    float delta_y = pit->y - p_in.y;
+    y_temp *= delta_y;
+    
+    // Use Manhattan distance
+    float dis = fabs(delta_x) + fabs(delta_y);
+    if (dis < dis_temp) {
+      p_dis.x = delta_x;
+      p_dis.y = delta_y;
+      dis_temp = dis;
+    }
+    ++i;
+  }
+  if (x_temp <= 0 && y_temp <= 0) {
+    // The p_in is surrounded by hull
+    p_dis.x = 0;
+    p_dis.y = 0;
+    return true;
+  }
+  else {
+    return false;
+  }
 }

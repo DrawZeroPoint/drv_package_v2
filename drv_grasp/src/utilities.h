@@ -104,6 +104,25 @@ public:
   static void getCloudByInliers(PointCloudRGBN::Ptr cloud_in, 
                                 PointCloudRGBN::Ptr &cloud_out,
                                 pcl::PointIndices::Ptr inliers, bool negative, bool organized);
+  
+  /**
+   * @brief shrinkHull Shrink the 2D hull by distance dis according to the center
+   * @param cloud Hull cloud in XY plane
+   * @param cloud_sk Shrinked cloud in XY plane
+   * @param dis in meter
+   */
+  static void shrinkHull(PointCloudMono::Ptr cloud, PointCloudMono::Ptr &cloud_sk, float dis);
+  
+  /**
+   * @brief isInHull
+   * Judge whether a given point p_in is in 2D hull, if so, return true, else return false
+   * @param hull Hull cloud in XY plane
+   * @param p_in Point to be judged in XY plane
+   * @param p_dis Distance between p_in and its nearest point on hull
+   * @return 
+   */
+  static bool isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, pcl::PointXY &p_dis);
+  
 };
 
 #endif // UTILITIES_H

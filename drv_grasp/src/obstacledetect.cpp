@@ -40,6 +40,29 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
 }
 
+ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, 
+                               float base_to_ground, float table_height, float table_area,
+                               float grasp_area_x, float grasp_area_y) :
+  use_od_(use_od),
+  src_cloud_(new PointCloudMono),
+  m_tf_(new Transform),
+  base_frame_(base_frame),
+  base_link_above_ground_(base_to_ground),
+  table_height_(table_height),
+  th_height_(0.2),
+  th_area_(table_area),
+  grasp_area_x_(grasp_area_x),
+  grasp_area_y_(grasp_area_y)
+{
+  param_running_mode_ = "/status/running_mode";
+
+  // For store max hull id and area
+  global_area_temp_ = 0;
+  
+  sub_pointcloud_ = nh.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
+                                                           &ObstacleDetect::cloudCallback, this);
+}
+
 void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
   if (!use_od_)
@@ -68,7 +91,26 @@ void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
   }
 }
 
-void ObstacleDetect::detectTableInCloud()
+void ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
+                                    bool &need_move)
+{
+  findMaxPlane();
+  if (plane_max_hull_ == NULL) {
+    ROS_INFO_THROTTLE(11, "ObstacleDetect: No put place detected.");
+    return;
+  }
+  need_move = analysePutPose(put_pose);
+}
+
+void ObstacleDetect::detectObstacleTable()
+{
+  findMaxPlane();
+  
+  // Get table geometry from hull and publish the plane with max area
+  analyseObstacle();
+}
+
+void ObstacleDetect::findMaxPlane()
 {
   if (src_cloud_->points.empty())
     return;
@@ -116,9 +158,6 @@ void ObstacleDetect::detectTableInCloud()
   // Extract each plane from the points having similar z value,
   // the planes are stored in vector plane_hull_
   extractPlaneForEachZ(cloud_norm_ok);
-  
-  // Get table geometry from hull and publish the plane with max area
-  analyseHull();
 }
 
 template <typename PointTPtr>
@@ -131,7 +170,49 @@ void ObstacleDetect::publishCloud(PointTPtr cloud)
   pub_table_points_.publish(ros_cloud);
 }
 
-void ObstacleDetect::analyseHull()
+bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose)
+{
+  PointCloudMono::Ptr cloud = plane_max_hull_;
+
+  pcl::PointXY p;
+  p.x = grasp_area_x_;
+  p.y = grasp_area_y_;
+
+  put_pose.header.frame_id = base_frame_;
+  put_pose.header.stamp = ros::Time(0);
+  
+  PointCloudMono::Ptr cloud_sk(new PointCloudMono);
+  Utilities::shrinkHull(cloud, cloud_sk, 0.06);
+  
+  pcl::PointXY p_dis;
+  if (Utilities::isInHull(cloud_sk, p, p_dis)) {
+    put_pose.pose.position.x = p.x;
+    put_pose.pose.position.y = p.y;
+    // All points in cloud have same z
+    put_pose.pose.position.z = cloud->points[0].z + z_offset_;
+    put_pose.pose.orientation.x = 0;
+    put_pose.pose.orientation.y = 0;
+    put_pose.pose.orientation.z = 0;
+    put_pose.pose.orientation.w = 1;
+    
+    ROS_INFO_THROTTLE(11, "ObstacleDetect: Put pose detected.");
+    return true;
+  }
+  else {
+    put_pose.pose.position.x = p_dis.x;
+    put_pose.pose.position.y = p_dis.y;
+    // All points in cloud have same z
+    put_pose.pose.position.z = cloud->points[0].z + z_offset_;
+    put_pose.pose.orientation.x = 0;
+    put_pose.pose.orientation.y = 0;
+    put_pose.pose.orientation.z = 0;
+    put_pose.pose.orientation.w = 1;
+    ROS_INFO_THROTTLE(11, "ObstacleDetect: Need move to put object.");
+    return false;
+  }
+}
+
+void ObstacleDetect::analyseObstacle()
 {
   PointCloudMono::Ptr cloud = plane_max_hull_;
   if (cloud == NULL) {
@@ -191,7 +272,7 @@ void ObstacleDetect::analyseHull()
   }
   
   tf2::Quaternion q;
-  q.setEuler(0, 0, yaw);
+  q.setEuler(0, 0, yaw); // Notice the last angle is around Z
   table_pose.pose.orientation.x = q.x();
   table_pose.pose.orientation.y = q.y();
   table_pose.pose.orientation.z = q.z();
