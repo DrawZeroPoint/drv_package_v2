@@ -203,7 +203,7 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
     put_pose.pose.orientation.w = 1;
     
     ROS_INFO_THROTTLE(11, "ObstacleDetect: Put pose detected.");
-    return true;
+    return false; // Return value means whether need move
   }
   else {
     put_pose.pose.position.x = p_dis.x;
@@ -223,7 +223,7 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
     ref_pose.pose.orientation.z = 0;
     ref_pose.pose.orientation.w = 1;
     ROS_INFO_THROTTLE(11, "ObstacleDetect: Need move to put object.");
-    return false;
+    return true;
   }
 }
 
