@@ -11,10 +11,10 @@
 
 #include <drv_msgs/recognized_target.h>
 
-class TargetSelecter
+class TargetSelector
 {
 public:
-  TargetSelecter();
+  TargetSelector();
 
   ros::NodeHandle nh;
   void publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found);

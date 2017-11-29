@@ -304,7 +304,7 @@ int main(int argc, char **argv)
   
   FaceListener fl;
   TargetListener tl;
-  TargetSelecter ts;
+  TargetSelector ts;
   
   resetStatus();
   

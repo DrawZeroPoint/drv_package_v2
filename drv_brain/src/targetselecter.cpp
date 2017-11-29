@@ -4,22 +4,22 @@
 std::string param_target_set = "/comm/param/control/target/is_set";
 std::string param_selected_target_label = "/comm/param/control/target/label";
 
-TargetSelecter::TargetSelecter()
+TargetSelector::TargetSelector()
 {
   targetNeedPub_ = false;
   ALPubROI_ = nh.advertise<drv_msgs::recognized_target>("search/recognized_target", 1);
-  ALSubROI_ = nh.subscribe<std_msgs::Float32MultiArray>("/jarvis/roi", 1, &TargetSelecter::APPROICallback, this);
+  ALSubROI_ = nh.subscribe<std_msgs::Float32MultiArray>("/jarvis/roi", 1, &TargetSelector::APPROICallback, this);
   
   // Sub rectangle bbox from image_view2 (developed by jsk)
   std::string roi_str = "/vision/rgb/image_rect_color/screenrectangle";
-  subImageView2ROI_ = nh.subscribe<geometry_msgs::PolygonStamped>(roi_str, 1, &TargetSelecter::IVROICallback, this);
+  subImageView2ROI_ = nh.subscribe<geometry_msgs::PolygonStamped>(roi_str, 1, &TargetSelector::IVROICallback, this);
   
   // Sub point from image_view2, only for cancel the target
   std::string p_str = "/vision/rgb/image_rect_color/screenpoint";
-  subImageView2P_ = nh.subscribe<geometry_msgs::PointStamped>(p_str, 1, &TargetSelecter::IVPCallback, this);
+  subImageView2P_ = nh.subscribe<geometry_msgs::PointStamped>(p_str, 1, &TargetSelector::IVPCallback, this);
 }
 
-void TargetSelecter::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
+void TargetSelector::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_found)
 {
   if (targetNeedPub_) {
     ros::param::set(param_selected_target_label, "user selected object");
@@ -31,7 +31,7 @@ void TargetSelecter::publishOnceIfTargetSelected(bool &is_tgt_set, bool &is_tgt_
   }
 }
 
-void TargetSelecter::APPROICallback(const std_msgs::Float32MultiArrayConstPtr &roi_msg)
+void TargetSelector::APPROICallback(const std_msgs::Float32MultiArrayConstPtr &roi_msg)
 {
   if (roi_msg->data.size() == 4) {
     std_msgs::UInt16MultiArray array;
@@ -57,7 +57,7 @@ void TargetSelecter::APPROICallback(const std_msgs::Float32MultiArrayConstPtr &r
   }
 }
 
-void TargetSelecter::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &roi_msg)
+void TargetSelector::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &roi_msg)
 {
   if (roi_msg->polygon.points.size() == 2) {
     std_msgs::UInt16MultiArray array;
@@ -90,7 +90,7 @@ void TargetSelecter::IVROICallback(const geometry_msgs::PolygonStampedConstPtr &
  * If user has select a point on ImageView2, cancel current target
  * @param p_msg
  */
-void TargetSelecter::IVPCallback(const geometry_msgs::PointStampedConstPtr &p_msg)
+void TargetSelector::IVPCallback(const geometry_msgs::PointStampedConstPtr &p_msg)
 {
   ROS_INFO("IVPCallback: Target cancelled by ImageView2.");
   ros::param::set(param_target_set, false);

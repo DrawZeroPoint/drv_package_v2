@@ -26,6 +26,9 @@ ros::Publisher motorPub_;
 string param_servo_pitch = "/status/servo/pitch";
 string param_servo_yaw = "/status/servo/yaw";
 
+int pitchAngle_ = 90;
+int yawAngle_ = 90;
+
 const float pi = 3.14159265359;
 
 // Signal-safe flag for whether shutdown is requested
@@ -54,10 +57,10 @@ float calculate(float ab, float bc, float cd, float ad, float theta_a)
 void setBoundary(int &pitch_angle, int &yaw_angle)
 {
   // Set the boundry of pitch value for NVG 2.0
-  if (pitch_angle > 140) pitch_angle = 140.0;
-  else if (pitch_angle < 60) pitch_angle = 60.0;
-  if (yaw_angle > 180) yaw_angle = 180.0;
-  else if (yaw_angle < 0) yaw_angle = 0.0;
+  if (pitch_angle > 140) pitch_angle = 140;
+  else if (pitch_angle < 60) pitch_angle = 60;
+  if (yaw_angle > 180) yaw_angle = 180;
+  else if (yaw_angle < 0) yaw_angle = 0;
 }
 
 void motorPublish(int pitch_angle, int yaw_angle,
@@ -77,24 +80,22 @@ void motorPublish(int pitch_angle, int yaw_angle,
 void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
 {
   // This callback should always active
-  int pitchAngle = 90;
-  int yawAngle = 90;
   int pitchSpeed = 50;
   int yawSpeed = 50;
   
   if (msg->data.size() == 2) {
-    pitchAngle = msg->data[0];
-    yawAngle = msg->data[1];
+    pitchAngle_ = msg->data[0];
+    yawAngle_ = msg->data[1];
   }
   else if (msg->data.size() == 3) {
-    pitchAngle = msg->data[0];
-    yawAngle = msg->data[1];
+    pitchAngle_ = msg->data[0];
+    yawAngle_ = msg->data[1];
     pitchSpeed = msg->data[2];
     yawSpeed = msg->data[2];
   }
   else if (msg->data.size() == 4) {
-    pitchAngle = msg->data[0];
-    yawAngle = msg->data[1];
+    pitchAngle_ = msg->data[0];
+    yawAngle_ = msg->data[1];
     pitchSpeed = msg->data[2];
     yawSpeed = msg->data[3];
   }
@@ -102,8 +103,19 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
     ROS_WARN_THROTTLE(3, "Servo params invalid.");
   }
 
-  setBoundary(pitchAngle, yawAngle);
-  motorPublish(pitchAngle, yawAngle, pitchSpeed, yawSpeed);
+  setBoundary(pitchAngle_, yawAngle_);
+  motorPublish(pitchAngle_, yawAngle_, pitchSpeed, yawSpeed);
+}
+
+/**
+ * @brief nextCallback
+ * When the msg was received, the servo will try to move to next
+ * predefined position based on current state
+ * @param msg
+ */
+void nextCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
+{
+  // TODO: change to service
 }
 
 // Replacement SIGINT handler
@@ -143,6 +155,7 @@ int main(int argc, char **argv)
 
   // This node should be launched in namespace /vision
   ros::Subscriber sub_servo_cmd = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
+  ros::Subscriber sub_to_pos = nh.subscribe<std_msgs::UInt16MultiArray>("servo/next_pos", 1, nextCallback);
 
   while (!g_request_shutdown)
   {
