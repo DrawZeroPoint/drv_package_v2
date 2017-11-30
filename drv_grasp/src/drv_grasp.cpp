@@ -68,7 +68,6 @@ bool posePublished_ = false; // only works in simple mode
 uint32_t shape = visualization_msgs::Marker::ARROW;
 
 // Transform frame
-string map_frame_ = "map";
 string base_frame_ = "base_link"; // Base frame that NVG link to
 string camera_optical_frame_ = "vision_depth_optical_frame";
 

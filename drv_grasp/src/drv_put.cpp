@@ -40,6 +40,7 @@
 // Custom message
 #include <drv_msgs/recognized_target.h>
 #include <drv_msgs/target_info.h>
+#include <drv_msgs/servo.h>
 #include "makeplan.h"
 #include "getsourcecloud.h"
 #include "obstacledetect.h"
@@ -73,7 +74,6 @@ bool offsetNeedPub_ = true;
 uint32_t shape = visualization_msgs::Marker::ARROW;
 
 // Transform frame
-string map_frame_ = "map";
 string base_frame_ = "base_link"; // Base frame that NVG link to
 string camera_optical_frame_ = "vision_depth_optical_frame";
 
@@ -94,7 +94,7 @@ float y_max_ = 0.35;
 float tolerance_ = 0.03;
 
 // Publish servo initial position
-ros::Publisher servoPub_;
+ros::Publisher putPubServo_;
 bool servo_init_ = false;
 
 void publishMarker(geometry_msgs::PoseStamped pose)
@@ -149,7 +149,7 @@ void pubServo(int pitch_angle, int yaw_angle, int power)
   array.data.push_back(yaw_angle);
   // The basic speed is 10 (0~255)
   array.data.push_back(10 * power);
-  servoPub_.publish(array);
+  putPubServo_.publish(array);
 }
 
 void objInfoCallback(const drv_msgs::target_infoConstPtr &info)
@@ -174,15 +174,22 @@ int main(int argc, char **argv)
   pnh.getParam("left_arm_x_max", x_max_);
   pnh.getParam("left_arm_y_max", y_max_);
   
-  // Public control value
+  // Publish control value
   putPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/put/pose", 1);
   putPubLocation_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/put/location", 1);
   
+  // Publish state and marker
   putPubStatus_ = nh.advertise<std_msgs::Int8>("/vision/status/put/feedback", 1);
   putPubMarker_ = nh.advertise<visualization_msgs::Marker>("/vision/put/marker", 1);
   
+  // Publish servo angle
+  putPubServo_ = nh.advertise<std_msgs::UInt16MultiArray>("servo", 1);
+  
   // Subscribe info for putting object
   ros::Subscriber sub_obj = nh.subscribe<drv_msgs::target_info>("/vision/target_info", 1, objInfoCallback);
+  
+  // Client for requesting rotate the head
+  ros::ServiceClient client = nh.serviceClient<drv_msgs::servo>("drv_motor_service");
 
   // Object to perform obstacle detect
   float grasp_area_x = (x_min_ + x_max_)/2;
@@ -230,8 +237,22 @@ int main(int argc, char **argv)
         hasPutPlan_ = true;
         posePublished_ = true;
       }
+
+    }
+    else {
       // Table not found, turn head to the next direction and search
-      
+      // Initialize request of servo service
+      drv_msgs::servo srv;
+      srv.request.to_next = true;
+  
+      // Call servo service
+      if (client.call(srv)) {
+        hasPutPlan_ = srv.response.success;
+      }
+      else {
+        hasPutPlan_ = false;
+        ROS_WARN_THROTTLE(11, "Call servo service failed.");
+      }
     }
     
     std_msgs::Int8 flag;

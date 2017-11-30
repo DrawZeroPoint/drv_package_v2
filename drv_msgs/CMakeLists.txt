@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
    recognize.srv
    face_recognize.srv
    face_train.srv
+   servo.srv
    user_select.srv
  )
 

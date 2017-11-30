@@ -14,6 +14,8 @@
 #include <std_msgs/UInt16MultiArray.h>
 #include <std_msgs/Float32MultiArray.h>
 
+#include <drv_msgs/servo.h>
+#include "getpose.h"
 
 #include <stdio.h>
 
@@ -28,6 +30,11 @@ string param_servo_yaw = "/status/servo/yaw";
 
 int pitchAngle_ = 90;
 int yawAngle_ = 90;
+
+bool have_target_ = false;
+int pitchTarget_ = 90;
+int yawTarget_ = 90;
+GetPose gp_;
 
 const float pi = 3.14159265359;
 
@@ -54,18 +61,15 @@ float calculate(float ab, float bc, float cd, float ad, float theta_a)
   return to_deg(result);
 }
 
-void setBoundary(int &pitch_angle, int &yaw_angle)
+void motorPublish(int pitch_angle, int yaw_angle,
+                  int pitch_speed, int yaw_speed)
 {
   // Set the boundry of pitch value for NVG 2.0
   if (pitch_angle > 140) pitch_angle = 140;
   else if (pitch_angle < 60) pitch_angle = 60;
   if (yaw_angle > 180) yaw_angle = 180;
   else if (yaw_angle < 0) yaw_angle = 0;
-}
-
-void motorPublish(int pitch_angle, int yaw_angle,
-                  int pitch_speed, int yaw_speed)
-{
+  
   std_msgs::UInt16MultiArray array;
   array.data.push_back(pitch_angle);
   array.data.push_back(yaw_angle);
@@ -75,6 +79,22 @@ void motorPublish(int pitch_angle, int yaw_angle,
   
   ros::param::set(param_servo_pitch, pitch_angle);
   ros::param::set(param_servo_yaw, yaw_angle);
+}
+
+bool toNextPose()
+{
+  if (have_target_) {
+    motorPublish(pitchTarget_, yawTarget_, 30, 30);
+    return true;
+  }
+  else {
+    if (gp_.getNextPosition(pitchAngle_, yawAngle_)) {
+      motorPublish(pitchAngle_, yawAngle_, 30, 30);
+      return true;
+    }
+    else
+      return false;
+  }
 }
 
 void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
@@ -103,19 +123,36 @@ void servoCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
     ROS_WARN_THROTTLE(3, "Servo params invalid.");
   }
 
-  setBoundary(pitchAngle_, yawAngle_);
   motorPublish(pitchAngle_, yawAngle_, pitchSpeed, yawSpeed);
 }
 
 /**
- * @brief nextCallback
+ * @brief motorService
  * When the msg was received, the servo will try to move to next
- * predefined position based on current state
- * @param msg
+ * predefined position or user given position based on current state
+ * @param req
+ * @param res
+ * @return Always true cause this is a service should not fail
  */
-void nextCallback(const std_msgs::UInt16MultiArrayConstPtr &msg)
+bool motorService(drv_msgs::servo::Request  &req,
+                  drv_msgs::servo::Response &res)
 {
-  // TODO: change to service
+  bool success = false;
+  if (req.to_next) {
+    // No user specified target, so have_target = false
+    have_target_ = false;
+    // A positive number will trigger the movement
+    success = toNextPose();
+  }
+  else {
+    // User set the pose for servo, so receive the value
+    have_target_ = true;
+    pitchTarget_ = req.pitch;
+    yawTarget_ = req.yaw;
+    success = toNextPose();
+  }
+  res.success = success;
+  return true; // Return bool is necessary for service
 }
 
 // Replacement SIGINT handler
@@ -155,10 +192,13 @@ int main(int argc, char **argv)
 
   // This node should be launched in namespace /vision
   ros::Subscriber sub_servo_cmd = nh.subscribe<std_msgs::UInt16MultiArray>("servo", 1, servoCallback);
-  ros::Subscriber sub_to_pos = nh.subscribe<std_msgs::UInt16MultiArray>("servo/next_pos", 1, nextCallback);
+  
+  ros::ServiceServer srv = nh.advertiseService("drv_motor_service", motorService);
 
   while (!g_request_shutdown)
   {
+    // Reset target status before each loop;
+    have_target_ = false;
     ros::spinOnce();
   }
 

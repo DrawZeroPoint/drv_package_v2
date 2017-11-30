@@ -1,0 +1,12 @@
+# If to_next is true, servo will try to go to
+# next search angle and pitch and yaw will be ignored
+bool to_next
+
+# You can specify the angle that the servo should go to
+int64 pitch
+int64 yaw
+---
+# true if the servo can go to target pose, 
+# if the next pose does not exist or 
+# the pose can not be reached, return false
+bool success
