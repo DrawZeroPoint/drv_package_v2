@@ -83,7 +83,7 @@ float base_to_ground_ = 0.465;
 float table_height_ = 0.9; // error: +-0.15m
 float table_area_ = 0.01; // m^2
 // Object grasp center to bottom
-float center_to_bottom_ = 0.05;
+float center_to_bottom_ = 0.07;
 
 /* The graspable area of robot left arm,
  * relative to base_link, in meter */
@@ -91,7 +91,7 @@ float x_min_ = 0.4;
 float x_max_ = 0.6;
 float y_min_ = 0.2;
 float y_max_ = 0.35;
-float tolerance_ = 0.03;
+float tolerance_ = 0.1;
 
 // Publish servo initial position
 ros::Publisher putPubServo_;
@@ -248,6 +248,7 @@ int main(int argc, char **argv)
       // Call servo service
       if (client.call(srv)) {
         hasPutPlan_ = srv.response.success;
+        ros::Duration(3).sleep();
       }
       else {
         hasPutPlan_ = false;
