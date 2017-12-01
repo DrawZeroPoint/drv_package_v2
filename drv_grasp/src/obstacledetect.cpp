@@ -126,7 +126,7 @@ void ObstacleDetect::detectObstacle(int min_x, int min_y,
   PointCloudMono::Ptr cloud_except_obj(new PointCloudMono);
   pcl::PointIndices::Ptr idx_except_obj(new pcl::PointIndices);
 
-  for (size_t i = 0; i < src_cloud_->points.size(); ++i) {
+  for (size_t i = 0; i < 307200; ++i) {
     int c = i % 640;
     int r = i / 640;
     if (c > min_x && c < max_x && r > min_y && r < max_y)
