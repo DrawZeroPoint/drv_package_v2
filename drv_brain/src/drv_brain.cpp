@@ -112,6 +112,7 @@ void resetStatus()
   putSuccess_ = 0;
   
   modeType_ = m_wander;
+  servo_initialized_ = false;
   
   ros::param::set(param_comm_target_set, false);
   ros::param::set(param_comm_target_label, "");
@@ -387,7 +388,8 @@ int main(int argc, char **argv)
     
     // Set private running mode
     ros::param::set(param_running_mode, modeType_);
-    
+
+    // Reset status when back to wander mode
     if (modeType_ != modeTypeTemp_) {
       String mode_msg;
       mode_msg.data = modeName[modeType_];
@@ -396,7 +398,7 @@ int main(int argc, char **argv)
       modeTypeTemp_ = modeType_;
       if (modeType_ == m_wander) {
         // Reset head pose
-        servo_initialized_ = false;
+        resetStatus();
       }
     }
   }
