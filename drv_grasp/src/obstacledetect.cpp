@@ -38,6 +38,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   
   pub_table_pose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
   pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
+  pub_except_object_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
 }
 
 ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, 
@@ -63,6 +64,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
   sub_pointcloud_ = nh.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
                                                            &ObstacleDetect::cloudCallback, this);
   pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
+  pub_except_object_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
 }
 
 void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -113,6 +115,25 @@ void ObstacleDetect::detectObstacleTable()
   
   // Get table geometry from hull and publish the plane with max area
   analyseObstacle();
+}
+
+void ObstacleDetect::detectObstacle(int min_x, int min_y, 
+                                    int max_x, int max_y)
+{
+  if (src_cloud_->points.empty())
+    return;
+  
+  PointCloudMono::Ptr cloud_except_obj(new PointCloudMono);
+  pcl::PointIndices::Ptr idx_except_obj(new pcl::PointIndices);
+
+  for (size_t i = 0; i < src_cloud_->points.size(); ++i) {
+    int c = i % 640;
+    int r = i / 640;
+    if (c > min_x && c < max_x && r > min_y && r < max_y)
+      idx_except_obj->indices.push_back(i);
+  }
+  Utilities::getCloudByInliers(src_cloud_, cloud_except_obj, idx_except_obj, true, false);
+  publishCloud(cloud_except_obj, pub_except_object_);
 }
 
 void ObstacleDetect::findMaxPlane()
@@ -166,13 +187,13 @@ void ObstacleDetect::findMaxPlane()
 }
 
 template <typename PointTPtr>
-void ObstacleDetect::publishCloud(PointTPtr cloud)
+void ObstacleDetect::publishCloud(PointTPtr cloud, ros::Publisher pub)
 {
   sensor_msgs::PointCloud2 ros_cloud;
   pcl::toROSMsg(*cloud, ros_cloud);
   ros_cloud.header.frame_id = base_frame_;
   ros_cloud.header.stamp = ros::Time(0);
-  pub_table_points_.publish(ros_cloud);
+  pub.publish(ros_cloud);
 }
 
 bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
@@ -193,7 +214,7 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
   
   PointCloudMono::Ptr cloud_sk(new PointCloudMono);
 //  Utilities::shrinkHull(cloud, cloud_sk, 0.06);
-  publishCloud(cloud); // For reference
+  publishCloud(cloud, pub_table_points_); // For reference
   
   pcl::PointXY p_dis;
   pcl::PointXY p_closest;
@@ -300,7 +321,7 @@ void ObstacleDetect::analyseObstacle()
   
   pub_table_pose_.publish(table_pose);
 
-  publishCloud(cloud);
+  publishCloud(cloud, pub_table_points_);
   ROS_INFO_THROTTLE(11, "ObstacleDetect: Table detected.");
 }
 

@@ -74,6 +74,8 @@ public:
    */
   void detectObstacleTable();
   
+  void detectObstacle(int min_x, int min_y, int max_x, int max_y);
+  
   /**
    * @brief detectPutTable
    * @param put_pose
@@ -105,6 +107,7 @@ private:
   
   ros::Publisher pub_table_pose_;
   ros::Publisher pub_table_points_;
+  ros::Publisher pub_except_object_;
   
   // Target table approximate height
   float table_height_;
@@ -173,7 +176,7 @@ private:
   
   
   template <typename PointTPtr>
-  void publishCloud(PointTPtr cloud);
+  void publishCloud(PointTPtr cloud, ros::Publisher pub);
 };
 
 #endif // OBSTACLEDETECT_H
