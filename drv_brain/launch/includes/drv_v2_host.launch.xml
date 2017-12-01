@@ -93,8 +93,8 @@
     <!-- If true, object pose only publish once for one detection -->
     <param name="pub_pose_once_id" value="false" />
     <!-- Left arm graspable area params -->
-    <param name="left_arm_x_min" value="0.48" />
-    <param name="left_arm_x_max" value="0.52" />
+    <param name="left_arm_x_min" value="0.47" />
+    <param name="left_arm_x_max" value="0.51" />
     <param name="left_arm_y_min" value="0.26" />
     <param name="left_arm_y_max" value="0.3" />
   </node>
@@ -107,8 +107,8 @@
     <!-- If true, object pose only publish once for one detection -->
     <param name="pub_pose_once_id" value="false" />
     <!-- Left arm graspable area params -->
-    <param name="left_arm_x_min" value="0.48" />
-    <param name="left_arm_x_max" value="0.52" />
+    <param name="left_arm_x_min" value="0.47" />
+    <param name="left_arm_x_max" value="0.51" />
     <param name="left_arm_y_min" value="0.26" />
     <param name="left_arm_y_max" value="0.3" />
   </node>
