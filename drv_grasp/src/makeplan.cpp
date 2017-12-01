@@ -46,7 +46,7 @@ void MakePlan::smartOffset(pcl::PointXYZ &p_in, float off_xy, float off_z)
   p_in.x += x_off;
   p_in.y += y_off;
   // To solve the detected point is higher than optimal
-  p_in.z -= off_z;
+  p_in.z += off_z;
 }
 
 void MakePlan::removeNans(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out)
