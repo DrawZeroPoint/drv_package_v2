@@ -21,7 +21,7 @@ bool MakePlan::getAveragePoint(PointCloud::Ptr cloud_in, pcl::PointXYZ &avrPt)
   {
     return false;
   }
-
+  
   pcl::PointXYZ min_dis_point;
   float min_dis = 100.0;
   for (PointCloud::const_iterator it = cloud_in->begin(); it != cloud_in->end(); ++ it)
@@ -33,7 +33,7 @@ bool MakePlan::getAveragePoint(PointCloud::Ptr cloud_in, pcl::PointXYZ &avrPt)
       min_dis_point = *it;
     }
   }
-
+  
   smartOffset(min_dis_point, 0.02, 0.05);
   avrPt = min_dis_point;
   return true;
@@ -41,10 +41,18 @@ bool MakePlan::getAveragePoint(PointCloud::Ptr cloud_in, pcl::PointXYZ &avrPt)
 
 void MakePlan::smartOffset(pcl::PointXYZ &p_in, float off_xy, float off_z)
 {
-  float y_off = off_xy / sqrt(1 + pow(p_in.x / p_in.y, 2)) * p_in.y / fabs(p_in.y);
-  float x_off = p_in.x / p_in.y * y_off;
-  p_in.x += x_off;
-  p_in.y += y_off;
+  //  float y_off = off_xy / sqrt(1 + pow(p_in.x / p_in.y, 2)) * p_in.y / fabs(p_in.y);
+  //  float x_off = p_in.x / p_in.y * y_off;
+  if (p_in.x == 0) {
+    p_in.x += off_xy;
+  }
+  else {
+    float rad = atan(p_in.y/p_in.x);
+    float y_off = off_xy * sin(rad);
+    float x_off = off_xy * cos(rad);  
+    p_in.x += x_off;
+    p_in.y += y_off;
+  }
   // To solve the detected point is higher than optimal
   p_in.z += off_z;
 }
@@ -53,23 +61,23 @@ void MakePlan::removeNans(PointCloud::Ptr cloud_in, PointCloud::Ptr &cloud_out)
 {
   std::vector< int >	index;
   PointCloud::Ptr cloud_filtered_nan (new PointCloud);
-
+  
   pcl::removeNaNFromPointCloud(*cloud_in, *cloud_filtered_nan, index);
-
+  
   pcl::PointIndices::Ptr indices_x(new pcl::PointIndices);
   pcl::PointIndices::Ptr indices_xy(new pcl::PointIndices);
-
+  
   pcl::PassThrough<pcl::PointXYZ> ptfilter; // Initializing with true will allow us to extract the removed indices
   ptfilter.setInputCloud (cloud_filtered_nan);
   ptfilter.setFilterFieldName ("x");
   ptfilter.setFilterLimits (-0.2, 0.2);
   ptfilter.filter (indices_x->indices);
-
+  
   ptfilter.setIndices (indices_x);
   ptfilter.setFilterFieldName ("y");
   ptfilter.setFilterLimits (-0.2, 0.2);
   ptfilter.filter (indices_xy->indices);
-
+  
   ptfilter.setIndices (indices_xy);
   ptfilter.setFilterFieldName ("z");
   ptfilter.setFilterLimits (0.5, 2.0);// this method can only be used on source cloud, aka cloud whose frame is camera optical frame
@@ -82,7 +90,7 @@ bool MakePlan::process(PointCloud::Ptr cloud_in, float a, float b, float c, floa
   {
     return false;
   }
-
+  
   PointCloud::Ptr cloud_filtered (new PointCloud);
 #ifdef USE_CENTER
   cloud_filtered = cloud_in;
