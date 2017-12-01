@@ -491,11 +491,6 @@ int main(int argc, char **argv)
       geometry_msgs::PoseStamped offset;
       bool in_range = isInGraspRange(graspPt.x, graspPt.y, graspPt.z, offset);
       if (in_range) {
-        if (use_od_) {
-          // Detect obstacle before publish target pose
-          //m_od_.detectObstacleTable();
-          m_od_.detectObstacle(min_x_, min_y_, max_x_, max_y_);
-        }
         geometry_msgs::PoseStamped grasp_pose;
         grasp_pose.header.frame_id = base_frame_;
         grasp_pose.header.stamp = imageDepthPtr_->header.stamp;
@@ -512,6 +507,11 @@ int main(int argc, char **argv)
         posePublished_ = true;
       }
       else {
+        if (use_od_) {
+          // Detect obstacle before publish target pose
+          //m_od_.detectObstacleTable();
+          m_od_.detectObstacle(min_x_, min_y_, max_x_, max_y_);
+        }
         offset.header.frame_id = base_frame_;
         offset.header.stamp = imageDepthPtr_->header.stamp;
         offset.pose.position.z = 0;
