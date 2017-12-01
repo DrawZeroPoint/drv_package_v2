@@ -10,7 +10,7 @@ class TargetListener
 {
 public:
   TargetListener();
-  void getTargetStatus(bool &is_tgt_set, string &tgt_label, bool &is_pub);
+  void getTargetStatus(bool &is_tgt_set, string &tgt_label, int &is_pub);
   
 private:
   bool isTargetSet_;

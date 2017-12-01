@@ -45,7 +45,7 @@ bool TargetListener::checkLabel(string label)
 
 void TargetListener::getTargetStatus(bool &is_tgt_set, 
                                      string &tgt_label,
-                                     bool &is_put)
+                                     int &is_put)
 {
   // First get target from action, then from Android device
   if (ros::param::has(param_action_target_set)) {
@@ -108,7 +108,6 @@ void TargetListener::getTargetStatus(bool &is_tgt_set,
         }
         else
         {
-          // TODO feedback lack of label
           tgt_label = "user selected object";
         }
       }
@@ -119,7 +118,7 @@ void TargetListener::getTargetStatus(bool &is_tgt_set,
   
   // Check if put the target
   if (is_tgt_set) {
-    is_put = false;
+    is_put = 0;
     if (ros::param::has(param_comm_is_put)) {
       ros::param::del(param_comm_is_put);
     }

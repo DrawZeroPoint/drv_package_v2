@@ -61,7 +61,7 @@ string param_comm_is_put = "/comm/param/ctrl/is_put";  // Is put down object in 
 // Target status control
 bool isTargetSet_ = false;
 string targetLabel_ = "";
-bool isPut_ = false;
+int isPut_ = 0;
 
 // Target status feedback
 bool foundTarget_ = false;
@@ -108,13 +108,13 @@ void resetStatus()
   
   isTargetSet_ = false;
   foundTarget_ = false;
+  isPut_ = 0;
   putSuccess_ = 0;
   
   modeType_ = m_wander;
   
   ros::param::set(param_comm_target_set, false);
   ros::param::set(param_comm_target_label, "");
-  ros::param::set(param_comm_is_put, false);
 }
 
 /**
