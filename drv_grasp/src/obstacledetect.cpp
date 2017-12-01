@@ -15,7 +15,7 @@ float th_deltaz_ = 2 * th_leaf_;
 float th_ratio_ = 5 * th_leaf_; // flatness ratio max value of plane
 
 // Depth threshold
-float th_max_depth_ = 1.5;
+float th_max_depth_ = 1.3;
 
 ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
                                float table_height, float table_area) :
@@ -181,6 +181,8 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
   PointCloudMono::Ptr cloud = plane_max_hull_;
 
   pcl::PointXY p;
+  // Cause the camera field is limited, we consider a hull is in reach
+  // When the nearest point on hull
   p.x = grasp_area_x_ + tolerance_;
   p.y = grasp_area_y_;
 
@@ -196,8 +198,8 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
   pcl::PointXY p_dis;
   pcl::PointXY p_closest;
   if (Utilities::isInHull(cloud, p, p_dis, p_closest)) {
-    put_pose.pose.position.x = p.x;
-    put_pose.pose.position.y = p.y;
+    put_pose.pose.position.x = grasp_area_x_;
+    put_pose.pose.position.y = grasp_area_y_;
     // All points in cloud have same z
     put_pose.pose.position.z = cloud->points[0].z + z_offset_;
     put_pose.pose.orientation.x = 0;
