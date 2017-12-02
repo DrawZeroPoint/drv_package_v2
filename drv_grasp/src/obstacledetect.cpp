@@ -98,7 +98,8 @@ void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
 }
 
 bool ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
-                                    geometry_msgs::PoseStamped &ref_pose, bool &need_move)
+                                    geometry_msgs::PoseStamped &ref_pose, 
+                                    bool &need_move)
 {
   findMaxPlane();
   if (plane_max_hull_ == NULL) {
@@ -128,15 +129,17 @@ void ObstacleDetect::detectObstacle(int min_x, int min_y,
   assert(src_cloud_->points.size() == src_z_inliers_->indices.size());
   
   PointCloudMono::Ptr cloud_except_obj(new PointCloudMono);
-  pcl::PointIndices::Ptr idx_except_obj(new pcl::PointIndices);
+  pcl::PointIndices::Ptr idx_obj(new pcl::PointIndices);
 
   for (size_t i = 0; i < src_z_inliers_->indices.size(); ++i) {
     int c = src_z_inliers_->indices[i] % 640;
     int r = src_z_inliers_->indices[i] / 640;
     if (c > min_x && c < max_x && r > min_y && r < max_y)
-      idx_except_obj->indices.push_back(i);
+      idx_obj->indices.push_back(i);
   }
-  Utilities::getCloudByInliers(src_cloud_, cloud_except_obj, idx_except_obj, false, false);
+  // Set negtive=true to get cloud id not equal to idx_obj
+  Utilities::getCloudByInliers(src_cloud_, cloud_except_obj, idx_obj, 
+                               true, false);
   publishCloud(cloud_except_obj, pub_except_object_);
 }
 

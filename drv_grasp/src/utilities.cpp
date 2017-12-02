@@ -206,10 +206,9 @@ void Utilities::getCloudByZ(PointCloudMono::Ptr cloud_in,
   pass.setInputCloud(cloud_in);
   pass.setFilterFieldName("z");
   pass.setFilterLimits(z_min, z_max);
-  pass.setIndices(inliers);
   //pass.setFilterLimitsNegative (true);
+  pass.filter(inliers->indices);
   pass.filter(*cloud_out);
-  
 }
 
 void Utilities::getCloudByInliers(PointCloudMono::Ptr cloud_in, 

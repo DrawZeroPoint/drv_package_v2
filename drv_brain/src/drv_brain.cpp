@@ -210,7 +210,7 @@ void trackCallback(const BoolConstPtr &msg)
       ros::param::set(param_vision_feedback, 1);
     }
     else {
-      ROS_INFO_THROTTLE(7, "Track report: Tracking...");
+      ROS_INFO_THROTTLE(21, "Track report: Tracking...");
       foundTarget_ = true;
       ros::param::set(param_vision_feedback_track, 1);
       ros::param::set(param_vision_feedback, 1);
@@ -222,12 +222,12 @@ void graspCallback(const Int8ConstPtr &msg)
 {
   if (modeType_ == m_track) {
     if (!msg->data) {
-      ROS_INFO_THROTTLE(3, "Grasp report: Failed.");
+      ROS_INFO_THROTTLE(7, "Grasp report: Failed.");
       ros::param::set(param_vision_feedback_grasp, -1);
       ros::param::set(param_vision_feedback, 1);
     }
     else if (msg->data == 1) {
-      ROS_INFO_THROTTLE(3, "Grasp report: Reaching to the target...");
+      ROS_INFO_THROTTLE(7, "Grasp report: Reaching to the target...");
       ros::param::set(param_vision_feedback_grasp, 1);
       ros::param::set(param_vision_feedback, 1);
     }
@@ -243,15 +243,15 @@ void putCallback(const Int8ConstPtr &msg)
 {
   if (modeType_ == m_put) {
     if (msg->data < 0) {
-      ROS_INFO_THROTTLE(3, "Put report: Failed.");
+      ROS_INFO("Put report: Failed.");
       drvPubPutResult_.publish(msg);
     }
     else if (msg->data == 1) {
-      ROS_INFO_THROTTLE(3, "Put report: Succeeded.");
+      ROS_INFO("Put report: Succeeded.");
       drvPubPutResult_.publish(msg);
     }
     else {
-      ROS_INFO_THROTTLE(11, "Put report: Putting the target...");
+      ROS_INFO_THROTTLE(21, "Put report: Putting the target...");
     }
     putSuccess_ = msg->data;
   }
