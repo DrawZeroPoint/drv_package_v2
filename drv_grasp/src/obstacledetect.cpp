@@ -42,7 +42,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   pub_table_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
   pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
   pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
-  pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/image_rect/except_object",1);
+  pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/image_rect/except_object", 1);
 }
 
 ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, 
@@ -69,11 +69,10 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
   
   sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
                                                             &ObstacleDetect::cloudCallback, this);
-  initDepthCallback();
   
   pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
   pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
-  pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/image_rect/except_object",1);
+  pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/image_rect/except_object", 1);
 }
 
 void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -122,10 +121,11 @@ bool ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
 void ObstacleDetect::initDepthCallback() 
 {
   depth_it_.reset(new image_transport::ImageTransport(nh_));
-  sub_depth_.subscribe(*depth_it_, "/vision/depth/image_rect", 1,
+  sub_camera_info_.subscribe(nh_, "/vision/depth/camera_info", 5);
+  sub_depth_.subscribe(*depth_it_, "/vision/depth/image_rect", 5,
                        image_transport::TransportHints("compressedDepth"));
   
-  sync_depth_.reset(new SynchronizerDepth(SyncPolicyDepth(1), 
+  sync_depth_.reset(new SynchronizerDepth(SyncPolicyDepth(5), 
                     sub_depth_, sub_camera_info_));
   
   sync_depth_->registerCallback(boost::bind(&ObstacleDetect::depthCallback, this, _1, _2));
@@ -146,6 +146,7 @@ void ObstacleDetect::depthCallback(const sensor_msgs::ImageConstPtr &depth_msg,
         return;
       }
       src_depth_ptr_ = cv_bridge::toCvCopy(depth_msg);
+      src_depth_ptr_->header = camera_info_msg->header;
     }
   }
 }
@@ -181,17 +182,39 @@ void ObstacleDetect::detectObstacleInCloud(int min_x, int min_y,
   publishCloud(cloud_except_obj, pub_exp_obj_cloud_);
 }
 
+void ObstacleDetect::detectObstacleInDepth(cv_bridge::CvImagePtr src_depth_ptr, 
+                                           int min_x, int min_y, 
+                                           int max_x, int max_y)
+{
+  if (src_depth_ptr == NULL)
+    return;
+  
+  Mat depth_except_obj = src_depth_ptr->image;
+  for (size_t r = 0; r < depth_except_obj.rows; ++r) {
+    for (size_t c = 0; c < depth_except_obj.cols; ++c) {
+      if (c > min_x && c < max_x && r > min_y && r < max_y)
+        depth_except_obj.at<ushort>(r, c) = std::numeric_limits<float>::quiet_NaN();
+    }
+  }
+  cv_bridge::CvImage cv_img;
+  cv_img.image = depth_except_obj;
+  cv_img.header = src_depth_ptr->header;
+  cv_img.header.stamp = ros::Time(0);
+  cv_img.encoding = src_depth_ptr->encoding;
+  pub_exp_obj_depth_.publish(cv_img.toImageMsg());
+}
+
 void ObstacleDetect::detectObstacleInDepth(int min_x, int min_y, 
                                            int max_x, int max_y)
 {
-  if (src_depth_ptr_->image.empty())
+  if (src_depth_ptr_ == NULL)
     return;
   
   Mat depth_except_obj = src_depth_ptr_->image;
   for (size_t r = 0; r < depth_except_obj.rows; ++r) {
     for (size_t c = 0; c < depth_except_obj.cols; ++c) {
       if (c > min_x && c < max_x && r > min_y && r < max_y)
-        depth_except_obj.at<ushort>(r, c) = std::numeric_limits<float>::quiet_NaN();
+        depth_except_obj.at<ushort>(r, c) = 0;
     }
   }
   cv_bridge::CvImage cv_img;

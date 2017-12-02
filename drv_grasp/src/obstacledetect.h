@@ -100,6 +100,9 @@ public:
    */
   void detectObstacleInCloud(int min_x, int min_y, int max_x, int max_y);
   
+  void detectObstacleInDepth(cv_bridge::CvImagePtr src_depth_ptr, 
+                             int min_x, int min_y, int max_x, int max_y);
+  
   void detectObstacleInDepth(int min_x, int min_y, int max_x, int max_y);
   
   /**
@@ -140,8 +143,8 @@ private:
   
   // Depth image temp
   cv_bridge::CvImagePtr src_depth_ptr_;
-  void depthCallback(const sensor_msgs::ImageConstPtr& depth_msg, 
-                     const sensor_msgs::CameraInfoConstPtr &camera_info_msg);
+  void depthCallback(const sensor_msgs::ImageConstPtr& depth_msg,
+                     const sensor_msgs::CameraInfoConstPtr& camera_info_msg);
   
   // Source point cloud and its inliers after z filter
   PointCloudMono::Ptr src_cloud_;

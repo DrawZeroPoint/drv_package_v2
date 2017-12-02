@@ -517,7 +517,9 @@ int main(int argc, char **argv)
         if (use_od_) {
           // Detect obstacle before publish target pose
           //m_od_.detectObstacleTable();
-          m_od_.detectObstacleInCloud(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
+          //m_od_.detectObstacleInCloud(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
+          m_od_.detectObstacleInDepth(roi_min_x_, roi_min_y_, 
+                                      roi_max_x_, roi_max_y_);
         }
         offset.header.frame_id = base_frame_;
         offset.header.stamp = imageDepthPtr_->header.stamp;
