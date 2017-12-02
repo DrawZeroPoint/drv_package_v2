@@ -21,6 +21,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
                                float table_height, float table_area) :
   use_od_(use_od),
   src_cloud_(new PointCloudMono),
+  src_z_inliers_(new pcl::PointIndices),
   m_tf_(new Transform),
   base_frame_(base_frame),
   base_link_above_ground_(base_to_ground),
@@ -46,6 +47,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
                                float grasp_area_x, float grasp_area_y, float tolerance) :
   use_od_(use_od),
   src_cloud_(new PointCloudMono),
+  src_z_inliers_(new pcl::PointIndices), 
   m_tf_(new Transform),
   base_frame_(base_frame),
   base_link_above_ground_(base_to_ground),
@@ -87,7 +89,7 @@ void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
       pcl::fromPCLPointCloud2(pcl_pc2, *temp);
       
       PointCloudMono::Ptr temp_filtered(new PointCloudMono);
-      Utilities::getCloudByZ(temp, temp_filtered, 0.0, th_max_depth_);
+      Utilities::getCloudByZ(temp, src_z_inliers_, temp_filtered, 0.0, th_max_depth_);
       
       m_tf_->getTransform(base_frame_, msg->header.frame_id);
       m_tf_->doTransform(temp_filtered, src_cloud_);
@@ -123,16 +125,18 @@ void ObstacleDetect::detectObstacle(int min_x, int min_y,
   if (src_cloud_->points.empty())
     return;
   
+  assert(src_cloud_->points.size() == src_z_inliers_->indices.size());
+  
   PointCloudMono::Ptr cloud_except_obj(new PointCloudMono);
   pcl::PointIndices::Ptr idx_except_obj(new pcl::PointIndices);
 
-  for (size_t i = 0; i < 307200; ++i) {
-    int c = i % 640;
-    int r = i / 640;
+  for (size_t i = 0; i < src_z_inliers_->indices.size(); ++i) {
+    int c = src_z_inliers_->indices[i] % 640;
+    int r = src_z_inliers_->indices[i] / 640;
     if (c > min_x && c < max_x && r > min_y && r < max_y)
       idx_except_obj->indices.push_back(i);
   }
-  Utilities::getCloudByInliers(src_cloud_, cloud_except_obj, idx_except_obj, true, false);
+  Utilities::getCloudByInliers(src_cloud_, cloud_except_obj, idx_except_obj, false, false);
   publishCloud(cloud_except_obj, pub_except_object_);
 }
 

@@ -197,6 +197,7 @@ void Utilities::getCloudByNormZ(PointCloudRGBN::Ptr cloud_in,
 }
 
 void Utilities::getCloudByZ(PointCloudMono::Ptr cloud_in, 
+                            pcl::PointIndices::Ptr &inliers, 
                             PointCloudMono::Ptr &cloud_out, 
                             float z_min, float z_max)
 {
@@ -205,6 +206,7 @@ void Utilities::getCloudByZ(PointCloudMono::Ptr cloud_in,
   pass.setInputCloud(cloud_in);
   pass.setFilterFieldName("z");
   pass.setFilterLimits(z_min, z_max);
+  pass.setIndices(inliers);
   //pass.setFilterLimitsNegative (true);
   pass.filter(*cloud_out);
   

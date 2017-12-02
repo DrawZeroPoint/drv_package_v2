@@ -74,6 +74,15 @@ public:
    */
   void detectObstacleTable();
   
+  /**
+   * @brief detectObstacle
+   * With the target bounding box given, publish pointcloud without
+   * the object
+   * @param min_x
+   * @param min_y
+   * @param max_x
+   * @param max_y
+   */
   void detectObstacle(int min_x, int min_y, int max_x, int max_y);
   
   /**
@@ -95,8 +104,11 @@ private:
   
   // Whether perform obstacle detection
   bool use_od_;
-  
+
+  // Source point cloud and its inliers after z filter
   PointCloudMono::Ptr src_cloud_;
+  pcl::PointIndices::Ptr src_z_inliers_;
+  
   // The transform object can't be shared between Classes
   Transform *m_tf_;
   // Frame for point cloud to transfer

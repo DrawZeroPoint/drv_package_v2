@@ -96,8 +96,8 @@ public:
   static void getCloudByNormZ(PointCloudRGBN::Ptr cloud_in, pcl::PointIndices::Ptr &inliers, 
                               float th_norm);
   
-  static void getCloudByZ(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out,
-                          float z_min, float z_max);
+  static void getCloudByZ(PointCloudMono::Ptr cloud_in, pcl::PointIndices::Ptr &inliers, 
+                          PointCloudMono::Ptr &cloud_out, float z_min, float z_max);
   
   static void getCloudByInliers(PointCloudMono::Ptr cloud_in, PointCloudMono::Ptr &cloud_out, 
                                 pcl::PointIndices::Ptr inliers, bool negative, bool organized);
