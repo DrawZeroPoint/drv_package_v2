@@ -20,6 +20,7 @@ float th_max_depth_ = 1.3;
 ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
                                float table_height, float table_area) :
   use_od_(use_od),
+  pub_it_(nh_),
   src_cloud_(new PointCloudMono),
   src_z_inliers_(new pcl::PointIndices),
   m_tf_(new Transform),
@@ -30,22 +31,25 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   th_area_(table_area)
 {
   param_running_mode_ = "/status/running_mode";
-
+  
   // For store max hull id and area
   global_area_temp_ = 0;
   
-  sub_pointcloud_ = nh.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
-                                                           &ObstacleDetect::cloudCallback, this);
+  sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
+                                                            &ObstacleDetect::cloudCallback, this);
+  initDepthCallback();
   
-  pub_table_pose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
-  pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
-  pub_except_object_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
+  pub_table_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
+  pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
+  pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
+  pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/image_rect/except_object",1);
 }
 
 ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, 
                                float base_to_ground, float table_height, float table_area,
                                float grasp_area_x, float grasp_area_y, float tolerance) :
   use_od_(use_od),
+  pub_it_(nh_),
   src_cloud_(new PointCloudMono),
   src_z_inliers_(new pcl::PointIndices), 
   m_tf_(new Transform),
@@ -59,14 +63,17 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
   tolerance_(tolerance)
 {
   param_running_mode_ = "/status/running_mode";
-
+  
   // For store max hull id and area
   global_area_temp_ = 0;
   
-  sub_pointcloud_ = nh.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
-                                                           &ObstacleDetect::cloudCallback, this);
-  pub_table_points_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
-  pub_except_object_ = nh.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
+  sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
+                                                            &ObstacleDetect::cloudCallback, this);
+  initDepthCallback();
+  
+  pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
+  pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
+  pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/image_rect/except_object",1);
 }
 
 void ObstacleDetect::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -112,6 +119,37 @@ bool ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
   }
 }
 
+void ObstacleDetect::initDepthCallback() 
+{
+  depth_it_.reset(new image_transport::ImageTransport(nh_));
+  sub_depth_.subscribe(*depth_it_, "/vision/depth/image_rect", 1,
+                       image_transport::TransportHints("compressedDepth"));
+  
+  sync_depth_.reset(new SynchronizerDepth(SyncPolicyDepth(1), 
+                    sub_depth_, sub_camera_info_));
+  
+  sync_depth_->registerCallback(boost::bind(&ObstacleDetect::depthCallback, this, _1, _2));
+}
+
+void ObstacleDetect::depthCallback(const sensor_msgs::ImageConstPtr &depth_msg,
+                                   const sensor_msgs::CameraInfoConstPtr& camera_info_msg)
+{
+  if (!use_od_)
+    return;
+  if (ros::param::has(param_running_mode_)) {
+    int mode_type;
+    ros::param::get(param_running_mode_, mode_type);
+    // 2 for tracking, 3 for putting
+    if (mode_type == 2 || mode_type == 3) {
+      if (depth_msg->data.empty()) {
+        ROS_WARN_THROTTLE(31, "ObstacleDetect: Depth image is empty.");
+        return;
+      }
+      src_depth_ptr_ = cv_bridge::toCvCopy(depth_msg);
+    }
+  }
+}
+
 void ObstacleDetect::detectObstacleTable()
 {
   findMaxPlane();
@@ -120,8 +158,8 @@ void ObstacleDetect::detectObstacleTable()
   analyseObstacle();
 }
 
-void ObstacleDetect::detectObstacle(int min_x, int min_y, 
-                                    int max_x, int max_y)
+void ObstacleDetect::detectObstacleInCloud(int min_x, int min_y, 
+                                           int max_x, int max_y)
 {
   if (src_cloud_->points.empty())
     return;
@@ -130,7 +168,7 @@ void ObstacleDetect::detectObstacle(int min_x, int min_y,
   
   PointCloudMono::Ptr cloud_except_obj(new PointCloudMono);
   pcl::PointIndices::Ptr idx_obj(new pcl::PointIndices);
-
+  
   for (size_t i = 0; i < src_z_inliers_->indices.size(); ++i) {
     int c = src_z_inliers_->indices[i] % 640;
     int r = src_z_inliers_->indices[i] / 640;
@@ -140,7 +178,27 @@ void ObstacleDetect::detectObstacle(int min_x, int min_y,
   // Set negtive=true to get cloud id not equal to idx_obj
   Utilities::getCloudByInliers(src_cloud_, cloud_except_obj, idx_obj, 
                                true, false);
-  publishCloud(cloud_except_obj, pub_except_object_);
+  publishCloud(cloud_except_obj, pub_exp_obj_cloud_);
+}
+
+void ObstacleDetect::detectObstacleInDepth(int min_x, int min_y, 
+                                           int max_x, int max_y)
+{
+  if (src_depth_ptr_->image.empty())
+    return;
+  
+  Mat depth_except_obj = src_depth_ptr_->image;
+  for (size_t r = 0; r < depth_except_obj.rows; ++r) {
+    for (size_t c = 0; c < depth_except_obj.cols; ++c) {
+      if (c > min_x && c < max_x && r > min_y && r < max_y)
+        depth_except_obj.at<ushort>(r, c) = std::numeric_limits<float>::quiet_NaN();
+    }
+  }
+  cv_bridge::CvImage cv_img;
+  cv_img.image = depth_except_obj;
+  cv_img.header = src_depth_ptr_->header;
+  cv_img.encoding = src_depth_ptr_->encoding;
+  pub_exp_obj_depth_.publish(cv_img.toImageMsg());
 }
 
 void ObstacleDetect::findMaxPlane()
@@ -207,20 +265,20 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
                                     geometry_msgs::PoseStamped &ref_pose)
 {
   PointCloudMono::Ptr cloud = plane_max_hull_;
-
+  
   pcl::PointXY p;
   // Cause the camera field is limited, we consider a hull is in reach
   // When the nearest point on hull
   p.x = grasp_area_x_ + tolerance_;
   p.y = grasp_area_y_;
-
+  
   put_pose.header.frame_id = base_frame_;
   put_pose.header.stamp = ros::Time(0);
   ref_pose.header.frame_id = base_frame_;
   ref_pose.header.stamp = ros::Time(0);
   
   PointCloudMono::Ptr cloud_sk(new PointCloudMono);
-//  Utilities::shrinkHull(cloud, cloud_sk, 0.06);
+  //  Utilities::shrinkHull(cloud, cloud_sk, 0.06);
   publishCloud(cloud, pub_table_points_); // For reference
   
   pcl::PointXY p_dis;
@@ -327,7 +385,7 @@ void ObstacleDetect::analyseObstacle()
   table_pose.pose.orientation.w = q.w();
   
   pub_table_pose_.publish(table_pose);
-
+  
   publishCloud(cloud, pub_table_points_);
   ROS_INFO_THROTTLE(11, "ObstacleDetect: Table detected.");
 }
@@ -464,7 +522,7 @@ void ObstacleDetect::calRegionGrowing(PointCloudRGBN::Ptr cloud,
     ROS_DEBUG("ObstacleDetect: Norm cloud contains nothing.");
     return;
   }
-
+  
   pcl::RegionGrowing<pcl::PointXYZRGBNormal, pcl::Normal> reg;
   pcl::search::Search<pcl::PointXYZRGBNormal>::Ptr tree = boost::shared_ptr<pcl::search::Search<pcl::PointXYZRGBNormal> > 
       (new pcl::search::KdTree<pcl::PointXYZRGBNormal>);
@@ -508,7 +566,7 @@ void ObstacleDetect::getMeanZofEachCluster(vector<pcl::PointIndices> indices_in,
       cloud_fit_part->width = cloud_fit_part->points.size ();
       cloud_fit_part->height = 1;
       cloud_fit_part->is_dense = true;
-            
+      
       // Search those part which may come from the same plane
       PointCloudMono::Ptr cloud_fit_part_t(new PointCloudMono);
       Utilities::pointTypeTransfer(cloud_fit_part, cloud_fit_part_t);

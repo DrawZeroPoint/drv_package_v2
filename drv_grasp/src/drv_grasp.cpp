@@ -464,6 +464,7 @@ int main(int argc, char **argv)
       posePublished_ = false;
       offsetNeedPub_ = true;
       pubPoseOnce_ = false;
+      m_od_.setUseOD(false);
       continue;
     }
     
@@ -478,6 +479,7 @@ int main(int argc, char **argv)
     MakePlan MP;
     pcl::PointXYZ graspPt; // target xyz center in robot's reference frame
     pcl::PointXYZ opticalPt; // target xyz center in camera optical frame
+    m_od_.setUseOD(true);
     
     // Get opticalPt and transfer to graspPt
     if (GetSourceCloud::getPoint(imageDepthPtr_->image, row_, col_,
@@ -515,7 +517,7 @@ int main(int argc, char **argv)
         if (use_od_) {
           // Detect obstacle before publish target pose
           //m_od_.detectObstacleTable();
-          m_od_.detectObstacle(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
+          m_od_.detectObstacleInCloud(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
         }
         offset.header.frame_id = base_frame_;
         offset.header.stamp = imageDepthPtr_->header.stamp;

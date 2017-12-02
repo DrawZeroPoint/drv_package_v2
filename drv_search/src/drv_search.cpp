@@ -96,12 +96,12 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "drv_search");
 
   ros::NodeHandle nh;
-  ros::NodeHandle pnh;
-  ros::NodeHandle cnh("~");
-  cnh.getParam("recognize_method", recognize_method_);
+  ros::NodeHandle pnh("~");
+  ros::NodeHandle cnh;
+  pnh.getParam("recognize_method", recognize_method_);
 
   ros::NodeHandle rgb_nh(nh, "rgb");
-  ros::NodeHandle rgb_pnh(pnh, "rgb");
+  ros::NodeHandle rgb_pnh(cnh, "rgb");
   image_transport::ImageTransport it_rgb_sub(rgb_nh);
   image_transport::TransportHints hints_rgb("compressed", ros::TransportHints(), rgb_pnh);
 

@@ -5,8 +5,22 @@
 #include <nodelet/nodelet.h>
 
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/CameraInfo.h>
+
+#include <image_transport/image_transport.h>
+#include <image_transport/subscriber_filter.h>
+#include <image_geometry/pinhole_camera_model.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 
 #include <geometry_msgs/PoseStamped.h>
+
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -56,6 +70,7 @@
 #include "utilities.h"
 
 using namespace std;
+using namespace cv;
 
 class ObstacleDetect
 {
@@ -83,7 +98,9 @@ public:
    * @param max_x
    * @param max_y
    */
-  void detectObstacle(int min_x, int min_y, int max_x, int max_y);
+  void detectObstacleInCloud(int min_x, int min_y, int max_x, int max_y);
+  
+  void detectObstacleInDepth(int min_x, int min_y, int max_x, int max_y);
   
   /**
    * @brief detectPutTable
@@ -98,28 +115,49 @@ public:
   
   inline void setZOffset(float z_offset) {z_offset_ = z_offset;}
   
-private:
-  ros::NodeHandle nh;
-  string param_running_mode_;
-  
   // Whether perform obstacle detection
   bool use_od_;
+  inline void setUseOD(bool use) {use_od_ = use;}
+  inline bool getUseOD() {return use_od_;}
+  
+private:
+  string param_running_mode_;
+  
+  ros::NodeHandle nh_;
+  boost::shared_ptr<image_transport::ImageTransport> depth_it_;
+  image_transport::ImageTransport pub_it_;
+  image_transport::SubscriberFilter sub_depth_;
+  void initDepthCallback();
+  
+  message_filters::Subscriber<sensor_msgs::CameraInfo> sub_camera_info_;
 
+  typedef message_filters::sync_policies::ApproximateTime<
+  sensor_msgs::Image, sensor_msgs::CameraInfo>
+  SyncPolicyDepth;
+
+  typedef message_filters::Synchronizer<SyncPolicyDepth> SynchronizerDepth;
+  boost::shared_ptr<SynchronizerDepth> sync_depth_;
+  
+  // Depth image temp
+  cv_bridge::CvImagePtr src_depth_ptr_;
+  void depthCallback(const sensor_msgs::ImageConstPtr& depth_msg, 
+                     const sensor_msgs::CameraInfoConstPtr &camera_info_msg);
+  
   // Source point cloud and its inliers after z filter
   PointCloudMono::Ptr src_cloud_;
   pcl::PointIndices::Ptr src_z_inliers_;
+  ros::Subscriber sub_pointcloud_;
+  void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
   
   // The transform object can't be shared between Classes
   Transform *m_tf_;
   // Frame for point cloud to transfer
   string base_frame_;
   
-  ros::Subscriber sub_pointcloud_;
-  void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
-  
   ros::Publisher pub_table_pose_;
   ros::Publisher pub_table_points_;
-  ros::Publisher pub_except_object_;
+  ros::Publisher pub_exp_obj_cloud_;
+  image_transport::Publisher pub_exp_obj_depth_;
   
   // Target table approximate height
   float table_height_;
@@ -168,8 +206,8 @@ private:
   
   float getCloudZMean(PointCloudMono::Ptr cloud_in);
   void getMeanZofEachCluster(std::vector<pcl::PointIndices> indices_in, 
-                          PointCloudRGBN::Ptr cloud_in);
-
+                             PointCloudRGBN::Ptr cloud_in);
+  
   void calRegionGrowing(PointCloudRGBN::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr normals);
   
   /**
