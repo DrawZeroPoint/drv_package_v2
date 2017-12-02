@@ -115,7 +115,7 @@ double min_depth_ = 0.2;
 double max_depth_ = 3.0;
 
 // Depth image temp
-cv_bridge::CvImagePtr imageDepthPtr_;
+cv_bridge::CvImagePtr depth_image_ptr_;
 
 #else
 pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
@@ -282,7 +282,7 @@ void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
     return;
   }
   
-  imageDepthPtr_ = cv_bridge::toCvCopy(imageDepth);
+  depth_image_ptr_ = cv_bridge::toCvCopy(imageDepth);
 }
 #else
 void getOrientation(gpd::GraspConfig g, geometry_msgs::Quaternion &q)
@@ -473,7 +473,7 @@ int main(int argc, char **argv)
 #ifdef USE_CENTER
     if (modeType_ != m_track || (pubPoseOnce_ && posePublished_))
       continue;
-    if (imageDepthPtr_ == NULL)
+    if (depth_image_ptr_ == NULL)
       continue;
     
     MakePlan MP;
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
     m_od_.setUseOD(true);
     
     // Get opticalPt and transfer to graspPt
-    if (GetSourceCloud::getPoint(imageDepthPtr_->image, row_, col_,
+    if (GetSourceCloud::getPoint(depth_image_ptr_->image, row_, col_,
                                  fx_, fy_, cx_, cy_, 
                                  max_depth_, min_depth_, opticalPt))
     {
@@ -490,7 +490,7 @@ int main(int argc, char **argv)
       m_tf_.doTransform(opticalPt, graspPt);
       MP.smartOffset(graspPt, 0.01, -0.05); //TODO: make this smart
       
-      publishMarker(graspPt.x, graspPt.y, graspPt.z, imageDepthPtr_->header);
+      publishMarker(graspPt.x, graspPt.y, graspPt.z, depth_image_ptr_->header);
       
       /* Judge if the graspPt is within the graspable area, if so,
        * publish the pose via graspPubPose_, otherwise, 
@@ -500,7 +500,7 @@ int main(int argc, char **argv)
       if (in_range) {
         geometry_msgs::PoseStamped grasp_pose;
         grasp_pose.header.frame_id = base_frame_;
-        grasp_pose.header.stamp = imageDepthPtr_->header.stamp;
+        grasp_pose.header.stamp = depth_image_ptr_->header.stamp;
         grasp_pose.pose.position.x = graspPt.x;
         grasp_pose.pose.position.y = graspPt.y;
         grasp_pose.pose.position.z = graspPt.z;
@@ -517,12 +517,11 @@ int main(int argc, char **argv)
         if (use_od_) {
           // Detect obstacle before publish target pose
           //m_od_.detectObstacleTable();
-          //m_od_.detectObstacleInCloud(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
-          m_od_.detectObstacleInDepth(roi_min_x_, roi_min_y_, 
-                                      roi_max_x_, roi_max_y_);
+          m_od_.detectObstacleInCloud(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
+          //m_od_.detectObstacleInDepth(depth_image_ptr_, roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
         }
         offset.header.frame_id = base_frame_;
-        offset.header.stamp = imageDepthPtr_->header.stamp;
+        offset.header.stamp = depth_image_ptr_->header.stamp;
         offset.pose.position.z = 0;
         offset.pose.orientation.w = 1;
         offset.pose.orientation.x = 0;

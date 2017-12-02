@@ -123,6 +123,6 @@
   <node pkg="dynamic_reconfigure" type="dynparam" name="dynparam"
         args="set_from_parameters /$(arg vision_namespace)/driver">
     <!-- Skip 1 msg so let the image be published in 15 Hz to speed up -->
-    <param name="data_skip" value="1" />
+    <param name="data_skip" value="0" />
   </node>
 </launch>
