@@ -43,7 +43,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   
   pub_table_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
   pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
-  pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);
+  pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points/except_object", 1);
   pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/except_object", 1);
 }
 
