@@ -101,10 +101,10 @@ int idx_;
 int row_;
 int col_;
 // Target ROI
-int min_x_;
-int min_y_;
-int max_x_;
-int max_y_;
+int roi_min_x_;
+int roi_min_y_;
+int roi_max_x_;
+int roi_max_y_;
 
 float fx_ = 579.77;
 float fy_ = 584.94;
@@ -135,10 +135,6 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
   // Directly use bbox center as tgt location
   int x = msg->tgt_bbox_center.data[0];
   int y = msg->tgt_bbox_center.data[1];
-  int min_x_ = msg->tgt_bbox_array.data[0];
-  int min_y_ = msg->tgt_bbox_array.data[1];
-  int max_x_ = msg->tgt_bbox_array.data[2];
-  int max_y_ = msg->tgt_bbox_array.data[3];
   if (x <= 0 || x >= 640) {
     ROS_WARN_ONCE("Grasp: Target x value is abnormal.");
     return;
@@ -147,7 +143,16 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
     ROS_WARN_ONCE("Grasp: Target y value is abnormal.");
     return;
   }
+  // Use target ROI to get point cloud without the target
+  // that is, obstacle
+  roi_min_x_ = msg->tgt_bbox_array.data[0];
+  roi_min_y_ = msg->tgt_bbox_array.data[1];
+  roi_max_x_ = msg->tgt_bbox_array.data[2];
+  roi_max_y_ = msg->tgt_bbox_array.data[3];
   
+  Utilities::tryExpandROI(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_,
+                          640, 480, 10);
+
   posePublished_ = false;
   idx_ = x + y * 640;
   col_ = x;
@@ -510,7 +515,7 @@ int main(int argc, char **argv)
         if (use_od_) {
           // Detect obstacle before publish target pose
           //m_od_.detectObstacleTable();
-          m_od_.detectObstacle(min_x_, min_y_, max_x_, max_y_);
+          m_od_.detectObstacle(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
         }
         offset.header.frame_id = base_frame_;
         offset.header.stamp = imageDepthPtr_->header.stamp;

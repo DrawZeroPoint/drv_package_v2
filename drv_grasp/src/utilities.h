@@ -124,6 +124,21 @@ public:
   static bool isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, 
                        pcl::PointXY &p_dis, pcl::PointXY &p_closest);
   
+  /**
+   * @brief tryExpandROI
+   * Expand given ROI by pad in both xy direction
+   * @param minx
+   * @param miny
+   * @param maxx
+   * @param maxy
+   * @param width Image width
+   * @param height Image height
+   * @param pad Expand value in px, can be negtive
+   * @return false if the given ROI is abnormal, else return true
+   */
+  static bool tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, 
+                           int width, int height, int pad);
+  
 };
 
 #endif // UTILITIES_H
