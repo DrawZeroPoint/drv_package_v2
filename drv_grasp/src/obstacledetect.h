@@ -132,7 +132,6 @@ private:
   
   image_transport::SubscriberFilter sub_depth_;
   image_transport::ImageTransport sub_it_;
-  image_transport::Subscriber sub_d_;
   void initDepthCallback();
   
   message_filters::Subscriber<sensor_msgs::CameraInfo> sub_camera_info_;
@@ -237,7 +236,6 @@ private:
   
   template <typename PointTPtr>
   void publishCloud(PointTPtr cloud, ros::Publisher pub);
-  void depthCb(const sensor_msgs::ImageConstPtr &depth_msg);
 };
 
 #endif // OBSTACLEDETECT_H

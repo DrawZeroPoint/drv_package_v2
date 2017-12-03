@@ -150,8 +150,8 @@ void trackResultCallback(const drv_msgs::recognized_targetConstPtr &msg)
   roi_max_x_ = msg->tgt_bbox_array.data[2];
   roi_max_y_ = msg->tgt_bbox_array.data[3];
   
-//  Utilities::tryExpandROI(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_,
-//                          640, 480, 10);
+  Utilities::tryExpandROI(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_,
+                          640, 480, 10);
 
   posePublished_ = false;
   idx_ = x + y * 640;
@@ -517,8 +517,8 @@ int main(int argc, char **argv)
         if (use_od_) {
           // Detect obstacle before publish target pose
           //m_od_.detectObstacleInCloud(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
-          m_od_.detectObstacleInDepth(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
-          //m_od_.detectObstacleTable();
+          //m_od_.detectObstacleInDepth(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
+          m_od_.detectObstacleTable();
           //m_od_.detectObstacleInDepth(depth_image_ptr_, roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
         }
         offset.header.frame_id = base_frame_;

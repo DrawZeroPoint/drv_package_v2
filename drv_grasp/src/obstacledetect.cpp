@@ -36,15 +36,22 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   // For store max hull id and area
   global_area_temp_ = 0;
   
+  // Regist the callback if you want to use octomap
+  // From point cloud
   //sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
   //                                                          &ObstacleDetect::cloudCallback, this);
-  initDepthCallback();
-  //sub_d_ = sub_it_.subscribe("/vision/depth/image", 1, &ObstacleDetect::depthCb, this);
   
+  // From depth image
+  initDepthCallback();
+  
+  // Detect table obstacle
   pub_table_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
   pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
+  
+  // Detect obstacle by octomap from point cloud
   pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points/except_object", 1);
   
+  // Detect obstacle by octomap from depth image
   pub_depth_cam_info_ = nh_.advertise<sensor_msgs::CameraInfo>("/vision/depth/camera_info", 3);
   pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/except_object", 1);
 }
@@ -74,6 +81,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
   
   //sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
   //                                                          &ObstacleDetect::cloudCallback, this);
+  
   //initDepthCallback();
   
   pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
@@ -154,24 +162,6 @@ void ObstacleDetect::depthCallback(const sensor_msgs::ImageConstPtr &depth_msg,
       src_depth_ptr_ = cv_bridge::toCvCopy(depth_msg);
       src_depth_ptr_->header = camera_info_msg->header;
       depth_cam_info_ = *camera_info_msg;
-    }
-  }
-}
-
-void ObstacleDetect::depthCb(const sensor_msgs::ImageConstPtr &depth_msg)
-{
-  if (!use_od_)
-    return;
-  if (ros::param::has(param_running_mode_)) {
-    int mode_type;
-    ros::param::get(param_running_mode_, mode_type);
-    // 2 for tracking, 3 for putting
-    if (mode_type == 2 || mode_type == 3) {
-      if (depth_msg->data.empty()) {
-        ROS_WARN_THROTTLE(31, "ObstacleDetect: Depth image is empty.");
-        return;
-      }
-      src_depth_ptr_ = cv_bridge::toCvCopy(depth_msg);
     }
   }
 }
