@@ -71,15 +71,9 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
   marker.type = shape;
   marker.action = visualization_msgs::Marker::ADD;
   
-  // Set the pose of the marker, which is a full 6DOF pose
-  // relative to the frame/time specified in the header
-  marker.points.resize(1);
-  // The point at index 0 is assumed to be the start point,
-  // and the point at index 1 is assumed to be the end.
-  marker.points[0].x = x;
-  marker.points[0].y = y;
-  marker.points[0].z = z;
-
+  marker.pose.position.x = x;
+  marker.pose.position.y = y;
+  marker.pose.position.z = z;
   marker.pose.orientation.x = 0.0;
   marker.pose.orientation.y = 0.0;
   marker.pose.orientation.z = 0.0;
@@ -159,8 +153,12 @@ int main(int argc, char **argv)
     int gesture;
     Point3f center;
     if (pd_.detectHand(depth_image_ptr_->image, bbox, center, gesture)) {
-      ROS_INFO("Recognize hand: Found gesture %d.", gesture);
-      publishMarker(center.x, center.y, center.z, depth_image_ptr_->header);
+      ROS_INFO_THROTTLE(21, "Recognize hand: Found gesture %d.", gesture);
+      m_tf_.getTransform(base_frame_, camera_optical_frame_);
+      Eigen::Vector3f p_in(center.x, center.y, center.z);
+      Eigen::Vector3f p_out;
+      m_tf_.doTransform(p_in, p_out);
+      publishMarker(p_out.x(), p_out.y(), p_out.z(), depth_image_ptr_->header);
     }
     
     std_msgs::Int8 flag;
