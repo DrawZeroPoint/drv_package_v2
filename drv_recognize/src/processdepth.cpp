@@ -97,7 +97,7 @@ bool ProcessDepth::analyseGesture(Mat depth, vector<int> bbox,
   center.y = (center_t.y - cy) * d / fy;
   center.z = d;
   
-  if (ratio > 0.9) {
+  if (ratio > 0.7) {
     gesture = 0;
     return true;
   }
