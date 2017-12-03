@@ -64,6 +64,7 @@ bool ProcessDepth::analyseGesture(Mat depth, vector<int> bbox,
   
   // Find the convex hull object for the largest contour
   vector<vector<Point> >hull(contours.size());
+  vector<Point> contour_max;
   vector<Point> hull_max;
   float rt = 0.0;
   Point2f center_t;
@@ -75,13 +76,17 @@ bool ProcessDepth::analyseGesture(Mat depth, vector<int> bbox,
     if (rad > rt) {
       rt = rad;
       center_t = ct;
+      contour_max = contours[i];
       hull_max = hull[i];
     }
   }
   
   // Check the size of max hull and compare with bbox size
-  float size_hull = M_PI * pow(rt, 2);
-  float size_bbox = (bbox[2] - bbox[0])*(bbox[3] - bbox[1]);
+  float area_hull = contourArea(hull_max);
+  float area_contour = contourArea(contour_max);
+  float ratio = area_contour / area_hull;
+  if (ratio < 0.2)
+    return false;
   
   float fx = 579.77;
   float fy = 584.94;
@@ -92,9 +97,7 @@ bool ProcessDepth::analyseGesture(Mat depth, vector<int> bbox,
   center.y = (center_t.y - cy) * d / fy;
   center.z = d;
   
-  if (size_hull/size_bbox < 0.2)
-    return false;
-  else if (size_hull/size_bbox > 0.9) {
+  if (ratio > 0.9) {
     gesture = 0;
     return true;
   }

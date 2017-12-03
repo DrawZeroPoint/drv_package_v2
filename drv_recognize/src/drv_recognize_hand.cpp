@@ -82,7 +82,7 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
   marker.scale.y = 0.15;
   marker.scale.z = 0.15;
   
-  marker.color.a = 0.1; // Don't forget to set the alpha!
+  marker.color.a = 0.8; // Don't forget to set the alpha!
   marker.color.r = 0.6;
   marker.color.g = 0.5;
   marker.color.b = 0.4;
