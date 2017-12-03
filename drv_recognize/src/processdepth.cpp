@@ -92,10 +92,9 @@ bool ProcessDepth::analyseGesture(Mat depth, vector<int> bbox,
   center.y = (center_t.y - cy) * d / fy;
   center.z = d;
   
-  if (size_hull/size_bbox < 0.2) {
+  if (size_hull/size_bbox < 0.2)
     return false;
-  }
-  else if (size_hull/size_bbox > 0.8) {
+  else if (size_hull/size_bbox > 0.9) {
     gesture = 0;
     return true;
   }
@@ -112,8 +111,6 @@ float ProcessDepth::getDepth(const Mat &depthImage, int x, int y,
   int u = x;
   int v = y;
   
-  bool isInMM = depthImage.type() == CV_16UC1; // is in mm?
-  
   // Inspired from RGBDFrame::getGaussianMixtureDistribution() method from
   // https://github.com/ccny-ros-pkg/rgbdtools/blob/master/src/rgbd_frame.cpp
   // Window weights:
@@ -126,14 +123,7 @@ float ProcessDepth::getDepth(const Mat &depthImage, int x, int y,
   int v_end = min(v + 1, depthImage.rows - 1);
   
   float depth = 0.0f;
-  if(isInMM) {
-    if(depthImage.at<unsigned short>(v, u) > 0 &&
-       depthImage.at<unsigned short>(v, u) < numeric_limits<unsigned short>::max()) {
-      depth = float(depthImage.at<unsigned short>(v, u)) * 0.001f;
-    }
-  }
-  else
-    depth = depthImage.at<float>(v, u);
+  depth = depthImage.at<float>(v, u);
   
   if((depth == 0.0f || !uIsFinite(depth)) && estWithNeighborsIfNull) {
     // all cells no2 must be under the zError to be accepted
@@ -143,22 +133,14 @@ float ProcessDepth::getDepth(const Mat &depthImage, int x, int y,
       for(int vv = v_start; vv <= v_end; ++vv) {
         if((uu == u && vv != v) || (uu != u && vv == v)) {
           float d = 0.0f;
-          if(isInMM) {
-            if(depthImage.at<unsigned short>(vv, uu) > 0 &&
-               depthImage.at<unsigned short>(vv, uu) < numeric_limits<unsigned short>::max()) {
-              depth = float(depthImage.at<unsigned short>(vv, uu)) * 0.001f;
-            }
-          }
-          else {
-            d = depthImage.at<float>(vv, uu);
-          }
+          
+          d = depthImage.at<float>(vv, uu);
           if(d != 0.0f && uIsFinite(d)) {
             if(tmp == 0.0f) {
               tmp = d;
               ++count;
             }
-            else if(fabs(d - tmp) < maxZError)
-            {
+            else if(fabs(d - tmp) < maxZError) {
               tmp += d;
               ++count;
             }
@@ -178,22 +160,11 @@ float ProcessDepth::getDepth(const Mat &depthImage, int x, int y,
       for(int uu = u_start; uu <= u_end; ++uu) {
         for(int vv = v_start; vv <= v_end; ++vv) {
           if(!(uu == u && vv == v)) {
-            float d = 0.0f;
-            if(isInMM) {
-              if(depthImage.at<unsigned short>(vv,uu) > 0 &&
-                 depthImage.at<unsigned short>(vv,uu) < numeric_limits<unsigned short>::max()) {
-                depth = float(depthImage.at<unsigned short>(vv,uu))*0.001f;
-              }
-            }
-            else {
-              d = depthImage.at<float>(vv,uu);
-            }
+            float d = depthImage.at<float>(vv,uu);
             
             // ignore if not valid or depth difference is too high
-            if(d != 0.0f && uIsFinite(d) && fabs(d - depth) < maxZError)
-            {
-              if(uu == u || vv == v)
-              {
+            if(d != 0.0f && uIsFinite(d) && fabs(d - depth) < maxZError) {
+              if(uu == u || vv == v) {
                 sumWeights += 2.0f;
                 d *= 2.0f;
               }
@@ -213,8 +184,7 @@ float ProcessDepth::getDepth(const Mat &depthImage, int x, int y,
       depth = (depth+sumDepths)/sumWeights;
     }
   }
-  else {
+  else 
     depth = 0;
-  }
   return depth;
 }

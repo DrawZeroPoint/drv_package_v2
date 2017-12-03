@@ -78,14 +78,14 @@ void publishMarker(float x, float y, float z, std_msgs::Header header)
   marker.pose.orientation.y = 0.0;
   marker.pose.orientation.z = 0.0;
   marker.pose.orientation.w = 1.0;
-  marker.scale.x = 1;
-  marker.scale.y = 0.1;
-  marker.scale.z = 0.1;
+  marker.scale.x = 0.15;
+  marker.scale.y = 0.15;
+  marker.scale.z = 0.15;
   
-  marker.color.a = 1.0; // Don't forget to set the alpha!
-  marker.color.r = 1.0;
-  marker.color.g = 1.0;
-  marker.color.b = 0.0;
+  marker.color.a = 0.1; // Don't forget to set the alpha!
+  marker.color.r = 0.6;
+  marker.color.g = 0.5;
+  marker.color.b = 0.4;
 
   pubMarker_.publish(marker);
 }
@@ -115,8 +115,7 @@ int main(int argc, char **argv)
   
   // Public control value
   //pubPose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/grasp/pose", 1);
-  
-  pubStatus_ = nh.advertise<std_msgs::Int8>("status/recognize/hand/feedback", 1);
+  pubStatus_ = nh.advertise<std_msgs::Int8>("/ctrl/vision/recognize/hand", 1);
   pubMarker_ = nh.advertise<visualization_msgs::Marker>("/vision/hand/marker", 1);
     
   // Object to perform transform
@@ -153,7 +152,7 @@ int main(int argc, char **argv)
     int gesture;
     Point3f center;
     if (pd_.detectHand(depth_image_ptr_->image, bbox, center, gesture)) {
-      ROS_INFO_THROTTLE(21, "Recognize hand: Found gesture %d.", gesture);
+      ROS_INFO_THROTTLE(3, "Recognize hand: Found gesture %d.", gesture);
       m_tf_.getTransform(base_frame_, camera_optical_frame_);
       Eigen::Vector3f p_in(center.x, center.y, center.z);
       Eigen::Vector3f p_out;
@@ -165,7 +164,7 @@ int main(int argc, char **argv)
     flag.data = 0;
     
     if (hasHand_)
-      flag.data = 1;
+      flag.data = gesture;
     else {
       flag.data = -1;
     }
