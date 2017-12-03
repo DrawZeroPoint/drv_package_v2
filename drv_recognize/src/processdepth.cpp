@@ -57,8 +57,9 @@ bool ProcessDepth::analyseGesture(Mat depth, vector<int> bbox,
   
   // Find contours
   Mat depth_u(depth.size(), CV_8UC1, Scalar(0));
+  //  FindContours support only 8uC1 and 32sC1 images
   depth_b.convertTo(depth_u, CV_8UC1);
-  findContours(depth_b, contours, hierarchy, CV_RETR_TREE, 
+  findContours(depth_u, contours, hierarchy, CV_RETR_TREE, 
                CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
   
   // Find the convex hull object for the largest contour
