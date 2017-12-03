@@ -73,7 +73,7 @@ string camera_optical_frame_ = "vision_depth_optical_frame";
 
 // Obstacle avoidance params
 bool use_od_ = true;
-float base_to_ground_ = 0.465;
+float base_to_ground_ = 0.44;
 float table_height_ = 0.9; // error: +-0.15m
 float table_area_ = 0.01; // m^2
 
