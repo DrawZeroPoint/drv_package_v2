@@ -37,9 +37,9 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   global_area_temp_ = 0;
   
   // Regist the callback if you want to use octomap
-  // From point cloud
-  //sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
-  //                                                          &ObstacleDetect::cloudCallback, this);
+  // Obstacle info from point cloud
+  sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
+                                                            &ObstacleDetect::cloudCallback, this);
   
   // From depth image
   initDepthCallback();
@@ -76,13 +76,12 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
 {
   param_running_mode_ = "/status/running_mode";
   
-  // For store max hull id and area
+  // Store max hull id and area
   global_area_temp_ = 0;
   
-  //sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
-  //                                                          &ObstacleDetect::cloudCallback, this);
-  
-  //initDepthCallback();
+  // Get table info from point cloud
+  sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
+                                                            &ObstacleDetect::cloudCallback, this);
   
   pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
   pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points_except_object", 1);

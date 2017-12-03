@@ -75,8 +75,30 @@ using namespace cv;
 class ObstacleDetect
 {
 public:
+  /**
+   * @brief ObstacleDetect
+   * Used in grasp function
+   * @param use_od
+   * @param base_frame
+   * @param base_to_ground
+   * @param table_height
+   * @param table_area
+   */
   ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
                  float table_height, float table_area);
+  
+  /**
+   * @brief ObstacleDetect
+   * Used in put function, regist callback for pointcloud
+   * @param use_od
+   * @param base_frame
+   * @param base_to_ground
+   * @param table_height
+   * @param table_area
+   * @param grasp_area_x X value of grapable area center
+   * @param grasp_area_y Y value of grapable area center
+   * @param tolerance How far robot hand can be away from graspable center in x direction
+   */
   ObstacleDetect(bool use_od, string base_frame, float base_to_ground, float table_height,
                  float table_area, float grasp_area_x, float grasp_area_y, float tolerance);
   /**
