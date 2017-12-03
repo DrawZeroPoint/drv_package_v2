@@ -383,12 +383,16 @@ void ObstacleDetect::analyseObstacle()
   // Try find the longest line between neighber points to be the edge
   float dis_temp = 0.0;
   float xs_, ys_, xe_, ye_;
+  float mean_x = (maxPt.x + minPt.x)/2;
   for (size_t i = 0; i < cloud->points.size(); ++i) {
     float xs = cloud->points[i].x;
     float ys = cloud->points[i].y;
     int ide = (i + 1) < cloud->points.size() ? (i + 1) : 0;
     float xe = cloud->points[ide].x;
     float ye = cloud->points[ide].y;
+    // Only consider the far edge
+    if (xs < mean_x && xe < mean_x)
+      continue;
     float dis = pow(xe - xs, 2) + pow(ye - ys, 2);
     if (dis > dis_temp) {
       dis_temp = dis;
