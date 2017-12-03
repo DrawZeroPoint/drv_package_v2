@@ -3,7 +3,7 @@ project(drv_recognize)
 
 aux_source_directory(./src SRC_LIST)
 
-set(CMAKE_BUILD_TYPE "Debug")
+# set(CMAKE_BUILD_TYPE "Debug")
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
     message(STATUS "No build type selected, default to ${CMAKE_BUILD_TYPE}")
@@ -17,8 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   tf2
+  tf2_ros
 )
-
+find_package(Eigen3 REQUIRED)
 find_package(Caffe REQUIRED)
 message("Caffe DIR is ${Caffe_DIR}")
 include_directories(${Caffe_INCLUDE_DIRS})
@@ -32,12 +33,26 @@ message("Open CV version is ${OpenCV_VERSION}")
 # Add dynamic reconfigure API
 generate_dynamic_reconfigure_options(cfg/recog.cfg)
 
-catkin_package(
-)
+catkin_package()
 
 include_directories(
-  ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR}
 )
 
-add_executable(drv_recognize_color ${SRC_LIST})
-target_link_libraries(drv_recognize_color ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Caffe_LIBRARIES})
+add_library (drv_recognize_lib
+ src/detectcolor.cpp
+ src/processdepth.cpp
+ src/transform.cpp
+ 
+ src/detectcolor.h
+ src/processdepth.h
+ src/transform.h
+)
+
+add_executable(drv_recognize_color src/drv_recognize_color.cpp)
+target_link_libraries(drv_recognize_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${Caffe_LIBRARIES})
+target_link_libraries (drv_recognize_color drv_recognize_lib)
+
+add_executable(drv_recognize_hand src/drv_recognize_hand.cpp)
+target_link_libraries(drv_recognize_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+target_link_libraries (drv_recognize_hand drv_recognize_lib)

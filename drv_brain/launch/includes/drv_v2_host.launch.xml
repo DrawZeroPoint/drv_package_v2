@@ -73,6 +73,10 @@
     <param name="val_high" value="255" />
   </node>
 
+  <!-- Initialize hand recognize, this node will always active in wander mode -->
+  <node ns="$(arg vision_namespace)" name="drv_recognize_hand" pkg="drv_recognize" type="drv_recognize_hand" output="screen">
+  </node>
+
   <group if="$(arg recog_method)">
     <!-- Initialize the search client -->
     <node ns="$(arg vision_namespace)" name="drv_search" pkg="drv_search" type="drv_search" output="screen">
