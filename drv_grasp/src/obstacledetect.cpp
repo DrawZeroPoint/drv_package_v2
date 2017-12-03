@@ -44,6 +44,8 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   pub_table_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
   pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
   pub_exp_obj_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/points/except_object", 1);
+  
+  pub_depth_cam_info_ = nh_.advertise<sensor_msgs::CameraInfo>("/vision/depth/camera_info", 3);
   pub_exp_obj_depth_ = pub_it_.advertise("/vision/depth/except_object", 1);
 }
 
@@ -150,6 +152,7 @@ void ObstacleDetect::depthCallback(const sensor_msgs::ImageConstPtr &depth_msg,
       }
       src_depth_ptr_ = cv_bridge::toCvCopy(depth_msg);
       src_depth_ptr_->header = camera_info_msg->header;
+      depth_cam_info_ = *camera_info_msg;
     }
   }
 }
@@ -240,11 +243,10 @@ void ObstacleDetect::detectObstacleInDepth(int min_x, int min_y,
   }
   cv_bridge::CvImage cv_img;
   cv_img.image = depth_except_obj;
-//  cv_img.header = src_depth_ptr_->header;
-//  cv_img.encoding = src_depth_ptr_->encoding;
-  cv_img.header.frame_id = "vision_depth_optical_frame";
-  cv_img.header.stamp = ros::Time(0);
+  cv_img.header = src_depth_ptr_->header;
   cv_img.encoding = src_depth_ptr_->encoding;
+  
+  pub_depth_cam_info_.publish(depth_cam_info_);
   pub_exp_obj_depth_.publish(cv_img.toImageMsg());
 }
 

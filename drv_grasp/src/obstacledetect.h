@@ -129,6 +129,7 @@ private:
   ros::NodeHandle nh_;
   boost::shared_ptr<image_transport::ImageTransport> depth_it_;
   image_transport::ImageTransport pub_it_;
+  
   image_transport::SubscriberFilter sub_depth_;
   image_transport::ImageTransport sub_it_;
   image_transport::Subscriber sub_d_;
@@ -145,6 +146,8 @@ private:
   
   // Depth image temp
   cv_bridge::CvImagePtr src_depth_ptr_;
+  // Depth image info
+  sensor_msgs::CameraInfo depth_cam_info_;
   void depthCallback(const sensor_msgs::ImageConstPtr& depth_msg,
                      const sensor_msgs::CameraInfoConstPtr& camera_info_msg);
   
@@ -162,6 +165,8 @@ private:
   ros::Publisher pub_table_pose_;
   ros::Publisher pub_table_points_;
   ros::Publisher pub_exp_obj_cloud_;
+  
+  ros::Publisher pub_depth_cam_info_;
   image_transport::Publisher pub_exp_obj_depth_;
   
   // Target table approximate height
