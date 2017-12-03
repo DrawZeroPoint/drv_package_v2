@@ -56,6 +56,8 @@ bool ProcessDepth::analyseGesture(Mat depth, vector<int> bbox,
   vector<Vec4i> hierarchy;
   
   // Find contours
+  Mat depth_u(depth.size(), CV_8UC1, Scalar(0));
+  depth_b.convertTo(depth_u, CV_8UC1);
   findContours(depth_b, contours, hierarchy, CV_RETR_TREE, 
                CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
   
