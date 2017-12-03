@@ -398,8 +398,8 @@ void ObstacleDetect::analyseObstacle()
   float yaw = 0.0;
   if (ye_ != ys_) {
     float p = 1.0;
-    if (xe_ < xs_ && ye_ < ys_) p = -1.0;
-    if (xe_ > xs_ && ye_ > ys_) p = -1.0;
+    if (xe_ < xs_ && ye_ > ys_) p = -1.0;
+    if (xe_ > xs_ && ye_ < ys_) p = -1.0;
     yaw = p*atan((xe_ - xs_)/(ye_ - ys_));
   }
   else
