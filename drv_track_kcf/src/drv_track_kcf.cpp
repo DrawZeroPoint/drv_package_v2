@@ -100,6 +100,8 @@ void searchROICallback(const drv_msgs::recognized_targetConstPtr &msg)
   
   ROS_INFO("Track: Received ROI %d %d %d %d.", min_x, min_y, max_x, max_y);
 
+  // Pad search roi by 10 px to make the tracking more robust
+  Utilities::tryExpandROI(min_x, min_y, max_x, max_y, 10);
   roi_init_ = Rect(min_x, min_y, max_x - min_x, max_y - min_y);
   tracker.initialized_ = false;
 }

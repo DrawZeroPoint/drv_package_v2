@@ -130,3 +130,19 @@ void Utilities::expandGt(Rect &gt, int margin)
   gt.width = w;
   gt.height = h;
 }
+
+bool Utilities::tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, 
+                             int pad, int width, int height)
+{
+  if (minx >= maxx || miny >= maxy) {
+    return false;
+  }
+  minx -= pad;
+  maxx += pad;
+  miny -= pad;
+  maxy += pad;
+  if (minx < 0) minx = 0;
+  if (maxx > width) maxx = width - 1;
+  if (miny < 0) miny = 0;
+  if (maxy > height) maxy = height - 1;
+}

@@ -136,8 +136,8 @@ public:
    * @param pad Expand value in px, can be negtive
    * @return false if the given ROI is abnormal, else return true
    */
-  static bool tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, 
-                           int width, int height, int pad);
+  static bool tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, int pad, 
+                           int width = 640, int height = 480);
   
 };
 

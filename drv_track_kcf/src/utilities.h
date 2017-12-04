@@ -27,7 +27,9 @@ public:
   static std::string intToString(int number);
 
   static void expandGt(cv::Rect &gt, int margin);
-
+  
+  static bool tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, int pad, 
+                           int width = 640, int height = 480);
 };
 
 #endif // UTILITIES_H

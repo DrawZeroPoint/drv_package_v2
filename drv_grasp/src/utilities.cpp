@@ -327,7 +327,7 @@ bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in,
 }
 
 bool Utilities::tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, 
-                             int width, int height, int pad)
+                             int pad, int width, int height)
 {
   if (minx >= maxx || miny >= maxy) {
     return false;
