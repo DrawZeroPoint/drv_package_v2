@@ -42,7 +42,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
                                                             &ObstacleDetect::cloudCallback, this);
   
   // From depth image
-  initDepthCallback();
+  //initDepthCallback();
   
   // Detect table obstacle
   pub_table_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
@@ -380,7 +380,7 @@ void ObstacleDetect::analyseObstacle()
   table_pose.pose.position.y = (maxPt.y + minPt.y)/2;
   table_pose.pose.position.z = (maxPt.z - base_link_above_ground_)/2;
   
-  // Try find the longest line between neighber points to be the edge
+  // Try find the longest line between neighbor points to be the edge
   float dis_temp = 0.0;
   float xs_, ys_, xe_, ye_;
   float mean_x = (maxPt.x + minPt.x)/2;
@@ -403,61 +403,12 @@ void ObstacleDetect::analyseObstacle()
   // atan2 is better than atan in 2 ways:
   // atan2 can handle the condition that the denominator=0
   // atan2 in range -Pi~PI while atan in -PI/2~PI/2
+  // here the denominator plus -1 cause the coordinate of atan2 is
+  // different with that of ROS (with rotation=PI/2)
   yaw = atan2(xe_ - xs_, ys_ - ye_);
-  
-  //  if (ye_ != ys_) {
-  //    float p = 1.0;
-  //    if (xe_ < xs_ && ye_ > ys_) p = -1.0;
-  //    if (xe_ > xs_ && ye_ < ys_) p = -1.0;
-  //    // atan2 is better than atan in 2 ways:
-  //    // atan2 can handle the condition that the denominator=0
-  //    // atan2 in range -Pi~PI while atan in -PI/2~PI/2
-  //    yaw = p * atan2(xe_ - xs_, ye_ - ys_);
-  //  }
-  //  else
-  //    yaw = M_PI_2;
-  
-  //  vector<pcl::PointXYZ> vertex_points;
-  //  for (size_t i = 0; i < cloud->points.size(); ++i) {
-  //    if (cloud->points[i].x == maxPt.x) {
-  //      vertex_points.push_back(cloud->points[i]);
-  //    }
-  //    else if (cloud->points[i].y == maxPt.y) {
-  //      vertex_points.push_back(cloud->points[i]);
-  //    }
-  //    else if (cloud->points[i].x == minPt.x) {
-  //      vertex_points.push_back(cloud->points[i]);
-  //    }
-  //    else if (cloud->points[i].y == minPt.y) {
-  //      vertex_points.push_back(cloud->points[i]);
-  //    }
-  //  }
-  //  // Try to find right angle to calculate yaw of table
-  //  float yaw = 0.0;
-  //  for (size_t i = 0; i < vertex_points.size() - 2; ++i) {
-  //    size_t id_s = i;
-  //    size_t id_m = i + 1;
-  //    size_t id_e = i + 2 < vertex_points.size()?(i+2):0;
-  //    tf2::Vector3 ms(vertex_points[id_m].x - vertex_points[id_s].x,
-  //                    vertex_points[id_m].y - vertex_points[id_s].y, 0);
-  //    tf2::Vector3 em(vertex_points[id_e].x - vertex_points[id_m].x,
-  //                    vertex_points[id_e].y - vertex_points[id_m].y, 0);
-  //    float angle = tf2::tf2Angle(ms, em);
-  //    if (fabs(angle - M_PI/2 < 0.1) || fabs(angle - 3*M_PI/2) < 0.1) {
-  //      ROS_DEBUG("ObstacleDetect: Found right angle.");
-  
-  //      if (ms.length() > em.length()) {
-  //        yaw = atan(ms.x()/ms.y());
-  //      }
-  //      else {
-  //        yaw = atan(em.x()/em.y());
-  //      }
-  //      break;
-  //    }
-  //  }
-  
+
   tf2::Quaternion q;
-  q.setEuler(0, 0, yaw); // Notice the last angle is around Z
+  q.setEuler(0, 0, yaw); // Notice the last angle is around Z axis
   table_pose.pose.orientation.x = q.x();
   table_pose.pose.orientation.y = q.y();
   table_pose.pose.orientation.z = q.z();
@@ -501,7 +452,7 @@ void ObstacleDetect::extractPlane(float z_in, PointCloudRGBN::Ptr cloud_in)
   PointCloudMono::Ptr cloud_projected_surface(new PointCloudMono);
   Utilities::cutCloud(coeff, th_deltaz_, cloud_in, cloud_projected_surface);
   
-  // Since there may be multipe plane around z, we need do clustering
+  // Since there may be multiple plane around z, we need do clustering
   vector<pcl::PointIndices> cluster_indices;
   Utilities::clusterExtract(cloud_projected_surface, cluster_indices, th_ratio_, 0, 307200);
   
