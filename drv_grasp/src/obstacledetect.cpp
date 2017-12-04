@@ -400,17 +400,22 @@ void ObstacleDetect::analyseObstacle()
     }
   }
   float yaw = 0.0;
-  if (ye_ != ys_) {
-    float p = 1.0;
-    if (xe_ < xs_ && ye_ > ys_) p = -1.0;
-    if (xe_ > xs_ && ye_ < ys_) p = -1.0;
-    // atan2 is better than atan in 2 ways:
-    // atan2 can handle the condition that the denominator=0
-    // atan2 in range -Pi~PI while atan in -PI/2~PI/2
-    yaw = p * atan2(xe_ - xs_, ye_ - ys_);
-  }
-  else
-    yaw = M_PI_2;
+  // atan2 is better than atan in 2 ways:
+  // atan2 can handle the condition that the denominator=0
+  // atan2 in range -Pi~PI while atan in -PI/2~PI/2
+  yaw = atan2(xe_ - xs_, ys_ - ye_);
+  
+  //  if (ye_ != ys_) {
+  //    float p = 1.0;
+  //    if (xe_ < xs_ && ye_ > ys_) p = -1.0;
+  //    if (xe_ > xs_ && ye_ < ys_) p = -1.0;
+  //    // atan2 is better than atan in 2 ways:
+  //    // atan2 can handle the condition that the denominator=0
+  //    // atan2 in range -Pi~PI while atan in -PI/2~PI/2
+  //    yaw = p * atan2(xe_ - xs_, ye_ - ys_);
+  //  }
+  //  else
+  //    yaw = M_PI_2;
   
   //  vector<pcl::PointXYZ> vertex_points;
   //  for (size_t i = 0; i < cloud->points.size(); ++i) {
