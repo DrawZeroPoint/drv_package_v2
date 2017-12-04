@@ -391,12 +391,12 @@ void ObstacleDetect::analyseObstacle()
     float xe = cloud->points[ide].x;
     float ye = cloud->points[ide].y;
     // Only consider the far edge
-    if (xs < mean_x && xe < mean_x)
-      continue;
-    float dis = pow(xe - xs, 2) + pow(ye - ys, 2);
-    if (dis > dis_temp) {
-      dis_temp = dis;
-      xs_ = xs; ys_ = ys; xe_ = xe; ye_ = ye;
+    if (xs >= mean_x && xe >= mean_x) {
+      float dis = pow(xe - xs, 2) + pow(ye - ys, 2);
+      if (dis > dis_temp) {
+        dis_temp = dis;
+        xs_ = xs; ys_ = ys; xe_ = xe; ye_ = ye;
+      }
     }
   }
   float yaw = 0.0;
@@ -404,7 +404,10 @@ void ObstacleDetect::analyseObstacle()
     float p = 1.0;
     if (xe_ < xs_ && ye_ > ys_) p = -1.0;
     if (xe_ > xs_ && ye_ < ys_) p = -1.0;
-    yaw = p*atan((xe_ - xs_)/(ye_ - ys_));
+    // atan2 is better than atan in 2 ways:
+    // atan2 can handle the condition that the denominator=0
+    // atan2 in range -Pi~PI while atan in -PI/2~PI/2
+    yaw = p * atan2(xe_ - xs_, ye_ - ys_);
   }
   else
     yaw = M_PI_2;

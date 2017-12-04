@@ -47,7 +47,7 @@ void MakePlan::smartOffset(pcl::PointXYZ &p_in, float off_xy, float off_z)
     p_in.x += off_xy;
   }
   else {
-    float rad = atan(p_in.y/p_in.x);
+    float rad = atan2(p_in.y, p_in.x);
     float y_off = off_xy * sin(rad);
     float x_off = off_xy * cos(rad);  
     p_in.x += x_off;
