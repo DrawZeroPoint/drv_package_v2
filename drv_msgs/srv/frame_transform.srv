@@ -1,0 +1,11 @@
+int64 type
+geometry_msgs/Point32[] p_in_tgt
+geometry_msgs/Point32[] p_in_base
+geometry_msgs/Transform base_to_tgt
+geometry_msgs/Transform tgt_to_base
+
+---
+geometry_msgs/Point32[] p_in_tgt_res
+geometry_msgs/Point32[] p_in_base_res
+geometry_msgs/Transform base_to_tgt_res
+geometry_msgs/Transform tgt_to_base_res
