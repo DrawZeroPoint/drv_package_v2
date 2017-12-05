@@ -59,3 +59,7 @@ target_link_libraries (drv_grasp drv_lib)
 add_executable(drv_put src/drv_put.cpp)
 target_link_libraries(drv_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
 target_link_libraries (drv_put drv_lib)
+
+add_executable(drv_frame_service src/drv_frame_service.cpp)
+target_link_libraries(drv_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+target_link_libraries (drv_frame_service drv_lib)

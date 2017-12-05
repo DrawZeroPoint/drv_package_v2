@@ -26,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
    face_train.srv
    servo.srv
    user_select.srv
+   frame_transform.srv
  )
 
  add_action_files(

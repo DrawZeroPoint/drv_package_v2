@@ -55,14 +55,6 @@ void Transform::doTransform(PointCloudMono::Ptr cloud_in,
   cloud_out->resize(cloud_out->height * cloud_out->width);
   
   Eigen::Vector3f point;
-//  for (size_t i = 0; i < cloud_in->points.size(); ++i) {
-//    point = t * Eigen::Vector3f(cloud_in->points[i].x, 
-//                                cloud_in->points[i].y, 
-//                                cloud_in->points[i].z);
-//    cloud_out->points[i].x = point.x();
-//    cloud_out->points[i].y = point.y();
-//    cloud_out->points[i].z = point.z();
-//  }
   size_t i = 0;
   for (PointCloudMono::const_iterator pit = cloud_in->begin();
        pit != cloud_in->end(); ++pit) {
