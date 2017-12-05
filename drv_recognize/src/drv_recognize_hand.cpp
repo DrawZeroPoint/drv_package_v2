@@ -157,7 +157,10 @@ int main(int argc, char **argv)
       Eigen::Vector3f p_in(center.x, center.y, center.z);
       Eigen::Vector3f p_out;
       m_tf_.doTransform(p_in, p_out);
-      publishMarker(p_out.x(), p_out.y(), p_out.z(), depth_image_ptr_->header);
+      if (gesture == 5) {
+        // Only publish marker when user shows 5 fingers
+        publishMarker(p_out.x(), p_out.y(), p_out.z(), depth_image_ptr_->header);
+      }
     }
     
     std_msgs::Int8 flag;
