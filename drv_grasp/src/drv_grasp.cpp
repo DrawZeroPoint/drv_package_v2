@@ -513,7 +513,7 @@ int main(int argc, char **argv)
         grasp_pose.pose.position.z = graspPt.z;
         
         tf2::Quaternion q;
-        q.setEuler(0, 0, 30); // Notice the last angle is around Z axis
+        q.setEuler(0, 0, 10); // Notice the last angle is around Z axis
         grasp_pose.pose.orientation.w = q.x();
         grasp_pose.pose.orientation.x = q.y();
         grasp_pose.pose.orientation.y = q.z();
