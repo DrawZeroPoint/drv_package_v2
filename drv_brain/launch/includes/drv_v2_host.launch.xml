@@ -99,6 +99,7 @@
     <!-- Left arm graspable area params -->
     <param name="left_arm_x_min" value="0.47" />
     <param name="left_arm_x_max" value="0.51" />
+    <!-- The left arm is 0.22m away from robot center -->
     <param name="left_arm_y_min" value="0.26" />
     <param name="left_arm_y_max" value="0.3" />
   </node>

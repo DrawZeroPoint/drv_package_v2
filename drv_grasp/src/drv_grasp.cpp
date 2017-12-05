@@ -512,9 +512,11 @@ int main(int argc, char **argv)
         grasp_pose.pose.position.y = graspPt.y;
         grasp_pose.pose.position.z = graspPt.z;
         
+        // The left arm is 0.22m away from robot center in +y direction
+        float yaw = atan2((graspPt.y - 0.22), graspPt.x);
         tf2::Quaternion q;
         // Notice the last angle is around Z axis, the value is in radius
-        q.setRPY(0, 0, 0.175); 
+        q.setRPY(0, 0, yaw); 
         grasp_pose.pose.orientation.w = q.w();
         grasp_pose.pose.orientation.x = q.x();
         grasp_pose.pose.orientation.y = q.y();
