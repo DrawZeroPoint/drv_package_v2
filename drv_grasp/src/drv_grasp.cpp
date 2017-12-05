@@ -520,10 +520,6 @@ int main(int argc, char **argv)
         posePublished_ = true;
       }
       else {
-        if (use_od_) {
-          // Detect obstacle before publish target pose
-          m_od_.detectObstacleTable();
-        }
         offset.header.frame_id = base_frame_;
         offset.header.stamp = depth_image_ptr_->header.stamp;
         offset.pose.position.z = 0;
