@@ -512,10 +512,12 @@ int main(int argc, char **argv)
         grasp_pose.pose.position.y = graspPt.y;
         grasp_pose.pose.position.z = graspPt.z;
         
-        grasp_pose.pose.orientation.w = 1;
-        grasp_pose.pose.orientation.x = 0;
-        grasp_pose.pose.orientation.y = 0;
-        grasp_pose.pose.orientation.z = 0;
+        tf2::Quaternion q;
+        q.setEuler(0, 0, 30); // Notice the last angle is around Z axis
+        grasp_pose.pose.orientation.w = q.x();
+        grasp_pose.pose.orientation.x = q.y();
+        grasp_pose.pose.orientation.y = q.z();
+        grasp_pose.pose.orientation.z = q.w();
         graspPubPose_.publish(grasp_pose);
         
         posePublished_ = true;
