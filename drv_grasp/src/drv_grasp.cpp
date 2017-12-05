@@ -514,10 +514,10 @@ int main(int argc, char **argv)
         
         tf2::Quaternion q;
         q.setEuler(0, 0, 10); // Notice the last angle is around Z axis
-        grasp_pose.pose.orientation.w = q.x();
+        grasp_pose.pose.orientation.w = q.w();
         grasp_pose.pose.orientation.x = q.y();
         grasp_pose.pose.orientation.y = q.z();
-        grasp_pose.pose.orientation.z = q.w();
+        grasp_pose.pose.orientation.z = q.x();
         graspPubPose_.publish(grasp_pose);
         
         posePublished_ = true;
