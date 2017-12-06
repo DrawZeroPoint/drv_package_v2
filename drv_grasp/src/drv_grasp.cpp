@@ -490,7 +490,7 @@ int main(int argc, char **argv)
     {
       m_tf_.getTransform(base_frame_, camera_optical_frame_);
       m_tf_.doTransform(opticalPt, graspPt);
-      MP.smartOffset(graspPt, 0.01, -0.05); //TODO: make this smart
+      MP.smartOffset(graspPt, 0.01, -0.06); //TODO: make this smart
       
       publishMarker(graspPt.x, graspPt.y, graspPt.z, depth_image_ptr_->header);
       

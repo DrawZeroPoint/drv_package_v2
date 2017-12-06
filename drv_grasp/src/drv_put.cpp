@@ -222,16 +222,19 @@ int main(int argc, char **argv)
     
     geometry_msgs::PoseStamped put_pose;
     geometry_msgs::PoseStamped ref_pose;
+    // Pass the distance between gripper center and bottom of grasped object
     m_od_.setZOffset(center_to_bottom_);
     if (m_od_.detectPutTable(put_pose, ref_pose, offsetNeedPub_)) {
       // Table found
       if (offsetNeedPub_) {
+        // Not in putting region, need to move
         putPubLocation_.publish(put_pose);
         publishMarker(ref_pose);
         hasPutPlan_ = true;
         posePublished_ = false;
       }
       else {
+        // In putting region
         putPubPose_.publish(put_pose);
         publishMarker(put_pose);
         hasPutPlan_ = true;

@@ -118,11 +118,11 @@ public:
    * Judge whether a given point p_in is in 2D hull, if so, return true, else return false
    * @param hull Hull cloud in XY plane
    * @param p_in Point to be judged in XY plane
-   * @param p_dis Distance between p_in and its nearest point on hull
+   * @param offset Distance between p_in and its nearest point on hull
    * @return 
    */
   static bool isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, 
-                       pcl::PointXY &p_dis, pcl::PointXY &p_closest);
+                       pcl::PointXY &offset, pcl::PointXY &p_closest);
   
   /**
    * @brief tryExpandROI

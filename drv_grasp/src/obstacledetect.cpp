@@ -120,6 +120,7 @@ bool ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
                                     geometry_msgs::PoseStamped &ref_pose, 
                                     bool &need_move)
 {
+  getSourceCloud();
   findMaxPlane();
   if (plane_max_hull_ == NULL) {
     ROS_INFO_THROTTLE(11, "ObstacleDetect: No put place detected.");
@@ -342,7 +343,7 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
   if (Utilities::isInHull(cloud, p, p_dis, p_closest)) {
     put_pose.pose.position.x = grasp_area_x_;
     put_pose.pose.position.y = grasp_area_y_;
-    // All points in cloud have same z
+    // All points in cloud have same z, so we directly use the first point
     put_pose.pose.position.z = cloud->points[0].z + z_offset_;
     put_pose.pose.orientation.x = 0;
     put_pose.pose.orientation.y = 0;

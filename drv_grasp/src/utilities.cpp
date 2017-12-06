@@ -290,7 +290,7 @@ void Utilities::shrinkHull(PointCloudMono::Ptr cloud,
 }
 
 bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, 
-                         pcl::PointXY &p_dis, pcl::PointXY &p_closest)
+                         pcl::PointXY &offset, pcl::PointXY &p_closest)
 {
   float x_temp = 1.0;
   float y_temp = 1.0;
@@ -307,8 +307,8 @@ bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in,
     // Use Manhattan distance
     float dis = fabs(delta_x) + fabs(delta_y);
     if (dis < dis_temp) {
-      p_dis.x = delta_x;
-      p_dis.y = delta_y;
+      offset.x = delta_x;
+      offset.y = delta_y;
       p_closest.x = pit->x;
       p_closest.y = pit->y;
       dis_temp = dis;
@@ -317,8 +317,8 @@ bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in,
   }
   if (x_temp <= 0 && y_temp <= 0) {
     // The p_in is surrounded by hull
-    p_dis.x = 0;
-    p_dis.y = 0;
+    offset.x = 0;
+    offset.y = 0;
     return true;
   }
   else {
