@@ -222,7 +222,7 @@ int main(int argc, char **argv)
     
     geometry_msgs::PoseStamped put_pose;
     geometry_msgs::PoseStamped ref_pose;
-    // Pass the distance between gripper center and bottom of grasped object
+    // Set the distance between gripper center and bottom of grasped object
     m_od_.setZOffset(center_to_bottom_);
     if (m_od_.detectPutTable(put_pose, ref_pose, offsetNeedPub_)) {
       // Table found

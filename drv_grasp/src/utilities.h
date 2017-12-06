@@ -78,7 +78,7 @@ public:
                              vector<pcl::PointIndices> &cluster_indices,
                              float th_cluster, int minsize, int maxsize);
   
-  static void cutCloud(pcl::ModelCoefficients::Ptr coeff_in, double th_distance, 
+  static void cutCloud(pcl::ModelCoefficients::Ptr coeff_in, float th_distance, 
                        PointCloudRGBN::Ptr cloud_in,
                        PointCloudMono::Ptr &cloud_out);
   
@@ -139,6 +139,25 @@ public:
   static bool tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, int pad, 
                            int width = 640, int height = 480);
   
+  static float pointToSegDist(float x, float y, float x1, float y1, float x2, float y2);
+  
+  /**
+   * @brief getClosestPoint
+   * Given line segment (p1,p2) and point p, get the closest point p_c of p on (p1,p2)
+   * with accuracy acc
+   * @param p1
+   * @param p2
+   * @param p
+   * @param p_c
+   * @param acc
+   */
+  static void getClosestPoint(pcl::PointXY p1, pcl::PointXY p2, 
+                              pcl::PointXY p, pcl::PointXY &pc);
+  
+private:
+  static float determinant(float v1, float v2, float v3, float v4);
+  
+  static bool isIntersect(pcl::PointXY p1, pcl::PointXY p2, pcl::PointXY p3, pcl::PointXY p4);
 };
 
 #endif // UTILITIES_H

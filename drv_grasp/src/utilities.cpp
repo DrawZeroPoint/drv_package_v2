@@ -98,7 +98,7 @@ void Utilities::pointTypeTransfer(PointCloudRGBN::Ptr cloud_in,
   }
 }
 
-void Utilities::cutCloud(pcl::ModelCoefficients::Ptr coeff_in, double th_distance,
+void Utilities::cutCloud(pcl::ModelCoefficients::Ptr coeff_in, float th_distance,
                          PointCloudRGBN::Ptr cloud_in, 
                          PointCloudMono::Ptr &cloud_out)
 {
@@ -263,27 +263,27 @@ void Utilities::shrinkHull(PointCloudMono::Ptr cloud,
       float theta = atan(d_y/d_x);
       if (d_x > 0 && d_y >= 0) {
         cloud_sk->points[i].x = (pit->x - fabs(dis*sin(theta)))>center_x?
-                                (pit->x - fabs(dis*sin(theta))):pit->x;
+              (pit->x - fabs(dis*sin(theta))):pit->x;
         cloud_sk->points[i].y = (pit->y - fabs(dis*cos(theta)))>center_y?
-                                (pit->y - fabs(dis*cos(theta))):pit->y;
+              (pit->y - fabs(dis*cos(theta))):pit->y;
       }
       else if (d_x < 0 && d_y >= 0) {
         cloud_sk->points[i].x = (pit->x + fabs(dis*sin(theta)))<center_x?
-                                (pit->x + fabs(dis*sin(theta))):pit->x;
+              (pit->x + fabs(dis*sin(theta))):pit->x;
         cloud_sk->points[i].y = (pit->y - fabs(dis*cos(theta)))>center_y?
-                                (pit->y - fabs(dis*cos(theta))):pit->y;
+              (pit->y - fabs(dis*cos(theta))):pit->y;
       }
       else if (d_x < 0 && d_y < 0) {
         cloud_sk->points[i].x = (pit->x + fabs(dis*sin(theta)))<center_x?
-                                (pit->x + fabs(dis*sin(theta))):pit->x;
+              (pit->x + fabs(dis*sin(theta))):pit->x;
         cloud_sk->points[i].y = (pit->y + fabs(dis*cos(theta)))<center_y?
-                                (pit->y + fabs(dis*cos(theta))):pit->y;
+              (pit->y + fabs(dis*cos(theta))):pit->y;
       }
       else {
         cloud_sk->points[i].x = (pit->x - fabs(dis*sin(theta)))>center_x?
-                                (pit->x - fabs(dis*sin(theta))):pit->x;
+              (pit->x - fabs(dis*sin(theta))):pit->x;
         cloud_sk->points[i].y = (pit->y + fabs(dis*cos(theta)))<center_y?
-                                (pit->y + fabs(dis*cos(theta))):pit->y;
+              (pit->y + fabs(dis*cos(theta))):pit->y;
       }
     }
   }
@@ -292,37 +292,52 @@ void Utilities::shrinkHull(PointCloudMono::Ptr cloud,
 bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, 
                          pcl::PointXY &offset, pcl::PointXY &p_closest)
 {
-  float x_temp = 1.0;
-  float y_temp = 1.0;
   float dis_temp = 30.0;
   
+  // Step 1: get the nearest 2 points of p_in on hull
   size_t i = 0;
+  pcl::PointXY p_n1;
+  pcl::PointXY p_n2;
   for (PointCloudMono::const_iterator pit = hull->begin(); 
        pit != hull->end(); ++pit) {
     float delta_x = pit->x - p_in.x;
-    x_temp *= delta_x;
     float delta_y = pit->y - p_in.y;
-    y_temp *= delta_y;
+    float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
     
-    // Use Manhattan distance
-    float dis = fabs(delta_x) + fabs(delta_y);
-    if (dis < dis_temp) {
-      offset.x = delta_x;
-      offset.y = delta_y;
-      p_closest.x = pit->x;
-      p_closest.y = pit->y;
-      dis_temp = dis;
+    if (distance < dis_temp) {
+      p_n2.x = p_n1.x;
+      p_n2.y = p_n1.y;
+      p_n1.x = pit->x;
+      p_n1.y = pit->y;
+      dis_temp = distance;
     }
     ++i;
   }
-  if (x_temp <= 0 && y_temp <= 0) {
-    // The p_in is surrounded by hull
+  
+  // Step 2: form the line segment (pn1, pn2) and (p_in, p_c)
+  // p_c is the center of the hull, judge if the 2 line segment
+  // cross each other, if true, the p_in is not in hull
+  pcl::PointXYZ minPt, maxPt;
+  pcl::getMinMax3D(*hull, minPt, maxPt);
+  pcl::PointXY p_c;
+  p_c.x = (minPt.x + maxPt.x)/2;
+  p_c.y = (minPt.y + maxPt.y)/2;
+  bool cross = isIntersect(p_n1, p_n2, p_in, p_c);
+  
+  if (cross) {
+    // The p_in is not in hull
+    // Here we use a less accurate but simple way
+    // to calculate the closest point on hull of p_in
+    getClosestPoint(p_n1, p_n2, p_in, p_closest);
+    
+    offset.x = p_closest.x - p_in.x;
+    offset.y = p_closest.y - p_in.y;
+    return false;
+  }
+  else {
     offset.x = 0;
     offset.y = 0;
     return true;
-  }
-  else {
-    return false;
   }
 }
 
@@ -340,4 +355,64 @@ bool Utilities::tryExpandROI(int &minx, int &miny, int &maxx, int &maxy,
   if (maxx > width) maxx = width - 1;
   if (miny < 0) miny = 0;
   if (maxy > height) maxy = height - 1;
+}
+
+float Utilities::determinant(float v1, float v2, float v3, float v4)
+{  
+  return (v1 * v3 - v2 * v4);  
+}  
+
+bool Utilities::isIntersect(pcl::PointXY p1, pcl::PointXY p2, 
+                            pcl::PointXY p3, pcl::PointXY p4)  
+{  
+  float delta = determinant(p2.x-p1.x, p3.x-p4.x, p2.y-p1.y, p3.y-p4.y);  
+  if ( delta<=(1e-6) && delta>=-(1e-6) ) {  
+    return false;  
+  }  
+  float lameda = determinant(p3.x-p1.x, p3.x-p4.x, p3.y-p1.y, p3.y-p4.y) / delta;  
+  if ( lameda > 1 || lameda < 0 ) {  
+    return false;  
+  }  
+  float miu = determinant(p2.x-p1.x, p3.x-p1.x, p2.y-p1.y, p3.y-p1.y) / delta;  
+  if ( miu > 1 || miu < 0 ) {  
+    return false;  
+  }  
+  return true;  
+} 
+
+void Utilities::getClosestPoint(pcl::PointXY p1, pcl::PointXY p2, 
+                                pcl::PointXY p, pcl::PointXY &pc)
+{
+  float A = p1.x - p2.x;
+  float B = p1.y - p2.y;
+  
+  if (A == 0) {
+    pc.x = p1.x;
+    pc.y = p.y;
+    return;
+  }
+  if (B == 0) {
+    pc.x = p.x;
+    pc.y = p1.y;
+    return;
+  }
+
+  pc.x = (A*(A*p.x + B*p.y)/B - A*p1.y + B*p1.x)/(B + A*A/B);
+  pc.y = B*(pc.x - p1.x)/A + p1.y;
+}
+
+float Utilities::pointToSegDist(float x, float y, float x1, float y1, float x2, float y2)
+{
+  float cross = (x2 - x1) * (x - x1) + (y2 - y1) * (y - y1);
+  if (cross <= 0) 
+    return sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1));
+  
+  float d2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+  if (cross >= d2) 
+    return sqrt((x - x2) * (x - x2) + (y - y2) * (y - y2));
+  
+  float r = cross / d2;
+  float px = x1 + (x2 - x1) * r;
+  float py = y1 + (y2 - y1) * r;
+  return sqrt((x - px) * (x - px) + (py - y) * (py - y));
 }

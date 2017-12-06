@@ -324,8 +324,8 @@ bool ObstacleDetect::analysePutPose(geometry_msgs::PoseStamped &put_pose,
   PointCloudMono::Ptr cloud = plane_max_hull_;
   
   pcl::PointXY p;
-  // Cause the camera field is limited, we consider a hull is in reach
-  // When the nearest point on hull
+  // Cause the camera view field is limited, we consider a hull is in reach
+  // when the center point plus a toletance in x direction is in hull
   p.x = grasp_area_x_ + tolerance_;
   p.y = grasp_area_y_;
   
