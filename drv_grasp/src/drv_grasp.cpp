@@ -433,7 +433,9 @@ int main(int argc, char **argv)
   
   // Object to perform transform
   Transform m_tf_;
-  // Object to perform obstacle detect
+  // Method to perform obstacle detect, here the base frame is on robot, which
+  // may not be optimal for adding octomap but well enough for detect table,
+  // cause we can delete the table after grasp
   ObstacleDetect m_od_(use_od_, base_frame_, base_to_ground_,
                        table_height_, table_area_);
   
