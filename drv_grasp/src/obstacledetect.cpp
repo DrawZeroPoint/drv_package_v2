@@ -364,7 +364,7 @@ void ObstacleDetect::analyseObstacle()
 {
   PointCloudMono::Ptr cloud = plane_max_hull_;
   if (cloud == NULL) {
-    ROS_INFO_THROTTLE(11, "ObstacleDetect: No table detected.");
+    ROS_WARN("ObstacleDetect: No table detected.");
     return;
   }
   
