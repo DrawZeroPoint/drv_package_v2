@@ -258,6 +258,7 @@ private:
   
   template <typename PointTPtr>
   void publishCloud(PointTPtr cloud, ros::Publisher pub);
+  bool getSourceCloud();
 };
 
 #endif // OBSTACLEDETECT_H

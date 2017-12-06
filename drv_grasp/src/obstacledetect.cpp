@@ -165,8 +165,22 @@ void ObstacleDetect::depthCallback(const sensor_msgs::ImageConstPtr &depth_msg,
   }
 }
 
+bool ObstacleDetect::getSourceCloud()
+{
+  while (ros::ok()) {
+    if (!src_cloud_->points.empty())
+      return true;
+    
+    // Handle callbacks and sleep for a small amount of time
+    // before looping again
+    ros::spinOnce();
+    ros::Duration(0.005).sleep();
+  }
+}
+
 void ObstacleDetect::detectObstacleTable()
 {
+  getSourceCloud();
   findMaxPlane();
   
   // Get table geometry from hull and publish the plane with max area
@@ -406,7 +420,7 @@ void ObstacleDetect::analyseObstacle()
   // here the denominator plus -1 cause the coordinate of atan2 is
   // different with that of ROS (with rotation=PI/2)
   yaw = atan2(xe_ - xs_, ys_ - ye_);
-
+  
   tf2::Quaternion q;
   q.setEuler(0, 0, yaw); // Notice the last angle is around Z axis
   table_pose.pose.orientation.x = q.x();
