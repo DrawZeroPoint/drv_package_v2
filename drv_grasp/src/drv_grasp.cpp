@@ -434,7 +434,7 @@ int main(int argc, char **argv)
   // Object to perform transform
   Transform m_tf_;
   // Object to perform obstacle detect
-  ObstacleDetect m_od_(use_od_, obstacle_frame_, base_to_ground_,
+  ObstacleDetect m_od_(use_od_, base_frame_, base_to_ground_,
                        table_height_, table_area_);
   
 #ifdef USE_CENTER
