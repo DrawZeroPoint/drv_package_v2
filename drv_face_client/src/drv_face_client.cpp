@@ -49,7 +49,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr & image_msg)
   // for now, face recognition run in wander mode
   if (modeType_ != m_wander)
     return;
-
+  
   imagePtr_ = cv_bridge::toCvCopy(image_msg, "bgr8");
 }
 
@@ -91,7 +91,7 @@ bool loadNames()
 {
   ifstream name_file;
   name_file.open(name_path_.c_str());
-
+  
   string line;
   if (name_file.is_open()) {
     names.push_back("Unknown");
@@ -107,68 +107,68 @@ bool loadNames()
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "drv_face_client");
-
+  
   ros::NodeHandle nh;
   ros::NodeHandle pnh;
   ros::NodeHandle rgb_nh(nh, "rgb");
   ros::NodeHandle rgb_pnh(pnh, "rgb");
   image_transport::ImageTransport it_rgb_sub(rgb_nh);
   image_transport::TransportHints hints_rgb("compressed", ros::TransportHints(), rgb_pnh);
-
+  
   faceRecogPubStatus_ = nh.advertise<std_msgs::Bool>("status/face/feedback", 1);
   facePubFace_ = nh.advertise<drv_msgs::recognized_faces>("face/recognized_faces", 1);
   image_transport::ImageTransport rgb_it(nh);
   facePubImage_ = rgb_it.advertise("search/labeled_image", 1);
-
+  
   image_transport::Subscriber sub_rgb = it_rgb_sub.subscribe("/vision/rgb/image_rect_color", 1,
                                                              imageCallback, hints_rgb);
-
+  
   ros::ServiceClient client = nh.serviceClient<drv_msgs::face_recognize>("drv_face_service");
-
+  
   FaceDetector fd(drv_path_);
   if (!loadNames()) {
     ROS_WARN("No name file, maybe train the network first.");
     return 0;
   }
-
+  
   ROS_INFO("Face recognition function initialized!");
-
+  
   while (ros::ok())
   {
     if (ros::param::has(param_running_mode))
       ros::param::get(param_running_mode, modeType_);
-
+    
     if (modeType_ != m_wander) {
       resetStatus();
       continue;
     }
-
+    
     if (ros::param::has(param_need_recognize))
       ros::param::get(param_need_recognize, needRecognize_);
-
+    
     ros::spinOnce(); // Get source image
-
+    
     if (!needRecognize_)
       continue;
-
+    
     if (imagePtr_ == NULL)
       continue;
-
+    
     // Get face region from source image, if no face found, continue
     Mat img_out;
     vector<Rect> face_roi;
     vector<Mat> face_imgs;
     if (!fd.Process(imagePtr_->image, img_out, face_roi, face_imgs))
       continue;
-
+    
     vector<sensor_msgs::Image> face_msgs;
     imgToSensorMsg(face_imgs, face_msgs);
-
+    
     // Call face recognize service
     drv_msgs::face_recognize srv;
-
+    
     srv.request.images_in = face_msgs;
-
+    
     if (client.call(srv)) {
       drv_msgs::recognized_faces rf;
       rf.name_ids = srv.response.face_label_ids;
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
         rf.names.push_back(name);
       }
       facePubFace_.publish(rf);
-
+      
       // Put name string on image and publish
       drawText(img_out, face_roi, rf.names);
       cv_bridge::CvImage cv_pub;
@@ -191,14 +191,14 @@ int main(int argc, char **argv)
       faceSearchResult_ = false;
       ROS_ERROR("Failed to call face recognize service.");
     }
-
+    
     needRecognize_ = false;
-
+    
     std_msgs::Bool flag;
     flag.data = faceSearchResult_;
     faceRecogPubStatus_.publish(flag);
   }
-
+  
   return 0;
 }
 

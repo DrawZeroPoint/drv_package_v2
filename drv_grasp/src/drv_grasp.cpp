@@ -39,6 +39,7 @@
 
 // Custom message
 #include <drv_msgs/recognized_target.h>
+#include <drv_msgs/refine_depth.h>
 #include "fetchrgbd.h"
 #include "getsourcecloud.h"
 #include "obstacledetect.h"
@@ -121,9 +122,6 @@ float cy_ = 237.86;
 
 double min_depth_ = 0.2;
 double max_depth_ = 3.0;
-
-// Depth image temp
-//cv_bridge::CvImagePtr depth_image_ptr_;
 
 #else
 pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
@@ -275,23 +273,7 @@ bool isInGraspRange(float x, float y, float z,
     return false;
 }
 
-#ifdef USE_CENTER
-//void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
-//{
-//  // In simple mode, pose only publish once after one detection
-//  if (modeType_ != m_track || (pubPoseOnce_ && posePublished_))
-//    return;
-  
-//  if(!(imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_16UC1) == 0 ||
-//       imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) == 0 ||
-//       imageDepth->encoding.compare(sensor_msgs::image_encodings::MONO16) == 0)) {
-//    ROS_ERROR("Grasp: Depth image type is wrong.");
-//    return;
-//  }
-  
-//  depth_image_ptr_ = cv_bridge::toCvCopy(imageDepth);
-//}
-#else
+#ifndef USE_CENTER
 void getOrientation(gpd::GraspConfig g, geometry_msgs::Quaternion &q)
 {
   float r11 = g.approach.x;
@@ -449,14 +431,7 @@ int main(int argc, char **argv)
   
 #ifdef USE_CENTER
   FetchRGBD m_fi_;
-//  RefineDepth m_rd_;
-//  ros::NodeHandle cnh;
-//  ros::NodeHandle depth_nh(nh, "depth");
-//  ros::NodeHandle depth_pnh(cnh, "depth");
-//  image_transport::ImageTransport depth_it(depth_nh);
-//  image_transport::TransportHints hintsDepth("compressedDepth", ros::TransportHints(), depth_pnh);
-  
-//  image_transport::Subscriber sub_depth = depth_it.subscribe("/vision/depth/image_rect", 1, depthCallback, hintsDepth);
+  ros::ServiceClient client = nh.serviceClient<drv_msgs::refine_depth>("drv_refine_depth");
 #else
   graspPubCloud_ = nh.advertise<sensor_msgs::PointCloud2>("grasp/points", 1);
   ros::Subscriber sub_cloud = nh.subscribe("depth_registered/points", 1, sourceCloudCallback);
@@ -490,11 +465,20 @@ int main(int argc, char **argv)
     cv_bridge::CvImagePtr rgb, depth;
     sensor_msgs::CameraInfo info;
     m_fi_.fetchRGBD(rgb, depth, info);
-    Mat depth_image = depth->image;
     
     // Call service to refine the depth image
-    //Mat depth_refined(depth_image.size(), depth_image.type());
-    //m_rd_.refineDepth(rgb->image, depth_image, depth_refined);
+    cv_bridge::CvImagePtr depth_refined;
+    drv_msgs::refine_depth srv;
+    srv.request.rgb_in = *(rgb->toImageMsg());
+    srv.request.depth_in = *(depth->toImageMsg());
+    if (client.call(srv)) {
+      depth_refined = cv_bridge::toCvCopy(srv.response.depth_out, 
+                                          srv.response.depth_out.encoding);
+    }
+    else {
+      depth_refined = depth;
+    }
+    Mat depth_image = depth_refined->image;
     
     pcl::PointXYZ graspPt; // target xyz center in robot's reference frame
     pcl::PointXYZ opticalPt; // target xyz center in camera optical frame
