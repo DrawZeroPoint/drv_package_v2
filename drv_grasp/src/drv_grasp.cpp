@@ -491,20 +491,18 @@ int main(int argc, char **argv)
     cv_bridge::CvImagePtr rgb, depth;
     sensor_msgs::CameraInfo info;
     m_fi_.fetchRGBD(rgb, depth, info);
-    // Refine the depth image
     Mat depth_image = depth->image;
-    Mat depth_refined(depth_image.size(), depth_image.type());
-    m_rd_.refineDepth(rgb->image, depth_image, depth_refined);
     
-//    if (depth_image_ptr_ == NULL)
-//      continue;
+    // Call service to refine the depth image
+    //Mat depth_refined(depth_image.size(), depth_image.type());
+    //m_rd_.refineDepth(rgb->image, depth_image, depth_refined);
     
     pcl::PointXYZ graspPt; // target xyz center in robot's reference frame
     pcl::PointXYZ opticalPt; // target xyz center in camera optical frame
     m_od_.setUseOD(true);
     
     // Get opticalPt and transfer to graspPt
-    if (GetSourceCloud::getPoint(depth_refined, row_, col_,
+    if (GetSourceCloud::getPoint(depth_image, row_, col_,
                                  fx_, fy_, cx_, cy_, 
                                  max_depth_, min_depth_, opticalPt))
     {
