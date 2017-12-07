@@ -177,10 +177,10 @@ void ObstacleDetect::detectObstacleInCloud(int min_x, int min_y,
 void ObstacleDetect::detectObstacleInDepth(int min_x, int min_y, 
                                            int max_x, int max_y)
 {
-  Mat rgb, depth;
+  cv_bridge::CvImagePtr rgb, depth;
   sensor_msgs::CameraInfo info;
   fi_->fetchRGBD(rgb, depth, info);
-  Mat depth_except_obj = depth;
+  Mat depth_except_obj = depth->image;
   for (size_t r = 0; r < depth_except_obj.rows; ++r) {
     for (size_t c = 0; c < depth_except_obj.cols; ++c) {
       if (c > min_x && c < max_x && r > min_y && r < max_y) {
@@ -192,6 +192,7 @@ void ObstacleDetect::detectObstacleInDepth(int min_x, int min_y,
   cv_bridge::CvImage cv_img;
   cv_img.image = depth_except_obj;
   cv_img.header = info.header;
+  cv_img.encoding = depth->encoding;
   
   pub_depth_cam_info_.publish(info);
   pub_exp_obj_depth_.publish(cv_img.toImageMsg());

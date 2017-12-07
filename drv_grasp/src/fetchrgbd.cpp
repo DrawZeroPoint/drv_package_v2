@@ -7,7 +7,9 @@ FetchRGBD::FetchRGBD()
   initRGBDCallback();
 }
 
-void FetchRGBD::fetchRGBD(Mat &rgb, Mat &depth, sensor_msgs::CameraInfo &info)
+void FetchRGBD::fetchRGBD(cv_bridge::CvImagePtr &rgb, 
+                          cv_bridge::CvImagePtr &depth,
+                          sensor_msgs::CameraInfo &info)
 {
   while (ros::ok()) {
     if (rgb_ptr_ != NULL && depth_ptr_ != NULL)
@@ -15,8 +17,8 @@ void FetchRGBD::fetchRGBD(Mat &rgb, Mat &depth, sensor_msgs::CameraInfo &info)
     ros::spinOnce();
     ros::Duration(0.005).sleep();
   }
-  rgb = rgb_ptr_->image;
-  depth = depth_ptr_->image;
+  rgb = rgb_ptr_;
+  depth = depth_ptr_;
   info = cam_info_;
 }
 

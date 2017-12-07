@@ -36,7 +36,8 @@ class FetchRGBD
 public:
   FetchRGBD();
   
-  void fetchRGBD(Mat &rgb, Mat &depth, sensor_msgs::CameraInfo &info);
+  void fetchRGBD(cv_bridge::CvImagePtr &rgb, cv_bridge::CvImagePtr &depth, 
+                 sensor_msgs::CameraInfo &info);
   
 private:
   ros::NodeHandle nh_;
