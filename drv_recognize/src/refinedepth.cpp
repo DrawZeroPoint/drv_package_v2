@@ -214,3 +214,4 @@ void RefineDepth::getOutput(Mat &depth_out)
     depth_out.at<float>(r, c) = float(temp_depth[i]);
   }
 }
+

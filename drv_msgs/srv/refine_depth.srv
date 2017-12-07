@@ -1,0 +1,5 @@
+sensor_msgs/Image rgb_in
+sensor_msgs/Image depth_in
+
+---
+sensor_msgs/Image depth_out

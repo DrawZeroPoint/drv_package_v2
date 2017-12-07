@@ -42,7 +42,6 @@
 #include "fetchrgbd.h"
 #include "getsourcecloud.h"
 #include "obstacledetect.h"
-#include "refinedepth.h"
 #include "transform.h"
 #include "utilities.h"
 

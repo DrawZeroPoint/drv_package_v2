@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(drv_recognize)
 
+# You only need add this to use C++ 11 features
+add_compile_options(-std=c++11)
+
 aux_source_directory(./src SRC_LIST)
 
 # set(CMAKE_BUILD_TYPE "Debug")
@@ -42,10 +45,12 @@ include_directories(
 add_library (drv_recognize_lib
  src/detectcolor.cpp
  src/processdepth.cpp
+ src/refinedepth.cpp
  src/transform.cpp
  
  src/detectcolor.h
  src/processdepth.h
+ src/refinedepth.h
  src/transform.h
 )
 
@@ -56,3 +61,7 @@ target_link_libraries (drv_recognize_color drv_recognize_lib)
 add_executable(drv_recognize_hand src/drv_recognize_hand.cpp)
 target_link_libraries(drv_recognize_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
 target_link_libraries (drv_recognize_hand drv_recognize_lib)
+
+add_executable(drv_refine_depth src/drv_refine_depth.cpp)
+target_link_libraries(drv_recognize_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PCL_LIBRARIES})
+target_link_libraries (drv_refine_depth drv_recognize_lib)

@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    recognize.srv
+   refine_depth.srv
    face_recognize.srv
    face_train.srv
    servo.srv

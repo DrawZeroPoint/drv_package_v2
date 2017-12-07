@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(drv_grasp)
 
-# You only need add this to use C++ 11 features
-add_compile_options(-std=c++11)
-
 #Comment this if don't want debug
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -50,14 +47,12 @@ add_library (drv_lib
 src/fetchrgbd.cpp
 src/getsourcecloud.cpp
 src/obstacledetect.cpp
-src/refinedepth.cpp
 src/transform.cpp
 src/utilities.cpp
 
 src/fetchrgbd.h
 src/getsourcecloud.h
 src/obstacledetect.h
-src/refinedepth.h
 src/transform.h
 src/utilities.h
 )

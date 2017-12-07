@@ -10,6 +10,10 @@
   	<param name="conf_thresh" value="0.8" />
   </node>
 
+  <!-- Initialize depth image refine service -->
+  <node ns="$(arg vision_namespace)" name="drv_refine_depth" pkg="drv_recognize" type="drv_refine_depth" output="screen">
+  </node>
+
   <!-- Initialize the search client -->
   <node ns="$(arg vision_namespace)" name="drv_search" pkg="drv_search" type="drv_search" output="screen">
     <!-- Use RCNN method -->
