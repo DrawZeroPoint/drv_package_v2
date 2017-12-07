@@ -469,11 +469,10 @@ int main(int argc, char **argv)
     // Call service to refine the depth image
     cv_bridge::CvImagePtr depth_refined;
     drv_msgs::refine_depth srv;
-    srv.request.rgb_in = *(rgb->toImageMsg());
-    srv.request.depth_in = *(depth->toImageMsg());
+    srv.request.rgb_in = *rgb->toCompressedImageMsg();
+    srv.request.depth_in = *depth->toCompressedImageMsg();
     if (client.call(srv)) {
-      depth_refined = cv_bridge::toCvCopy(srv.response.depth_out, 
-                                          srv.response.depth_out.encoding);
+      depth_refined = cv_bridge::toCvCopy(srv.response.depth_out);
     }
     else {
       depth_refined = depth;
