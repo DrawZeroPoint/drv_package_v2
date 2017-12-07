@@ -503,9 +503,8 @@ int main(int argc, char **argv)
         if (use_od_) {
           // Detect obstacle before publish target pose
           //m_od_.detectObstacleInCloud(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
-          //m_od_.detectObstacleInDepth(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
+          m_od_.detectObstacleInDepth(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
           m_od_.detectObstacleTable();
-          //m_od_.detectObstacleInDepth(depth_image_ptr_, roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
         }
         geometry_msgs::PoseStamped grasp_pose;
         grasp_pose.header.frame_id = base_frame_;

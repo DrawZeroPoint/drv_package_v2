@@ -1,0 +1,230 @@
+layer {
+  name: "depth_in"
+  type: "Input"
+  top: "depth_in"
+  input_param {
+    shape {
+      dim: 1
+      dim: 1
+      dim: 1
+      dim: 307200
+    }
+  }
+}
+layer {
+  name: "in_features"
+  type: "Input"
+  top: "in_features"
+  input_param {
+    shape {
+      dim: 1
+      dim: 5
+      dim: 1
+      dim: 307200
+    }
+  }
+}
+layer {
+  name: "out_features"
+  type: "Input"
+  top: "out_features"
+  input_param {
+    shape {
+      dim: 1
+      dim: 5
+      dim: 1
+      dim: 307200
+    }
+  }
+}
+layer {
+  name: "scales1"
+  type: "Input"
+  top: "scales1"
+  input_param {
+    shape {
+      dim: 1
+      dim: 5
+      dim: 1
+      dim: 1
+    }
+  }
+}
+layer {
+  name: "scales2"
+  type: "Input"
+  top: "scales2"
+  input_param {
+    shape {
+      dim: 1
+      dim: 5
+      dim: 1
+      dim: 1
+    }
+  }
+}
+layer {
+  name: "flatten_scales1"
+  type: "Flatten"
+  bottom: "scales1"
+  top: "flatten_scales1"
+  flatten_param {
+    axis: 0
+  }
+}
+layer {
+  name: "flatten_scales2"
+  type: "Flatten"
+  bottom: "scales2"
+  top: "flatten_scales2"
+  flatten_param {
+    axis: 0
+  }
+}
+layer {
+  name: "in_scaled_features1"
+  type: "Scale"
+  bottom: "in_features"
+  bottom: "flatten_scales1"
+  top: "in_scaled_features1"
+  scale_param {
+    axis: 1
+  }
+}
+layer {
+  name: "out_scaled_features1"
+  type: "Scale"
+  bottom: "out_features"
+  bottom: "flatten_scales1"
+  top: "out_scaled_features1"
+  scale_param {
+    axis: 1
+  }
+}
+layer {
+  name: "in_scaled_features2"
+  type: "Scale"
+  bottom: "in_features"
+  bottom: "flatten_scales2"
+  top: "in_scaled_features2"
+  scale_param {
+    axis: 1
+  }
+}
+layer {
+  name: "out_scaled_features2"
+  type: "Scale"
+  bottom: "out_features"
+  bottom: "flatten_scales2"
+  top: "out_scaled_features2"
+  scale_param {
+    axis: 1
+  }
+}
+layer {
+  name: "out_depth1"
+  type: "Permutohedral"
+  bottom: "depth_in"
+  bottom: "in_scaled_features1"
+  bottom: "out_scaled_features1"
+  top: "out_depth1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  permutohedral_param {
+    num_output: 1
+    neighborhood_size: 0
+    filter_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_term: true
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+    group: 1
+    norm_type: AFTER
+    offset_type: NONE
+  }
+}
+layer {
+  name: "out_depth2"
+  type: "Permutohedral"
+  bottom: "depth_in"
+  bottom: "in_scaled_features2"
+  bottom: "out_scaled_features2"
+  top: "out_depth2"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  permutohedral_param {
+    num_output: 1
+    neighborhood_size: 0
+    filter_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_term: true
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+    group: 1
+    norm_type: AFTER
+    offset_type: NONE
+  }
+}
+layer {
+  name: "concat_out_depth"
+  type: "Concat"
+  bottom: "out_depth1"
+  bottom: "out_depth2"
+  top: "concat_out_depth"
+  concat_param {
+    axis: 1
+  }
+}
+layer {
+  name: "concat_out_relu"
+  type: "ReLU"
+  bottom: "concat_out_depth"
+  top: "concat_out_depth"
+}
+layer {
+  name: "spixel_out_depth1"
+  type: "Convolution"
+  bottom: "concat_out_depth"
+  top: "spixel_out_depth1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 1
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}

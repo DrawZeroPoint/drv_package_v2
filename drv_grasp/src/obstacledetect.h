@@ -66,6 +66,7 @@
 #include <vector>
 #include <string>
 
+#include "fetchrgbd.h"
 #include "transform.h"
 #include "utilities.h"
 
@@ -122,9 +123,6 @@ public:
    */
   void detectObstacleInCloud(int min_x, int min_y, int max_x, int max_y);
   
-  void detectObstacleInDepth(cv_bridge::CvImagePtr src_depth_ptr, 
-                             int min_x, int min_y, int max_x, int max_y);
-  
   void detectObstacleInDepth(int min_x, int min_y, int max_x, int max_y);
   
   /**
@@ -149,28 +147,7 @@ private:
   string param_running_mode_;
   
   ros::NodeHandle nh_;
-  boost::shared_ptr<image_transport::ImageTransport> depth_it_;
   image_transport::ImageTransport pub_it_;
-  
-  image_transport::SubscriberFilter sub_depth_;
-  image_transport::ImageTransport sub_it_;
-  void initDepthCallback();
-  
-  message_filters::Subscriber<sensor_msgs::CameraInfo> sub_camera_info_;
-
-  typedef message_filters::sync_policies::ApproximateTime<
-  sensor_msgs::Image, sensor_msgs::CameraInfo>
-  SyncPolicyDepth;
-
-  typedef message_filters::Synchronizer<SyncPolicyDepth> SynchronizerDepth;
-  boost::shared_ptr<SynchronizerDepth> sync_depth_;
-  
-  // Depth image temp
-  cv_bridge::CvImagePtr src_depth_ptr_;
-  // Depth image info
-  sensor_msgs::CameraInfo depth_cam_info_;
-  void depthCallback(const sensor_msgs::ImageConstPtr& depth_msg,
-                     const sensor_msgs::CameraInfoConstPtr& camera_info_msg);
   
   // Source point cloud and its inliers after z filter
   PointCloudMono::Ptr src_cloud_;
@@ -178,6 +155,7 @@ private:
   ros::Subscriber sub_pointcloud_;
   void cloudCallback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
   
+  FetchRGBD *fi_;
   // The transform object can't be shared between Classes
   Transform *m_tf_;
   // Frame for point cloud to transfer

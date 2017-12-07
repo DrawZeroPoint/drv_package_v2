@@ -1,4 +1,4 @@
-# drv_package_v2.0
+# drv_package_v2
 
 ![overview](https://github.com/DrawZeroPoint/drv_package_v2/blob/master/supplements/figures/1.png )
 

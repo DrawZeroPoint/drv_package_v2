@@ -20,8 +20,8 @@ float th_max_depth_ = 1.3;
 ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_ground, 
                                float table_height, float table_area) :
   use_od_(use_od),
+  fi_(new FetchRGBD),
   pub_it_(nh_),
-  sub_it_(nh_),
   src_cloud_(new PointCloudMono),
   src_z_inliers_(new pcl::PointIndices),
   m_tf_(new Transform),
@@ -40,10 +40,7 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame, float base_to_gro
   // Obstacle info from point cloud
   sub_pointcloud_ = nh_.subscribe<sensor_msgs::PointCloud2>("/vision/depth_registered/points", 1, 
                                                             &ObstacleDetect::cloudCallback, this);
-  
-  // From depth image
-  //initDepthCallback();
-  
+
   // Detect table obstacle
   pub_table_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/detect/table", 1);
   pub_table_points_ = nh_.advertise<sensor_msgs::PointCloud2>("/vision/table/points", 1);
@@ -60,8 +57,8 @@ ObstacleDetect::ObstacleDetect(bool use_od, string base_frame,
                                float base_to_ground, float table_height, float table_area,
                                float grasp_area_x, float grasp_area_y, float tolerance) :
   use_od_(use_od),
+  fi_(new FetchRGBD),
   pub_it_(nh_),
-  sub_it_(nh_),
   src_cloud_(new PointCloudMono),
   src_z_inliers_(new pcl::PointIndices), 
   m_tf_(new Transform),
@@ -132,40 +129,6 @@ bool ObstacleDetect::detectPutTable(geometry_msgs::PoseStamped &put_pose,
   }
 }
 
-void ObstacleDetect::initDepthCallback() 
-{
-  depth_it_.reset(new image_transport::ImageTransport(nh_));
-  sub_camera_info_.subscribe(nh_, "/vision/depth/camera_info", 5);
-  sub_depth_.subscribe(*depth_it_, "/vision/depth/image", 5,
-                       image_transport::TransportHints("compressedDepth"));
-  
-  sync_depth_.reset(new SynchronizerDepth(SyncPolicyDepth(5), 
-                                          sub_depth_, sub_camera_info_));
-  
-  sync_depth_->registerCallback(boost::bind(&ObstacleDetect::depthCallback, this, _1, _2));
-}
-
-void ObstacleDetect::depthCallback(const sensor_msgs::ImageConstPtr &depth_msg,
-                                   const sensor_msgs::CameraInfoConstPtr& camera_info_msg)
-{
-  if (!use_od_)
-    return;
-  if (ros::param::has(param_running_mode_)) {
-    int mode_type;
-    ros::param::get(param_running_mode_, mode_type);
-    // 2 for tracking, 3 for putting
-    if (mode_type == 2 || mode_type == 3) {
-      if (depth_msg->data.empty()) {
-        ROS_WARN_THROTTLE(31, "ObstacleDetect: Depth image is empty.");
-        return;
-      }
-      src_depth_ptr_ = cv_bridge::toCvCopy(depth_msg);
-      src_depth_ptr_->header = camera_info_msg->header;
-      depth_cam_info_ = *camera_info_msg;
-    }
-  }
-}
-
 bool ObstacleDetect::getSourceCloud()
 {
   while (ros::ok()) {
@@ -211,36 +174,13 @@ void ObstacleDetect::detectObstacleInCloud(int min_x, int min_y,
   publishCloud(cloud_except_obj, pub_exp_obj_cloud_);
 }
 
-void ObstacleDetect::detectObstacleInDepth(cv_bridge::CvImagePtr src_depth_ptr, 
-                                           int min_x, int min_y, 
-                                           int max_x, int max_y)
-{
-  if (src_depth_ptr == NULL)
-    return;
-  
-  Mat depth_except_obj = src_depth_ptr->image;
-  for (size_t r = 0; r < depth_except_obj.rows; ++r) {
-    for (size_t c = 0; c < depth_except_obj.cols; ++c) {
-      if (c > min_x && c < max_x && r > min_y && r < max_y)
-        // The type of depth image is CV_32F
-        depth_except_obj.at<float>(r, c) = 0.0;
-    }
-  }
-  cv_bridge::CvImage cv_img;
-  cv_img.image = depth_except_obj;
-  cv_img.header.frame_id = "vision_depth_optical_frame";
-  cv_img.header.stamp = ros::Time(0);
-  cv_img.encoding = src_depth_ptr->encoding;
-  pub_exp_obj_depth_.publish(cv_img.toImageMsg());
-}
-
 void ObstacleDetect::detectObstacleInDepth(int min_x, int min_y, 
                                            int max_x, int max_y)
 {
-  if (src_depth_ptr_ == NULL)
-    return;
-  
-  Mat depth_except_obj = src_depth_ptr_->image;
+  Mat rgb, depth;
+  sensor_msgs::CameraInfo info;
+  fi_->fetchRGBD(rgb, depth, info);
+  Mat depth_except_obj = depth;
   for (size_t r = 0; r < depth_except_obj.rows; ++r) {
     for (size_t c = 0; c < depth_except_obj.cols; ++c) {
       if (c > min_x && c < max_x && r > min_y && r < max_y) {
@@ -251,10 +191,9 @@ void ObstacleDetect::detectObstacleInDepth(int min_x, int min_y,
   }
   cv_bridge::CvImage cv_img;
   cv_img.image = depth_except_obj;
-  cv_img.header = src_depth_ptr_->header;
-  cv_img.encoding = src_depth_ptr_->encoding;
+  cv_img.header = info.header;
   
-  pub_depth_cam_info_.publish(depth_cam_info_);
+  pub_depth_cam_info_.publish(info);
   pub_exp_obj_depth_.publish(cv_img.toImageMsg());
 }
 
