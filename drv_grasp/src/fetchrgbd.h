@@ -21,15 +21,12 @@
 #include <geometry_msgs/PoseStamped.h>
 
 #include <cv_bridge/cv_bridge.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/opencv.hpp>
 
 #include <math.h>
 #include <vector>
 #include <string>
 
 using namespace std;
-using namespace cv;
 
 class FetchRGBD
 {

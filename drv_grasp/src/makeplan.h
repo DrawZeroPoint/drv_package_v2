@@ -46,13 +46,6 @@
 #include <pcl/surface/concave_hull.h>
 #include <pcl/surface/mls.h>
 
-
-/* In USE_CENTER mode, only use the point in the middle of the target to represent
- * its grasp pose, otherwise, use the target's point cloud together with gpd to get
- * its grasp pose. https://github.com/atenpas/gpd
- */
-#define USE_CENTER
-
 class MakePlan
 {
 public:

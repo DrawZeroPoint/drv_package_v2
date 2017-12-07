@@ -416,3 +416,17 @@ float Utilities::pointToSegDist(float x, float y, float x1, float y1, float x2, 
   float py = y1 + (y2 - y1) * r;
   return sqrt((x - px) * (x - px) + (py - y) * (py - y));
 }
+
+void Utilities::smartOffset(pcl::PointXYZ &p_in, float off_xy, float off_z)
+{
+  //  float y_off = off_xy / sqrt(1 + pow(p_in.x / p_in.y, 2)) * p_in.y / fabs(p_in.y);
+  //  float x_off = p_in.x / p_in.y * y_off;
+  
+  float rad = atan2(p_in.y, p_in.x);
+  float y_off = off_xy * sin(rad);
+  float x_off = off_xy * cos(rad);  
+  p_in.x += x_off;
+  p_in.y += y_off;
+  // To solve the issue that the detected point is higher than optimal position
+  p_in.z += off_z;
+}

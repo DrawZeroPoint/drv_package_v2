@@ -87,10 +87,10 @@ float center_to_bottom_ = 0.07;
 
 /* The graspable area of robot left arm,
  * relative to base_link, in meter */
-float x_min_ = 0.4;
-float x_max_ = 0.6;
-float y_min_ = 0.2;
-float y_max_ = 0.35;
+float left_arm_x_min_ = 0.4;
+float left_arm_x_max_ = 0.6;
+float left_arm_y_min_ = 0.2;
+float left_arm_y_max_ = 0.35;
 float tolerance_ = 0.1;
 
 // Publish servo initial position
@@ -169,10 +169,10 @@ int main(int argc, char **argv)
   pnh.getParam("pub_pose_once_id", pubPoseOnce_);
   
   // Get left arm movable area params
-  pnh.getParam("left_arm_x_min", x_min_);
-  pnh.getParam("left_arm_y_min", y_min_);
-  pnh.getParam("left_arm_x_max", x_max_);
-  pnh.getParam("left_arm_y_max", y_max_);
+  pnh.getParam("left_arm_x_min", left_arm_x_min_);
+  pnh.getParam("left_arm_y_min", left_arm_y_min_);
+  pnh.getParam("left_arm_x_max", left_arm_x_max_);
+  pnh.getParam("left_arm_y_max", left_arm_y_max_);
   
   // Publish control value
   putPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/put/pose", 1);
@@ -192,8 +192,8 @@ int main(int argc, char **argv)
   ros::ServiceClient client = nh.serviceClient<drv_msgs::servo>("drv_motor_service");
 
   // Object to perform obstacle detect
-  float grasp_area_x = (x_min_ + x_max_)/2;
-  float grasp_area_y = (y_min_ + y_max_)/2;
+  float grasp_area_x = (left_arm_x_min_ + left_arm_x_max_)/2;
+  float grasp_area_y = (left_arm_y_min_ + left_arm_y_max_)/2;
   ObstacleDetect m_od_(use_od_, base_frame_, base_to_ground_, table_height_, 
                        table_area_, grasp_area_x, grasp_area_y, tolerance_);
 

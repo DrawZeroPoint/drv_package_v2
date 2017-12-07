@@ -49,7 +49,6 @@ include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_
 add_library (drv_lib
 src/fetchrgbd.cpp
 src/getsourcecloud.cpp
-src/makeplan.cpp
 src/obstacledetect.cpp
 src/refinedepth.cpp
 src/transform.cpp
@@ -57,7 +56,6 @@ src/utilities.cpp
 
 src/fetchrgbd.h
 src/getsourcecloud.h
-src/makeplan.h
 src/obstacledetect.h
 src/refinedepth.h
 src/transform.h

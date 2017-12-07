@@ -89,8 +89,9 @@ void RefineDepth::refineDepth(Mat rgb_in, Mat depth_in, Mat &depth_out)
       }
     }
   }
-//  imshow("out", depth_out);
-//  waitKey();
+  namedWindow("Refined", WINDOW_NORMAL);
+  imshow("Refined", depth_out);
+  waitKey();
 }
 
 void RefineDepth::forward(vector<float> depth_in, vector<vector<float> > features_in,

@@ -154,6 +154,7 @@ public:
   static void getClosestPoint(pcl::PointXY p1, pcl::PointXY p2, 
                               pcl::PointXY p, pcl::PointXY &pc);
   
+  static void smartOffset(pcl::PointXYZ &p_in, float off_xy, float off_z);
 private:
   static float determinant(float v1, float v2, float v3, float v4);
   

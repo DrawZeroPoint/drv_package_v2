@@ -39,11 +39,18 @@
 
 // Custom message
 #include <drv_msgs/recognized_target.h>
-#include "makeplan.h"
+#include "fetchrgbd.h"
 #include "getsourcecloud.h"
 #include "obstacledetect.h"
+#include "refinedepth.h"
 #include "transform.h"
 #include "utilities.h"
+
+/* In USE_CENTER mode, only use the point in the middle of the target to represent
+ * its grasp pose, otherwise, use the target's point cloud together with gpd to get
+ * its grasp pose. https://github.com/atenpas/gpd
+ */
+#define USE_CENTER
 
 // 3rd party package, should below makeplan.h
 #ifndef USE_CENTER
@@ -84,10 +91,11 @@ bool pubPoseOnce_ = false;
 
 /* The graspable area of robot left arm,
  * relative to base_link, in meter */
-float x_min_ = 0.4;
-float x_max_ = 0.6;
-float y_min_ = 0.2;
-float y_max_ = 0.35;
+float left_arm_x_min_ = 0.4;
+float left_arm_x_max_ = 0.6;
+float left_arm_y_min_ = 0.2;
+float left_arm_y_max_ = 0.35;
+float left_arm_y_to_base_ = 0.22;
 float tolerance_ = 0.03;
 
 /* This location will be published if the target is out of range
@@ -116,7 +124,7 @@ double min_depth_ = 0.2;
 double max_depth_ = 3.0;
 
 // Depth image temp
-cv_bridge::CvImagePtr depth_image_ptr_;
+//cv_bridge::CvImagePtr depth_image_ptr_;
 
 #else
 pcl::PointIndices::Ptr inliers_(new pcl::PointIndices);
@@ -239,11 +247,11 @@ bool isInGraspRange(float x, float y, float z,
     return true;
   
   // Upper value
-  float x_off_u = x - x_max_;
-  float y_off_u = y - y_max_;
+  float x_off_u = x - left_arm_x_max_;
+  float y_off_u = y - left_arm_y_max_;
   // Lower value
-  float x_off_l = x - x_min_;
-  float y_off_l = y - y_min_;
+  float x_off_l = x - left_arm_x_min_;
+  float y_off_l = y - left_arm_y_min_;
   
   if (x_off_u > 0)
     offset.pose.position.x = x_off_u; // Robot move forward
@@ -269,21 +277,21 @@ bool isInGraspRange(float x, float y, float z,
 }
 
 #ifdef USE_CENTER
-void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
-{
-  // In simple mode, pose only publish once after one detection
-  if (modeType_ != m_track || (pubPoseOnce_ && posePublished_))
-    return;
+//void depthCallback(const sensor_msgs::ImageConstPtr& imageDepth)
+//{
+//  // In simple mode, pose only publish once after one detection
+//  if (modeType_ != m_track || (pubPoseOnce_ && posePublished_))
+//    return;
   
-  if(!(imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_16UC1) == 0 ||
-       imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) == 0 ||
-       imageDepth->encoding.compare(sensor_msgs::image_encodings::MONO16) == 0)) {
-    ROS_ERROR("Grasp: Depth image type is wrong.");
-    return;
-  }
+//  if(!(imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_16UC1) == 0 ||
+//       imageDepth->encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) == 0 ||
+//       imageDepth->encoding.compare(sensor_msgs::image_encodings::MONO16) == 0)) {
+//    ROS_ERROR("Grasp: Depth image type is wrong.");
+//    return;
+//  }
   
-  depth_image_ptr_ = cv_bridge::toCvCopy(imageDepth);
-}
+//  depth_image_ptr_ = cv_bridge::toCvCopy(imageDepth);
+//}
 #else
 void getOrientation(gpd::GraspConfig g, geometry_msgs::Quaternion &q)
 {
@@ -416,10 +424,11 @@ int main(int argc, char **argv)
   pnh.getParam("pub_pose_once_id", pubPoseOnce_);
   
   // Get left arm movable area params
-  pnh.getParam("left_arm_x_min", x_min_);
-  pnh.getParam("left_arm_y_min", y_min_);
-  pnh.getParam("left_arm_x_max", x_max_);
-  pnh.getParam("left_arm_y_max", y_max_);
+  pnh.getParam("left_arm_x_min", left_arm_x_min_);
+  pnh.getParam("left_arm_y_min", left_arm_y_min_);
+  pnh.getParam("left_arm_x_max", left_arm_x_max_);
+  pnh.getParam("left_arm_y_max", left_arm_y_max_);
+  pnh.getParam("left_arm_y_to_base", left_arm_y_to_base_);
   
   // Public control value
   graspPubPose_ = nh.advertise<geometry_msgs::PoseStamped>("/ctrl/vision/grasp/pose", 1);
@@ -440,13 +449,15 @@ int main(int argc, char **argv)
                        table_height_, table_area_);
   
 #ifdef USE_CENTER
-  ros::NodeHandle cnh;
-  ros::NodeHandle depth_nh(nh, "depth");
-  ros::NodeHandle depth_pnh(cnh, "depth");
-  image_transport::ImageTransport depth_it(depth_nh);
-  image_transport::TransportHints hintsDepth("compressedDepth", ros::TransportHints(), depth_pnh);
+  FetchRGBD m_fi_;
+  RefineDepth m_rd_;
+//  ros::NodeHandle cnh;
+//  ros::NodeHandle depth_nh(nh, "depth");
+//  ros::NodeHandle depth_pnh(cnh, "depth");
+//  image_transport::ImageTransport depth_it(depth_nh);
+//  image_transport::TransportHints hintsDepth("compressedDepth", ros::TransportHints(), depth_pnh);
   
-  image_transport::Subscriber sub_depth = depth_it.subscribe("/vision/depth/image_rect", 1, depthCallback, hintsDepth);
+//  image_transport::Subscriber sub_depth = depth_it.subscribe("/vision/depth/image_rect", 1, depthCallback, hintsDepth);
 #else
   graspPubCloud_ = nh.advertise<sensor_msgs::PointCloud2>("grasp/points", 1);
   ros::Subscriber sub_cloud = nh.subscribe("depth_registered/points", 1, sourceCloudCallback);
@@ -475,24 +486,33 @@ int main(int argc, char **argv)
 #ifdef USE_CENTER
     if (modeType_ != m_track || (pubPoseOnce_ && posePublished_))
       continue;
-    if (depth_image_ptr_ == NULL)
-      continue;
     
-    MakePlan MP;
+    // Fetch synchronized image message
+    cv_bridge::CvImagePtr rgb, depth;
+    sensor_msgs::CameraInfo info;
+    m_fi_.fetchRGBD(rgb, depth, info);
+    // Refine the depth image
+    Mat depth_image = depth->image;
+    Mat depth_refined(depth_image.size(), depth_image.type());
+    m_rd_.refineDepth(rgb->image, depth_image, depth_refined);
+    
+//    if (depth_image_ptr_ == NULL)
+//      continue;
+    
     pcl::PointXYZ graspPt; // target xyz center in robot's reference frame
     pcl::PointXYZ opticalPt; // target xyz center in camera optical frame
     m_od_.setUseOD(true);
     
     // Get opticalPt and transfer to graspPt
-    if (GetSourceCloud::getPoint(depth_image_ptr_->image, row_, col_,
+    if (GetSourceCloud::getPoint(depth_refined, row_, col_,
                                  fx_, fy_, cx_, cy_, 
                                  max_depth_, min_depth_, opticalPt))
     {
       m_tf_.getTransform(base_frame_, camera_optical_frame_);
       m_tf_.doTransform(opticalPt, graspPt);
-      MP.smartOffset(graspPt, 0.01, -0.06); //TODO: make this smart
+      Utilities::smartOffset(graspPt, 0.01, -0.06); //TODO: make this smart
       
-      publishMarker(graspPt.x, graspPt.y, graspPt.z, depth_image_ptr_->header);
+      publishMarker(graspPt.x, graspPt.y, graspPt.z, depth->header);
       
       /* Judge if the graspPt is within the graspable area, if so,
        * publish the pose via graspPubPose_, otherwise, 
@@ -502,19 +522,20 @@ int main(int argc, char **argv)
       if (in_range) {
         if (use_od_) {
           // Detect obstacle before publish target pose
+          // By default we only detect table, the other 2 generate octomap and is slow
           //m_od_.detectObstacleInCloud(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
-          m_od_.detectObstacleInDepth(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
+          //m_od_.detectObstacleInDepth(roi_min_x_, roi_min_y_, roi_max_x_, roi_max_y_);
           m_od_.detectObstacleTable();
         }
         geometry_msgs::PoseStamped grasp_pose;
         grasp_pose.header.frame_id = base_frame_;
-        grasp_pose.header.stamp = depth_image_ptr_->header.stamp;
+        grasp_pose.header.stamp = depth->header.stamp;
         grasp_pose.pose.position.x = graspPt.x;
         grasp_pose.pose.position.y = graspPt.y;
         grasp_pose.pose.position.z = graspPt.z;
         
         // The left arm is 0.22m away from robot center in +y direction
-        float yaw = atan2((graspPt.y - 0.22), graspPt.x);
+        float yaw = atan2((graspPt.y - left_arm_y_to_base_), graspPt.x);
         tf2::Quaternion q;
         // Notice the last angle is around Z axis, the value is in radius
         q.setRPY(0, 0, yaw); 
@@ -528,7 +549,7 @@ int main(int argc, char **argv)
       }
       else {
         offset.header.frame_id = base_frame_;
-        offset.header.stamp = depth_image_ptr_->header.stamp;
+        offset.header.stamp = depth->header.stamp;
         offset.pose.position.z = 0;
         offset.pose.orientation.w = 1;
         offset.pose.orientation.x = 0;
