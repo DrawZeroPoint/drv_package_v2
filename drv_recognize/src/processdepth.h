@@ -25,7 +25,7 @@ public:
   
 private:
   bool getContentInRange(Mat depth, Mat &depth_out, vector<int> &bbox, 
-                         float range_max, float range_min = 0.0);
+                         float range_max, float range_min = 0.3);
   
   float getDepth(const Mat &depthImage, int x, int y, bool smoothing, 
                  float maxZError, bool estWithNeighborsIfNull);

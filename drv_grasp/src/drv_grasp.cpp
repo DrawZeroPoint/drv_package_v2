@@ -450,7 +450,7 @@ int main(int argc, char **argv)
   
 #ifdef USE_CENTER
   FetchRGBD m_fi_;
-  RefineDepth m_rd_;
+//  RefineDepth m_rd_;
 //  ros::NodeHandle cnh;
 //  ros::NodeHandle depth_nh(nh, "depth");
 //  ros::NodeHandle depth_pnh(cnh, "depth");
