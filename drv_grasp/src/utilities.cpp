@@ -315,13 +315,14 @@ bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in,
   }
   
   // Step 3: judge if the distance between p_in and p_c is closer
+  // than min distance multiple factor 1.5
   float delta_x = p_in.x - p_c.x;
   float delta_y = p_in.y - p_c.y;
   float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
-  
-  if (distance > dis_temp) {
-    p_closest.x = dis_temp/distance*(p_in.x - p_c.x) + p_c.x;
-    p_closest.y = dis_temp/distance*(p_in.y - p_c.y) + p_c.y;
+
+  if (distance > 1.5*dis_temp) {
+    p_closest.x = 1.5*dis_temp/distance*(p_in.x - p_c.x) + p_c.x;
+    p_closest.y = 1.5*dis_temp/distance*(p_in.y - p_c.y) + p_c.y;
     
     offset.x = p_closest.x - p_in.x;
     offset.y = p_closest.y - p_in.y;
