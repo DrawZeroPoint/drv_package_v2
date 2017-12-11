@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/time.h>
 
 #include <math.h>
 #include <string.h>
@@ -42,6 +43,7 @@ enum ModeType{m_wander, m_search, m_track, m_put};
 int modeType_ = m_wander;
 
 string param_running_mode = "/status/running_mode";
+string param_voice_serve = "/comm/param/ctrl/is_ready_to_serve";
 
 bool hasHand_ = false; // for output grasp info 
 bool posePublished_ = false; // only works in simple mode
@@ -160,6 +162,11 @@ int main(int argc, char **argv)
       if (gesture == 5) {
         // Only publish marker when user shows 5 fingers
         publishMarker(p_out.x(), p_out.y(), p_out.z(), depth_image_ptr_->header);
+        bool voice_serve = true;
+        ros::param::get(param_voice_serve, voice_serve);
+        ros::param::set(param_voice_serve, !voice_serve);
+        // Make the detection not too sensitive
+        ros::Duration(5).sleep();
       }
     }
     
