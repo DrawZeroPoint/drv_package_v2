@@ -292,47 +292,115 @@ void Utilities::shrinkHull(PointCloudMono::Ptr cloud,
 bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, 
                          pcl::PointXY &offset, pcl::PointXY &p_closest)
 {
-  // Step 1: get p_c the center of the hull
-  pcl::PointXYZ minPt, maxPt;
-  pcl::getMinMax3D(*hull, minPt, maxPt);
-  pcl::PointXY p_c;
-  p_c.x = (minPt.x + maxPt.x)/2;
-  p_c.y = (minPt.y + maxPt.y)/2;
-  
-  // Step 2: get the min distance between point on hull to the center
+  // Step 1: get cloest point of p_in in each sector
   size_t i = 0;
-  float dis_temp = 30.0;
+  bool has_sector_1 = false;
+  bool has_sector_2 = false;
+  bool has_sector_3 = false;
+  bool has_sector_4 = false;
+  float dis_1 = 10.0;
+  float dis_2 = 10.0;
+  float dis_3 = 10.0;
+  float dis_4 = 10.0;
+  pcl::PointXY p_1, p_2, p_3, p_4;
   for (PointCloudMono::const_iterator pit = hull->begin(); 
        pit != hull->end(); ++pit) {
-    float delta_x = pit->x - p_c.x;
-    float delta_y = pit->y - p_c.y;
-    float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
-    
-    if (distance < dis_temp) {
-      dis_temp = distance;
+    float delta_x = pit->x - p_in.x;
+    float delta_y = pit->y - p_in.y;
+    float dis = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
+    if (delta_x > 0 && delta_y > 0) {
+      has_sector_1 = true;
+      if (dis < dis_1) {
+        dis_1 = dis;
+        p_1.x = pit->x;
+        p_1.y = pit->y;
+      }
+    }
+    else if (delta_x <= 0 && delta_y > 0) {
+      has_sector_2 = true;
+      if (dis < dis_2) {
+        dis_2 = dis;
+        p_2.x = pit->x;
+        p_2.y = pit->y;
+      }
+    }
+    else if (delta_x <= 0 && delta_y <=0 ) {
+      has_sector_3 = true;
+      if (dis < dis_3) {
+        dis_3 = dis;
+        p_3.x = pit->x;
+        p_3.y = pit->y;
+      }
+    }
+    else {
+      has_sector_4 = true;
+      if (dis < dis_4) {
+        dis_4 = dis;
+        p_4.x = pit->x;
+        p_4.y = pit->y;
+      }
     }
     ++i;
   }
-  
-  // Step 3: judge if the distance between p_in and p_c is closer
-  // than min distance multiple factor 1.5
-  float delta_x = p_in.x - p_c.x;
-  float delta_y = p_in.y - p_c.y;
-  float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
-
-  if (distance > 1.5*dis_temp) {
-    p_closest.x = 1.5*dis_temp/distance*(p_in.x - p_c.x) + p_c.x;
-    p_closest.y = 1.5*dis_temp/distance*(p_in.y - p_c.y) + p_c.y;
+  if (has_sector_1 && has_sector_2 && has_sector_3 && has_sector_4) {
+    offset.x = 0;
+    offset.y = 0;
+    return true;
+  }
+  else {
+    pcl::PointXYZ minPt, maxPt;
+    pcl::getMinMax3D(*hull, minPt, maxPt);
+    pcl::PointXY p_c;
+    p_c.x = (minPt.x + maxPt.x)/2;
+    p_c.y = (minPt.y + maxPt.y)/2;
+    p_closest.x = p_c.x;
+    p_closest.y = p_c.y;
     
     offset.x = p_closest.x - p_in.x;
     offset.y = p_closest.y - p_in.y;
     return false;
   }
-  else {
-    offset.x = 0;
-    offset.y = 0;
-    return true;
-  }
+//  // Step 1: get p_c the center of the hull
+//  pcl::PointXYZ minPt, maxPt;
+//  pcl::getMinMax3D(*hull, minPt, maxPt);
+//  pcl::PointXY p_c;
+//  p_c.x = (minPt.x + maxPt.x)/2;
+//  p_c.y = (minPt.y + maxPt.y)/2;
+  
+//  // Step 2: get the min distance between point on hull to the center
+//  size_t i = 0;
+//  float dis_temp = 30.0;
+//  for (PointCloudMono::const_iterator pit = hull->begin(); 
+//       pit != hull->end(); ++pit) {
+//    float delta_x = pit->x - p_c.x;
+//    float delta_y = pit->y - p_c.y;
+//    float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
+    
+//    if (distance < dis_temp) {
+//      dis_temp = distance;
+//    }
+//    ++i;
+//  }
+  
+//  // Step 3: judge if the distance between p_in and p_c is closer
+//  // than min distance multiple factor 1.5
+//  float delta_x = p_in.x - p_c.x;
+//  float delta_y = p_in.y - p_c.y;
+//  float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
+
+//  if (distance > 1.5*dis_temp) {
+//    p_closest.x = 1.5*dis_temp/distance*(p_in.x - p_c.x) + p_c.x;
+//    p_closest.y = 1.5*dis_temp/distance*(p_in.y - p_c.y) + p_c.y;
+    
+//    offset.x = p_closest.x - p_in.x;
+//    offset.y = p_closest.y - p_in.y;
+//    return false;
+//  }
+//  else {
+//    offset.x = 0;
+//    offset.y = 0;
+//    return true;
+//  }
 }
 
 bool Utilities::tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, 
