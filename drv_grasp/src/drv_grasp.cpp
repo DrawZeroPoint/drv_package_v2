@@ -461,22 +461,25 @@ int main(int argc, char **argv)
     if (modeType_ != m_track || (pubPoseOnce_ && posePublished_))
       continue;
     
+    cv_bridge::CvImagePtr depth_refined;
+    
     // Fetch synchronized image message
     cv_bridge::CvImagePtr rgb, depth;
     sensor_msgs::CameraInfo info;
     m_fi_.fetchRGBD(rgb, depth, info);
     
-    // Call service to refine the depth image
-    cv_bridge::CvImagePtr depth_refined;
-    drv_msgs::refine_depth srv;
-    srv.request.rgb_in = *rgb->toCompressedImageMsg();
-    depth->toImageMsg(srv.request.depth_in);
-    if (client.call(srv)) {
-      depth_refined = cv_bridge::toCvCopy(srv.response.depth_out);
-    }
-    else {
-      depth_refined = depth;
-    }
+    // Call service to refine the depth image, slow, only for research
+    //drv_msgs::refine_depth srv;
+    //srv.request.rgb_in = *rgb->toCompressedImageMsg();
+    //depth->toImageMsg(srv.request.depth_in);
+    //if (client.call(srv)) {
+    //  depth_refined = cv_bridge::toCvCopy(srv.response.depth_out);
+    //}
+    //else {
+    //  depth_refined = depth;
+    //}
+    
+    depth_refined = depth;
     Mat depth_image = depth_refined->image;
     
     pcl::PointXYZ graspPt; // target xyz center in robot's reference frame
