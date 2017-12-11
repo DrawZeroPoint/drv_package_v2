@@ -1,5 +1,5 @@
 sensor_msgs/CompressedImage rgb_in
-sensor_msgs/CompressedImage depth_in
+sensor_msgs/Image depth_in
 
 ---
-sensor_msgs/CompressedImage depth_out
+sensor_msgs/Image depth_out

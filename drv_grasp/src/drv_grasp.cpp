@@ -470,7 +470,7 @@ int main(int argc, char **argv)
     cv_bridge::CvImagePtr depth_refined;
     drv_msgs::refine_depth srv;
     srv.request.rgb_in = *rgb->toCompressedImageMsg();
-    srv.request.depth_in = *depth->toCompressedImageMsg();
+    depth->toImageMsg(srv.request.depth_in);
     if (client.call(srv)) {
       depth_refined = cv_bridge::toCvCopy(srv.response.depth_out);
     }
