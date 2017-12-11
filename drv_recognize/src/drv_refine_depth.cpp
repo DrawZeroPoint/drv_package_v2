@@ -28,7 +28,7 @@ bool refine_depth(drv_msgs::refine_depth::Request  &req,
   cv_bridge::CvImage img_cv;
   img_cv.image = depth_refined;
   img_cv.encoding = req.depth_in.encoding;
-  cerr << img_cv.encoding << endl;
+  //cerr << img_cv.encoding << endl; 32FC1
   res.depth_out = *img_cv.toImageMsg();
   
   return true; // Return bool is necessary for service
