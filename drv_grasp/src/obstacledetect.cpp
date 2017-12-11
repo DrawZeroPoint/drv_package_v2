@@ -9,7 +9,7 @@ float th_z_norm_ = 0.7;
 float th_smooth_ = 8;
 
 // Voxel grid threshold
-float th_leaf_ = 0.01;
+float th_leaf_ = 0.015;
 // th_deltaz_ must 2 times bigger than th_leaf_
 float th_deltaz_ = 2 * th_leaf_;
 float th_ratio_ = 5 * th_leaf_; // flatness ratio max value of plane
