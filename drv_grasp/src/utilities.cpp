@@ -397,8 +397,11 @@ void Utilities::getClosestPoint(pcl::PointXY p1, pcl::PointXY p2,
     return;
   }
 
-  pc.x = (A*(A*p.x + B*p.y)/B - A*p1.y + B*p1.x)/(B + A*A/B);
-  pc.y = B*(pc.x - p1.x)/A + p1.y;
+  //pc.x = (A*(A*p.x + B*p.y)/B - A*p1.y + B*p1.x)/(B + A*A/B);
+  //pc.y = B*(pc.x - p1.x)/A + p1.y;
+  
+  pc.y = (p.x - p1.x + A/B*p1.y + B/A*p.y)/(A/B + B/A);
+  pc.x = A/B*(pc.y - p1.y) + p1.x;
 }
 
 float Utilities::pointToSegDist(float x, float y, float x1, float y1, float x2, float y2)
