@@ -27,7 +27,7 @@ bool refine_depth(drv_msgs::refine_depth::Request  &req,
   // Convert cv::Mat to sensor_msgs::Image
   cv_bridge::CvImage img_cv;
   img_cv.image = depth_refined;
-  res.depth_out = *img_cv.toCompressedImageMsg();
+  res.depth_out = *img_cv.toImageMsg();
   return true; // Return bool is necessary for service
 }
 
