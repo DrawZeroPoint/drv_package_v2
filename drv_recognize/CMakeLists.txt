@@ -23,6 +23,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
 )
 find_package(Eigen3 REQUIRED)
+
+set(Caffe_DIR "/home/aicrobo/video_prop_networks/lib/build-caffe-Desktop-Default")
 find_package(Caffe REQUIRED)
 message("Caffe DIR is ${Caffe_DIR}")
 include_directories(${Caffe_INCLUDE_DIRS})
