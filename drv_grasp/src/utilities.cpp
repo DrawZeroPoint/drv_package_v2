@@ -292,43 +292,36 @@ void Utilities::shrinkHull(PointCloudMono::Ptr cloud,
 bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in, 
                          pcl::PointXY &offset, pcl::PointXY &p_closest)
 {
-  float dis_temp = 30.0;
-  
-  // Step 1: get the nearest 2 points of p_in on hull
-  size_t i = 0;
-  pcl::PointXY p_n1;
-  pcl::PointXY p_n2;
-  for (PointCloudMono::const_iterator pit = hull->begin(); 
-       pit != hull->end(); ++pit) {
-    float delta_x = pit->x - p_in.x;
-    float delta_y = pit->y - p_in.y;
-    float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
-    
-    if (distance < dis_temp) {
-      p_n2.x = p_n1.x;
-      p_n2.y = p_n1.y;
-      p_n1.x = pit->x;
-      p_n1.y = pit->y;
-      dis_temp = distance;
-    }
-    ++i;
-  }
-  
-  // Step 2: form the line segment (pn1, pn2) and (p_in, p_c)
-  // p_c is the center of the hull, judge if the 2 line segment
-  // cross each other, if true, the p_in is not in hull
+  // Step 1: get p_c the center of the hull
   pcl::PointXYZ minPt, maxPt;
   pcl::getMinMax3D(*hull, minPt, maxPt);
   pcl::PointXY p_c;
   p_c.x = (minPt.x + maxPt.x)/2;
   p_c.y = (minPt.y + maxPt.y)/2;
-  bool cross = isIntersect(p_n1, p_n2, p_in, p_c);
   
-  if (cross) {
-    // The p_in is not in hull
-    // Here we use a less accurate but simple way
-    // to calculate the closest point on hull of p_in
-    getClosestPoint(p_n1, p_n2, p_in, p_closest);
+  // Step 2: get the min distance between point on hull to the center
+  size_t i = 0;
+  float dis_temp = 30.0;
+  for (PointCloudMono::const_iterator pit = hull->begin(); 
+       pit != hull->end(); ++pit) {
+    float delta_x = pit->x - p_c.x;
+    float delta_y = pit->y - p_c.y;
+    float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
+    
+    if (distance < dis_temp) {
+      dis_temp = distance;
+    }
+    ++i;
+  }
+  
+  // Step 3: judge if the distance between p_in and p_c is closer
+  float delta_x = p_in.x - p_c.x;
+  float delta_y = p_in.y - p_c.y;
+  float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
+  
+  if (distance > dis_temp) {
+    p_closest.x = dis_temp/distance*(p_in.x - p_c.x) + p_c.x;
+    p_closest.y = dis_temp/distance*(p_in.y - p_c.y) + p_c.y;
     
     offset.x = p_closest.x - p_in.x;
     offset.y = p_closest.y - p_in.y;
