@@ -353,54 +353,13 @@ bool Utilities::isInHull(PointCloudMono::Ptr hull, pcl::PointXY p_in,
     pcl::PointXY p_c;
     p_c.x = (minPt.x + maxPt.x)/2;
     p_c.y = (minPt.y + maxPt.y)/2;
-    p_closest.x = p_c.x;
-    p_closest.y = p_c.y;
+    p_closest.x = p_in.x + 0.1 * (p_c.x - p_in.x);
+    p_closest.y = p_in.y + 0.1 * (p_c.y - p_in.y);
     
     offset.x = p_closest.x - p_in.x;
     offset.y = p_closest.y - p_in.y;
     return false;
   }
-//  // Step 1: get p_c the center of the hull
-//  pcl::PointXYZ minPt, maxPt;
-//  pcl::getMinMax3D(*hull, minPt, maxPt);
-//  pcl::PointXY p_c;
-//  p_c.x = (minPt.x + maxPt.x)/2;
-//  p_c.y = (minPt.y + maxPt.y)/2;
-  
-//  // Step 2: get the min distance between point on hull to the center
-//  size_t i = 0;
-//  float dis_temp = 30.0;
-//  for (PointCloudMono::const_iterator pit = hull->begin(); 
-//       pit != hull->end(); ++pit) {
-//    float delta_x = pit->x - p_c.x;
-//    float delta_y = pit->y - p_c.y;
-//    float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
-    
-//    if (distance < dis_temp) {
-//      dis_temp = distance;
-//    }
-//    ++i;
-//  }
-  
-//  // Step 3: judge if the distance between p_in and p_c is closer
-//  // than min distance multiple factor 1.5
-//  float delta_x = p_in.x - p_c.x;
-//  float delta_y = p_in.y - p_c.y;
-//  float distance = sqrt(pow(delta_x, 2) + pow(delta_y, 2));
-
-//  if (distance > 1.5*dis_temp) {
-//    p_closest.x = 1.5*dis_temp/distance*(p_in.x - p_c.x) + p_c.x;
-//    p_closest.y = 1.5*dis_temp/distance*(p_in.y - p_c.y) + p_c.y;
-    
-//    offset.x = p_closest.x - p_in.x;
-//    offset.y = p_closest.y - p_in.y;
-//    return false;
-//  }
-//  else {
-//    offset.x = 0;
-//    offset.y = 0;
-//    return true;
-//  }
 }
 
 bool Utilities::tryExpandROI(int &minx, int &miny, int &maxx, int &maxy, 
