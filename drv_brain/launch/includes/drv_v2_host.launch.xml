@@ -97,10 +97,10 @@
     <!-- If true, object pose only publish once for one detection -->
     <param name="pub_pose_once_id" value="false" />
     <!-- Left arm graspable area params -->
-    <param name="left_arm_x_min" value="0.47" />
-    <param name="left_arm_x_max" value="0.53" />
-    <param name="left_arm_y_min" value="0.26" />
-    <param name="left_arm_y_max" value="0.3" />
+    <param name="left_arm_x_min" value="0.46" />
+    <param name="left_arm_x_max" value="0.54" />
+    <param name="left_arm_y_min" value="0.25" />
+    <param name="left_arm_y_max" value="0.31" />
     <!-- The left arm is 0.22m away from robot center -->
     <param name="left_arm_y_to_base" value="0.22" />
   </node>
@@ -113,10 +113,10 @@
     <!-- If true, object pose only publish once for one detection -->
     <param name="pub_pose_once_id" value="false" />
     <!-- Left arm graspable area params -->
-    <param name="left_arm_x_min" value="0.47" />
-    <param name="left_arm_x_max" value="0.51" />
-    <param name="left_arm_y_min" value="0.26" />
-    <param name="left_arm_y_max" value="0.3" />
+    <param name="left_arm_x_min" value="0.46" />
+    <param name="left_arm_x_max" value="0.54" />
+    <param name="left_arm_y_min" value="0.25" />
+    <param name="left_arm_y_max" value="0.31" />
   </node>
 
   <!-- Limit the image quality to speed up -->
